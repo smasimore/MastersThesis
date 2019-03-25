@@ -1,4 +1,5 @@
-# AvGNC
+# FlightSoftware
+All code flying on the rocket must be in this repository.
 
 ## Cpputest
 [Cpputest Manual](https://cpputest.github.io/manual.html)
