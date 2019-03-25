@@ -2,6 +2,7 @@
 All code flying on the rocket must be in this repository.
 
 ## Cpputest
+CppUTest is used to create unit & integration tests for flight software. 
 [Cpputest Manual](https://cpputest.github.io/manual.html)
 
 ### Building cpputest library (only needs to be done once per machine)
