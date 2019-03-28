@@ -1,6 +1,10 @@
 CC=g++
 
-# Cpputest vars
+### COMMON VARS ###
+SRC = $(wildcard src/*.c)
+INCLUDE = -Iinclude/
+
+### CPPUTEST VARS ###
 CPPUTEST_HOME = ../libs/cpputest
 CPPFLAGS += -I$(CPPUTEST_HOME)/include
 LD_LIBRARIES += -L$(CPPUTEST_HOME)/cpputest_build/lib -lCppUTest -lCppUTestExt
@@ -8,8 +12,10 @@ LD_LIBRARIES += -L$(CPPUTEST_HOME)/cpputest_build/lib -lCppUTest -lCppUTestExt
 TEST_FILES = $(wildcard tests/*.cpp)
 
 fsw_test:
+	# Only make build folder if doesn't already exist.
 	mkdir -p build
-	$(CC) -o build/$@ $(TEST_FILES) $(CPPFLAGS) $(LD_LIBRARIES)
+	# Compile & link
+	$(CC) -o build/$@ $(INCLUDE) $(SRC) $(TEST_FILES) $(CPPFLAGS) $(LD_LIBRARIES)
 
 # Remove binaries
 clean:
