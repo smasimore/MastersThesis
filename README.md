@@ -1,6 +1,9 @@
 # FlightSoftware
 All code flying on the rocket must be in this repository.
 
+## Running Tests
+sh ./RunTests.sh
+
 ## Cpputest
 CppUTest is used to create unit & integration tests for flight software. 
 [Cpputest Manual](https://cpputest.github.io/manual.html)
@@ -12,5 +15,4 @@ CppUTest is used to create unit & integration tests for flight software.
 
 ### Creating a test
 1. Add a test file in fsw/tests/
-2. In fsw/ run 'make fsw_tests'
-3. Execute ./build/fsw_test
+2. Run sh ./RunTests.sh to verify your test is now running as part of the FSW test suite
