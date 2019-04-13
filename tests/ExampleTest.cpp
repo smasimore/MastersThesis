@@ -1,16 +1,26 @@
 #include "CppUTest/TestHarness.h"
-#include "Example.h"
+
+#include "Errors.h"
+#include "Example.hpp"
  
-TEST_GROUP(Examples)
+TEST_GROUP (Examples)
 {
 };
  
-TEST(Examples, Pass)
+TEST (Examples, Pass)
 {
-    CHECK_EQUAL(0, retZero());
+    uint8_t result;
+    Error_t ret = retZero (result);
+
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (0, result);
 }
 
-TEST(Examples, Fail)
+TEST (Examples, Fail)
 {
-    CHECK_EQUAL(1, retZero());
+    uint8_t result;
+    Error_t ret = retZero (result);
+
+    CHECK_FALSE (E_INVALID_PARAM == ret);
+    CHECK_EQUAL (1, result);
 }
