@@ -1,7 +1,7 @@
 CC=g++
 
 ### COMMON VARS ###
-SRC = $(wildcard src/*.c)
+SRC = $(wildcard src/*.c*)
 INCLUDE = -Iinclude/
 FLAGS = -Wall
 
@@ -16,7 +16,8 @@ fsw_test:
 	@# Only make build folder if doesn't already exist.
 	mkdir -p build
 	@# Compile & link
-	$(CC) -o build/$@ $(FLAGS) $(INCLUDE) $(SRC) $(TEST_SRC) $(TEST_INCLUDE) $(TEST_LIBRARIES)
+	$(CC) -o build/$@ $(FLAGS) $(INCLUDE) $(SRC) $(TEST_SRC) $(TEST_INCLUDE)   \
+		$(TEST_LIBRARIES)
 
 # Remove binaries
 clean:
