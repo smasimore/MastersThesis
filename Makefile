@@ -6,7 +6,7 @@ INCLUDE = -Iinclude/
 FLAGS = -Wall
 
 ### CPPUTEST VARS ###
-CPPUTEST_HOME = ../libs/cpputest
+CPPUTEST_HOME = libs/cpputest
 TEST_INCLUDE += -I$(CPPUTEST_HOME)/include
 TEST_LIBRARIES += -L$(CPPUTEST_HOME)/cpputest_build/lib -lCppUTest -lCppUTestExt
 # Grab all .cpp files from tests dir
