@@ -21,6 +21,6 @@ TEST (Examples, Fail)
     uint8_t result;
     Error_t ret = retZero (result);
 
-    CHECK_FALSE (E_INVALID_PARAM == ret);
+    CHECK_FALSE (ret == E_SUCCESS);
     CHECK_EQUAL (1, result);
 }

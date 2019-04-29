@@ -15,8 +15,8 @@
 # define ERRORS_H
 
 typedef enum Error {
-    E_SUCCESS,
-    E_INVALID_PARAM
+    E_SUCCESS ,
+    E_INVALID_ENUM
 } Error_t;
 
 #endif
