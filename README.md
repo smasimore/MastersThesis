@@ -17,5 +17,5 @@ CppUTest is used to create unit & integration tests for flight software.
 6. make check
 
 ### Creating a test
-1. Add a test file in fsw/tests/
-2. Run sh ./RunTests.sh to verify your test is now running as part of the FSW test suite
+1. Add a test file in fsw/tests/src
+2. Run sh ./RunTests.sh from the FlightSoftware/ directory to verify your test is now running as part of the FSW test suite
