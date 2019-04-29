@@ -9,9 +9,12 @@ CppUTest is used to create unit & integration tests for flight software.
 [Cpputest Manual](https://cpputest.github.io/manual.html)
 
 ### Building cpputest library (only needs to be done once per machine)
-1. cd libs/cpputest/cpputest_build
-2. autoreconf .. -i
-3. ../configure
+1. sudo apt install autoconf libtool make
+2. cd libs/cpputest/cpputest_build
+3. autoreconf .. -i
+4. ../configure
+5. make
+6. make check
 
 ### Creating a test
 1. Add a test file in fsw/tests/
