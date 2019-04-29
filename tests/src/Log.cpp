@@ -2,6 +2,7 @@
 
 Log::Log (Error_t &ret) : log ()
 {
+    // Initialize lock.
     if (pthread_mutex_init (this->pLock, NULL) != 0)
     {
         ret = E_FAILED_TO_INIT_LOCK;
@@ -21,6 +22,7 @@ Log::~Log ()
 
 Error_t Log::logEvent (const LogEvent_t event, const LogInfo_t info)
 {
+    // Verify event param.
     if (event >= Log::LogEvent_t::LAST)
     {
         return E_INVALID_ENUM;
@@ -29,12 +31,16 @@ Error_t Log::logEvent (const LogEvent_t event, const LogInfo_t info)
     // Create row.
     struct Log::LogRow row = {event, info};
 
-    // Add to log.
+    // Lock log.
     if (pthread_mutex_lock (this->pLock) != 0)
     {
         return E_FAILED_TO_LOCK;
     }
+
+    // Add to log.
     this->log.push_back (row);
+
+    // Unlock log.
     if (pthread_mutex_unlock (this->pLock) != 0)
     {
         return E_FAILED_TO_UNLOCK;
@@ -53,19 +59,20 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     areEqual = true;
 
     // Lock vectors.
-    if (pthread_mutex_lock (logOne.pLock) != 0)
-    {
-        return E_FAILED_TO_LOCK;
-    }
-    if (pthread_mutex_lock (logTwo.pLock) != 0)
+    if ((pthread_mutex_lock (logOne.pLock) != 0) || 
+        (pthread_mutex_lock (logTwo.pLock) != 0))
     {
         return E_FAILED_TO_LOCK;
     }
 
+    // Check if the logs have the same size and set areEqual to false if they 
+    // are not.
     if (pLogOneVec->size () != pLogTwoVec->size ())
     {
         areEqual = false;
     }
+
+    // If they are the same size, check if any of their rows are different.
     else
     {
         for (uint32_t i = 0; i < pLogOneVec->size (); i++)
@@ -79,11 +86,8 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     }
 
     // Unlock vectors.
-    if (pthread_mutex_unlock (logOne.pLock) != 0)
-    {
-        return E_FAILED_TO_UNLOCK;
-    }
-    if (pthread_mutex_unlock (logTwo.pLock) != 0)
+    if ((pthread_mutex_unlock (logOne.pLock) != 0) ||
+        (pthread_mutex_unlock (logTwo.pLock) != 0))
     {
         return E_FAILED_TO_UNLOCK;
     }

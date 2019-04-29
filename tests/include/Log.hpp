@@ -1,6 +1,7 @@
 /**
- * Log class for unit/integration tests. To use the logger in a test:
- *      1. Create 2 Logger objects, expectedLog and actualLog
+ * Log class for unit/integration tests. Each Log has a lock to provide thread 
+ * safety. To use the log in a test:
+ *      1. Create 2 Log objects, expectedLog and actualLog
  *      2. Build expectedLog by logging the events you expect to happen using 
  *         expectedLog->logEvent (...)
  *      3. Run the test and log events throughout the test to the actualLog
@@ -22,10 +23,10 @@ class Log final
 {
 public:
 
-    /* Log event describing what is being logged. */
+    /* Event to be logged. */
     enum class LogEvent_t : uint32_t 
     {
-        THREAD_START ,
+        THREAD_START,
         LAST
     };
 
@@ -36,7 +37,11 @@ public:
     /**
      * Constructs a Log object and initializes lock.
      * 
-     * @param ret   E_SUCCESS               Log successfully initialized.
+     * @param ret   Since constructors do not return values, return whether or
+     *              not the initialization was successful in this parameter. 
+     *              Possible values:
+     * 
+     *              E_SUCCESS               Log successfully initialized.
      *              E_FAILED_TO_INIT_LOCK   Lock initialization failed.
      */        
     Log (Error_t &ret);
@@ -60,7 +65,7 @@ public:
     Error_t logEvent (const LogEvent_t event, const LogInfo_t info);
 
     /**
-     * Compare the rows of two logs to determine if they are equal.
+     * Compare two logs to determine if they are equal.
      * 
      * @param logOne    First log.
      * @param logTwo    Second log. 
@@ -68,8 +73,12 @@ public:
      *                  false if they are not.
      * 
      * @ret             E_SUCCESS           areEqual set successfully.
-     *                  E_FAILED_TO_LOCK    Failed to lock vector.
-     *                  E_FAILED_TO_UNLOCK  Failed to unlock vector.
+     *                  E_FAILED_TO_LOCK    Failed to lock vector. This leaves
+     *                                      both log locks in an undefined 
+     *                                      state.
+     *                  E_FAILED_TO_UNLOCK  Failed to unlock vector. This leaves
+     *                                      both log locks in an undefined 
+     *                                      state.
      */
     static Error_t verify (Log &logOne, Log &logTwo, bool &areEqual);
 
@@ -84,7 +93,7 @@ private:
     /* Underlying data structure encapsulating log. */
     std::vector<struct LogRow> log;
 
-    /* Lock to protect access to all logs. */
+    /* Lock to protect access to log. */
     pthread_mutex_t *pLock;
 };
 
