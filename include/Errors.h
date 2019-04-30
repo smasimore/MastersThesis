@@ -16,7 +16,10 @@
 
 typedef enum Error {
     E_SUCCESS,
-    E_INVALID_PARAM
+    E_INVALID_ENUM,
+    E_FAILED_TO_INIT_LOCK,
+    E_FAILED_TO_LOCK,
+    E_FAILED_TO_UNLOCK
 } Error_t;
 
 #endif
