@@ -19,7 +19,9 @@ typedef enum Error {
     E_INVALID_ENUM,
     E_FAILED_TO_INIT_LOCK,
     E_FAILED_TO_LOCK,
-    E_FAILED_TO_UNLOCK
+    E_FAILED_TO_UNLOCK,
+    E_FAILED_TO_INIT_KERNEL_ENV,
+    E_FAILED_TO_OPEN_DIR
 } Error_t;
 
 #endif
