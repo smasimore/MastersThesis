@@ -53,7 +53,7 @@ public:
     ~Log ();
 
     /**
-     * Log an event to the log.
+     * Log an event to the log. Blocks if lock unavailable.
      * 
      * @param   event               Event to log.
      * @param   info                Extra info to log in row.
