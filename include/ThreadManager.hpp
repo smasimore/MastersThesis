@@ -59,6 +59,17 @@ class ThreadManager final
 {
 public:
 
+    /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER 
+       PID's of the kernel threads that ThreadManager updates the priorities of.
+       Hardcode the PID's of the ktimersoftd threads since these do not appear 
+       to change per system boot and getting the PID's dynamically is tricky. 
+       These are verified using verifyProcess. */
+    static const uint8_t KTIMERSOFTD_0_PID;
+    static const uint8_t KTIMERSOFTD_1_PID;
+
+    /* Priority to set ktimersoftd threads to. */
+    static const uint8_t KTIMERSOFTD_TARGET_PRIORITY;
+
     /**
      * Construct the ThreadManager if it does not already exist and return it
      * in the pThreadManager param.

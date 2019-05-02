@@ -7,6 +7,10 @@
 
 #include "ThreadManager.hpp"
 
+const uint8_t ThreadManager::KTIMERSOFTD_0_PID = 4;
+const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 20;
+const uint8_t ThreadManager::KTIMERSOFTD_TARGET_PRIORITY = 49;
+
 /*************************** PUBLIC FUNCTIONS *********************************/
 Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
 {
@@ -37,21 +41,20 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
 {
     verified = true;
 
-    // 1) Verify name of process by reading the /proc/<pid>/comm file.
-    // 1a) Build path to file 
+    // 1) Build path to file 
     const static std::string PROC_DIR = "/proc/";
     const static std::string PROC_COMM_DIR = "/comm";
     std::string procNameFilePath = PROC_DIR + std::to_string (pid) + PROC_COMM_DIR;
     std::fstream procNameFile;
 
-    // 1b) Open file.
+    // 2) Open file.
     procNameFile.open (procNameFilePath, std::ios::in);
     if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
     {
         return E_FAILED_TO_OPEN_FILE;
     }
 
-    // 1c) Read the first line of the file.
+    // 3) Read the first line of the file.
     const static uint8_t MAX_NAME_LEN = 32;
     char actualName[MAX_NAME_LEN];
     procNameFile >> actualName;
@@ -61,14 +64,14 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
         return E_FAILED_TO_READ_FILE;
     }
 
-    // 1d) Close file.
+    // 4) Close file.
     procNameFile.close();
     if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
     {
         return E_FAILED_TO_CLOSE_FILE;
     }
 
-    // 1e) Compare actual to expected.
+    // 5) Compare actual to expected.
     if (strcmp (actualName, expectedName.c_str ()) != 0)
     {
         verified = false;
@@ -80,6 +83,7 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
 Error_t ThreadManager::setProcessPriority (const uint8_t pid, 
                                            const uint8_t priority)
 {
+    // hw IRQ threads have a priority of 50, so only allow priorities below.
     static const uint8_t MAX_PRIORITY = 49;
     if (priority > MAX_PRIORITY)
     {
@@ -105,17 +109,9 @@ ThreadManager& ThreadManager::operator=(ThreadManager const &) {
 };
 
 Error_t ThreadManager::init () {
-    // 1) Hardcode the PID's of the ktimersoftd threads since these do not 
-    //    appear to change per OS configuration and getting the PID's 
-    //    dynamically is tricky. 
-    const static uint8_t KTIMERSOFTD_0_PID = 4;
-    const static uint8_t KTIMERSOFTD_1_PID = 20;
-
-    // 2) Verify that the PID's map to the correct processes and default 
-    //    priority is what we expect.
+    // 1) Verify that the PID's map to the correct processes.
     const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
     const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
-
     bool verified = false;
     Error_t ret = ThreadManager::verifyProcess (KTIMERSOFTD_0_PID, 
                                                 EXPECTED_KTIMERSOFTD_0_NAME, 
@@ -134,15 +130,16 @@ Error_t ThreadManager::init () {
         return E_FAILED_TO_VERIFY_PROCESS;
     }
 
-    // 3) Set the priority of the processes to be 49 (1 below the hw IRQ 
+    // 2) Set the priority of the processes to be 49 (1 below the hw IRQ 
     //    priorities of 50).
-    static const uint8_t TARGET_PRI = 49;
-    ret = ThreadManager::setProcessPriority (KTIMERSOFTD_0_PID, TARGET_PRI);
+    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
+                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
-    ret = ThreadManager::setProcessPriority (KTIMERSOFTD_1_PID, TARGET_PRI);
+    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID, 
+                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
