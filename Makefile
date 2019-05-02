@@ -3,6 +3,7 @@ CC=g++
 ### COMMON VARS ###
 SRC = $(wildcard src/*.c*)
 INCLUDE = -Iinclude/
+LIBRARIES = -pthread
 # Compile for c++11 and ignore c++14 compatibility warnings
 FLAGS = -Wall -std=c++11 -Wno-c++14-compat
 
@@ -18,7 +19,7 @@ fsw_test:
 	mkdir -p build
 	@# Compile & link
 	$(CC) -o build/$@ $(FLAGS) $(INCLUDE) $(SRC) $(TEST_SRC) $(TEST_INCLUDE)   \
-		$(TEST_LIBRARIES)
+		$(LIBRARIES) $(TEST_LIBRARIES)
 
 # Remove binaries
 clean:
