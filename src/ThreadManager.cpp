@@ -30,6 +30,55 @@ Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
     return E_SUCCESS;
 }
 
+Error_t ThreadManager::verifyProcess (const uint8_t pid, 
+                                      const std::string expectedName, 
+                                      const uint8_t expectedPri, 
+                                      const uint8_t expectedSchedPolicy, 
+                                      bool &verified)
+{
+    // 1) Initialize verified output param.
+    verified = false;
+
+    // 2) Get name of process by reading the /proc/<pid>/comm file.
+    // 2a) Build path to file 
+    const static std::string PROC_DIR = "/proc/";
+    const static std::string PROC_COMM_DIR = "/comm";
+    std::string procNameFilePath = PROC_DIR + std::to_string (pid) + PROC_COMM_DIR;
+    std::fstream procNameFile;
+
+    // 2b) Open file.
+    procNameFile.open (procNameFilePath, std::ios::in);
+    if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
+    {
+        return E_FAILED_TO_OPEN_FILE;
+    }
+
+    // 2c) Read the first line of the file.
+    const static uint8_t MAX_NAME_LEN = 32;
+    char actualName[MAX_NAME_LEN];
+    procNameFile >> actualName;
+    if ((procNameFile.rdstate () & (std::ifstream::eofbit | 
+         std::ifstream::badbit | std::ifstream::failbit)) != 0)
+    {
+        return E_FAILED_TO_READ_FILE;
+    }
+
+    // 2d) Close file.
+    procNameFile.close();
+    if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
+    {
+        return E_FAILED_TO_CLOSE_FILE;
+    }
+
+    // 3) Compare actuala to expected.
+    if (strcmp (actualName, expectedName.c_str ()) == 0)
+    {
+        verified = true;
+    }
+
+    return E_SUCCESS;
+}
+
 /**************************** PRIVATE FUNCTIONS *******************************/
 ThreadManager::ThreadManager () {}
 
@@ -83,54 +132,6 @@ Error_t ThreadManager::init () {
     // some greater value but < hw timer
     //FILE *ktimersoftd0File = open ("/proc/" + )
 
-
-    return E_SUCCESS;
-Error on stream (such as when this function catches an exception thrown by an internal operation).
-When set, the integrity of the stream may have been affected.
-Error_t ThreadManager::verifyProcess (const uint8_t pid, 
-                                      const std::string expectedName, 
-                                      const uint8_t expectedPri, 
-                                      const uint8_t expectedSchedPolicy, 
-                                      bool &verified)
-{
-    // todo: check for errors on return
-
-    // 1) Get name of process by reading the /proc/<pid>/comm file.
-    const static std::string PROC_DIR = "/proc/";
-    const static std::string PROC_COMM_DIR = "/comm";
-    std::string procNameFilePath = PROC_DIR + std::to_string (pid) + PROC_COMM_DIR;
-    std::fstream procNameFile;
-
-    // Open file.
-    procNameFile.open (procNameFilePath, std::ios::in);
-    if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
-    {
-        return E_FAILED_TO_OPEN_FILE;
-    }
-
-    // Read file.
-    const static uint8_t MAX_NAME_LEN = 32;
-    char actualName[MAX_NAME_LEN];
-    procNameFile.read (actualName, MAX_NAME_LEN);
-    if ((procNameFile.rdstate () & 
-        (std::ifstream::failbit | std::ifstream::badbit) != 0)
-    {
-        return E_FAILED_TO_READ_FILE;
-    }
-
-    // LEFT OFF HERE
-
-    // Close file.
-    procNameFile.close();
-    if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
-    {
-        return E_FAILED_TO_CLOSE_FILE;
-    }
-
-    //  todo: compare
-
-    // TODO
-    verified = true;
 
     return E_SUCCESS;
 }
