@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <sched.h>
 
 #include "ThreadManager.hpp"
 
@@ -76,6 +77,24 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
     return E_SUCCESS;
 }
 
+Error_t ThreadManager::setProcessPriority (const uint8_t pid, 
+                                           const uint8_t priority)
+{
+    static const uint8_t MAX_PRIORITY = 49;
+    if (priority > MAX_PRIORITY)
+    {
+        return E_INVALID_PRIORITY;
+    }
+    struct sched_param schedParam;
+    schedParam.__sched_priority = priority;
+    if (sched_setparam (pid, &schedParam) != 0)
+    {
+        return E_FAILED_TO_SET_PRIORITY;
+    }
+
+    return E_SUCCESS;
+}
+
 /**************************** PRIVATE FUNCTIONS *******************************/
 ThreadManager::ThreadManager () {}
 
@@ -115,14 +134,19 @@ Error_t ThreadManager::init () {
         return E_FAILED_TO_VERIFY_PROCESS;
     }
 
-    // ... not sure how to do othis, process setpriority seems like doesn't
-    // work for RT processes? what if use pthread funcs? Appears these PIDs
-    // just have 1 thread, so pid should be equal
-    // LEFT OFF: open /proc/<pid>/comm, contents should equal string above
-    // verify pri is min SCHED_FIFO, scheduling is SCHED_FIFO, then set pri to
-    // some greater value but < hw timer
-    //FILE *ktimersoftd0File = open ("/proc/" + )
-
+    // 3) Set the priority of the processes to be 49 (1 below the hw IRQ 
+    //    priorities of 50).
+    static const uint8_t TARGET_PRI = 49;
+    ret = ThreadManager::setProcessPriority (KTIMERSOFTD_0_PID, TARGET_PRI);
+    if (ret != E_SUCCESS)
+    {
+        return E_FAILED_TO_SET_PRIORITY;
+    }
+    ret = ThreadManager::setProcessPriority (KTIMERSOFTD_1_PID, TARGET_PRI);
+    if (ret != E_SUCCESS)
+    {
+        return E_FAILED_TO_SET_PRIORITY;
+    }
 
     return E_SUCCESS;
 }

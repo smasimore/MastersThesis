@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sched.h>
 
 #include "CppUTest/TestHarness.h"
 
@@ -15,8 +16,8 @@ TEST_GROUP (ThreadManager)
 TEST (ThreadManager, verifyProcess)
 {
     // Test using process watchdog/0. On RT Linux this is PID 14. 
-    const static uint8_t SYSTEMD_PID = 14;
-    const static std::string SYSTEMD_NAME = "watchdog/0";
+    static const uint8_t SYSTEMD_PID = 14;
+    static const std::string SYSTEMD_NAME = "watchdog/0";
 
     // Test incorrect name.
     bool verified = false;
@@ -30,6 +31,24 @@ TEST (ThreadManager, verifyProcess)
                                         verified);
     CHECK_EQUAL (E_SUCCESS, ret);
     CHECK_EQUAL (true, verified);
+}
+
+TEST (ThreadManager, setProccessPriority)
+{
+    static const uint8_t PID = 4;
+    static const uint8_t DEFAULT_PRIORITY = 1;
+    static const uint8_t TARGET_PRIORITY = 49;
+
+    // Set priority and verify.
+    ThreadManager::setProcessPriority (PID, TARGET_PRIORITY); 
+    struct sched_param schedParam;
+    sched_getparam (PID, &schedParam);
+    CHECK_EQUAL (schedParam.__sched_priority, TARGET_PRIORITY);
+    
+    // Set priority back to default and verify.
+    ThreadManager::setProcessPriority (PID, DEFAULT_PRIORITY);
+    sched_getparam (PID, &schedParam);
+    CHECK_EQUAL (schedParam.__sched_priority, DEFAULT_PRIORITY);
 }
 
 /* Test ThreadManager singleton. This test will fail if not run on RT Linux. */
