@@ -59,17 +59,21 @@ class ThreadManager final
 {
 public:
 
-    /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER 
-       PID's of the kernel threads that ThreadManager updates the priorities of.
-       There is one per core, and the sbRIO-96<2|3>7 has 2 cores. Hardcode the 
-       PID's of the ktimersoftd threads since these do not appear to change per 
-       system boot and getting the PID's dynamically is tricky. These are 
-       verified on initialization using verifyProcess. */
+    /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
+       PID's of the timer soft IRQ kernel threads. There is one per core, and 
+       the sbRIO-96<2|3>7 has 2 cores. Hardcode the PID's since these do not 
+       appear to change per system boot and getting the PID's dynamically is 
+       tricky. These are verified on initialization using verifyProcess. */
     static const uint8_t KTIMERSOFTD_0_PID;
     static const uint8_t KTIMERSOFTD_1_PID;
 
-    /* Priority to set ktimersoftd threads to. */
-    static const uint8_t KTIMERSOFTD_TARGET_PRIORITY;
+    /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
+       Priority to set ktimersoftd threads to. */
+    static const uint8_t KTIMERSOFTD_PRIORITY;
+
+    /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
+       Priority of hw IRQ threads. */
+    static const uint8_t HW_IRQ_PRIORITY;
 
     /**
      * Construct the ThreadManager if it does not already exist and return it

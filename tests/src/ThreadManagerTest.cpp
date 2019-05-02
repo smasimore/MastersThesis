@@ -12,9 +12,9 @@ TEST_GROUP (ThreadManager)
     void teardown()
     {
         ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID,
-                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
+                                    ThreadManager::KTIMERSOFTD_PRIORITY);
         ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID,
-                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
+                                    ThreadManager::KTIMERSOFTD_PRIORITY);
     }
 };
 
@@ -41,18 +41,18 @@ TEST (ThreadManager, verifyProcess)
 }
 
 /* Test setProcessPriority function. */
-TEST (ThreadManager, setProccessPriority)
+TEST (ThreadManager, setProcessPriority)
 {
     static const uint8_t DEFAULT_PRIORITY = 1;
 
     // Set priority and verify.
     Error_t ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KTIMERSOFTD_0_PID,
-                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY); 
+                                    ThreadManager::KTIMERSOFTD_PRIORITY); 
     CHECK_EQUAL (E_SUCCESS, ret);
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_TARGET_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_PRIORITY, 
                  schedParam.__sched_priority);
     
     // Set priority back to default and verify.
@@ -60,6 +60,15 @@ TEST (ThreadManager, setProccessPriority)
                                        DEFAULT_PRIORITY);
     sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
     CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);
+}
+
+/* Test passing in an invalid priority to setProcessPriority. */
+TEST (ThreadManager, setProcessPriorityInvalidPri)
+{
+    Error_t ret = ThreadManager::setProcessPriority (
+                                    ThreadManager::KTIMERSOFTD_0_PID,
+                                    ThreadManager::HW_IRQ_PRIORITY); 
+    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
 }
 
 /* Test ThreadManager singleton. This test will fail if not run on RT Linux. */
@@ -85,9 +94,9 @@ TEST (ThreadManager, ConstructTwo)
     // Verify that ktimersoftd thread priorities set.
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_TARGET_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_PRIORITY, 
                  schedParam.__sched_priority);
     sched_getparam (ThreadManager::KTIMERSOFTD_1_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_TARGET_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::KTIMERSOFTD_PRIORITY, 
                  schedParam.__sched_priority);
 }

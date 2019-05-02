@@ -9,7 +9,8 @@
 
 const uint8_t ThreadManager::KTIMERSOFTD_0_PID = 4;
 const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 20;
-const uint8_t ThreadManager::KTIMERSOFTD_TARGET_PRIORITY = 49;
+const uint8_t ThreadManager::KTIMERSOFTD_PRIORITY = 49;
+const uint8_t ThreadManager::HW_IRQ_PRIORITY = 50;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
@@ -44,7 +45,8 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
     // 1) Build path to file 
     const static std::string PROC_DIR = "/proc/";
     const static std::string PROC_COMM_DIR = "/comm";
-    std::string procNameFilePath = PROC_DIR + std::to_string (pid) + PROC_COMM_DIR;
+    std::string procNameFilePath = PROC_DIR + std::to_string (pid) + 
+                                   PROC_COMM_DIR;
     std::fstream procNameFile;
 
     // 2) Open file.
@@ -83,9 +85,8 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
 Error_t ThreadManager::setProcessPriority (const uint8_t pid, 
                                            const uint8_t priority)
 {
-    // hw IRQ threads have a priority of 50, so only allow priorities below.
-    static const uint8_t MAX_PRIORITY = 49;
-    if (priority > MAX_PRIORITY)
+    // Only allow priorities below hw IRQ thread priority.
+    if (priority >= ThreadManager::HW_IRQ_PRIORITY)
     {
         return E_INVALID_PRIORITY;
     }
@@ -134,13 +135,13 @@ Error_t ThreadManager::initKernelSchedulingEnvironment () {
     // 2) Set the priority of the processes to be 49 (1 below the hw IRQ 
     //    priorities of 50).
     ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
-                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
+                                        ThreadManager::KTIMERSOFTD_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
     ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID, 
-                                    ThreadManager::KTIMERSOFTD_TARGET_PRIORITY);
+                                        ThreadManager::KTIMERSOFTD_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
