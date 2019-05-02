@@ -32,28 +32,25 @@ Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
 
 Error_t ThreadManager::verifyProcess (const uint8_t pid, 
                                       const std::string expectedName, 
-                                      const uint8_t expectedPri, 
-                                      const uint8_t expectedSchedPolicy, 
                                       bool &verified)
 {
-    // 1) Initialize verified output param.
-    verified = false;
+    verified = true;
 
-    // 2) Get name of process by reading the /proc/<pid>/comm file.
-    // 2a) Build path to file 
+    // 1) Verify name of process by reading the /proc/<pid>/comm file.
+    // 1a) Build path to file 
     const static std::string PROC_DIR = "/proc/";
     const static std::string PROC_COMM_DIR = "/comm";
     std::string procNameFilePath = PROC_DIR + std::to_string (pid) + PROC_COMM_DIR;
     std::fstream procNameFile;
 
-    // 2b) Open file.
+    // 1b) Open file.
     procNameFile.open (procNameFilePath, std::ios::in);
     if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
     {
         return E_FAILED_TO_OPEN_FILE;
     }
 
-    // 2c) Read the first line of the file.
+    // 1c) Read the first line of the file.
     const static uint8_t MAX_NAME_LEN = 32;
     char actualName[MAX_NAME_LEN];
     procNameFile >> actualName;
@@ -63,17 +60,17 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
         return E_FAILED_TO_READ_FILE;
     }
 
-    // 2d) Close file.
+    // 1d) Close file.
     procNameFile.close();
     if ((procNameFile.rdstate () & std::ifstream::failbit) != 0)
     {
         return E_FAILED_TO_CLOSE_FILE;
     }
 
-    // 3) Compare actuala to expected.
-    if (strcmp (actualName, expectedName.c_str ()) == 0)
+    // 1e) Compare actual to expected.
+    if (strcmp (actualName, expectedName.c_str ()) != 0)
     {
-        verified = true;
+        verified = false;
     }
 
     return E_SUCCESS;
@@ -99,14 +96,10 @@ Error_t ThreadManager::init () {
     //    priority is what we expect.
     const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
     const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
-    const static uint8_t EXPECTED_DEFAULT_PRIORITY = 1;
-    const static uint8_t EXPECTED_DEFAULT_SCHED_POLICY = SCHED_FIFO;
 
     bool verified = false;
     Error_t ret = ThreadManager::verifyProcess (KTIMERSOFTD_0_PID, 
                                                 EXPECTED_KTIMERSOFTD_0_NAME, 
-                                                EXPECTED_DEFAULT_PRIORITY, 
-                                                EXPECTED_DEFAULT_SCHED_POLICY, 
                                                 verified);
     if (ret != E_SUCCESS || verified == false)
     {
@@ -116,8 +109,6 @@ Error_t ThreadManager::init () {
     verified = false;
     ret = ThreadManager::verifyProcess (KTIMERSOFTD_1_PID, 
                                         EXPECTED_KTIMERSOFTD_1_NAME, 
-                                        EXPECTED_DEFAULT_PRIORITY, 
-                                        EXPECTED_DEFAULT_SCHED_POLICY, 
                                         verified);
     if (ret != E_SUCCESS || verified == false)
     {

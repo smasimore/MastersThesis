@@ -50,17 +50,14 @@ public:
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT CALL OUTSIDE OF THREADMANAGER 
      * 
      * Verify that the process identified by the provided PID has the expected
-     * name, priority, and scheduling policy. This is used during ThreadManager
-     * initialization.
-     * 
-     * Note: This function uses the pthread API to verify and is only intended
-     *       to be used for processes with 1 thread (e.g. the soft IRQ threads).
+     * name. This is done by reading the /proc/<pid>/comm file. This function is
+     * used during ThreadManager initialization to verify that the correct 
+     * system threads are being modified. It is static so that it can be done
+     * before the ThreadManager object is constructed.
      * 
      * 
      * @param   pid                 PID of the process to verify.
      * @param   expectedName        Expected name of process.
-     * @param   expectedPri         Expected priority of process.
-     * @param   expectedSchedPolicy Expected scheduling policy of process.
      * @param   verified            Will be set to true if process is 
      *                              successfully verified and false otherwise.
      * 
@@ -69,8 +66,6 @@ public:
      */
     static Error_t verifyProcess (const uint8_t pid, 
                                   const std::string expectedName, 
-                                  const uint8_t expectedPri, 
-                                  const uint8_t expectedSchedPolicy, 
                                   bool &verified);
 
 private:
