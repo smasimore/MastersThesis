@@ -52,7 +52,7 @@ TEST (ThreadManager, setProccessPriority)
 }
 
 /* Test ThreadManager singleton. This test will fail if not run on RT Linux. */
-IGNORE_TEST (ThreadManager, ConstructTwo)
+TEST (ThreadManager, ConstructTwo)
 {
     // Get first instance.
     ThreadManager *pThreadManagerOne = nullptr;
