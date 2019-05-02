@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "Log.hpp"
 
 Log::Log (Error_t &ret) : log ()
