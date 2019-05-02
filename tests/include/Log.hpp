@@ -94,7 +94,7 @@ private:
     std::vector<struct LogRow> log;
 
     /* Lock to protect access to log. */
-    pthread_mutex_t *pLock;
+    pthread_mutex_t lock;
 };
 
 #endif
