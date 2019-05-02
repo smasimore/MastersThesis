@@ -3,7 +3,7 @@
 Log::Log (Error_t &ret) : log ()
 {
     // Initialize lock.
-    if (pthread_mutex_init (this->pLock, NULL) != 0)
+    if (pthread_mutex_init (&this->lock, NULL) != 0)
     {
         ret = E_FAILED_TO_INIT_LOCK;
     }
@@ -17,7 +17,7 @@ Log::~Log ()
 {
     // Don't check return since there's not an easy way to surface an error and
     // the consequence of a floating mutex is minimal.
-    pthread_mutex_destroy (this->pLock);
+    pthread_mutex_destroy (&this->lock);
 }
 
 Error_t Log::logEvent (const LogEvent_t event, const LogInfo_t info)
@@ -32,7 +32,7 @@ Error_t Log::logEvent (const LogEvent_t event, const LogInfo_t info)
     struct Log::LogRow row = {event, info};
 
     // Lock log.
-    if (pthread_mutex_lock (this->pLock) != 0)
+    if (pthread_mutex_lock (&this->lock) != 0)
     {
         return E_FAILED_TO_LOCK;
     }
@@ -41,7 +41,7 @@ Error_t Log::logEvent (const LogEvent_t event, const LogInfo_t info)
     this->log.push_back (row);
 
     // Unlock log.
-    if (pthread_mutex_unlock (this->pLock) != 0)
+    if (pthread_mutex_unlock (&this->lock) != 0)
     {
         return E_FAILED_TO_UNLOCK;
     }
@@ -58,9 +58,9 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     // not equal.
     areEqual = true;
 
-    // Lock vectors.
-    if ((pthread_mutex_lock (logOne.pLock) != 0) || 
-        (pthread_mutex_lock (logTwo.pLock) != 0))
+    // Lock logs.
+    if ((pthread_mutex_lock (&logOne.lock) != 0) || 
+        (pthread_mutex_lock (&logTwo.lock) != 0))
     {
         return E_FAILED_TO_LOCK;
     }
@@ -85,9 +85,9 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
         }
     }
 
-    // Unlock vectors.
-    if ((pthread_mutex_unlock (logOne.pLock) != 0) ||
-        (pthread_mutex_unlock (logTwo.pLock) != 0))
+    // Unlock logs.
+    if ((pthread_mutex_unlock (&logOne.lock) != 0) ||
+        (pthread_mutex_unlock (&logTwo.lock) != 0))
     {
         return E_FAILED_TO_UNLOCK;
     }
