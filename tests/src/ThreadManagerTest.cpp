@@ -1,4 +1,3 @@
-#include <iostream>
 #include <sched.h>
 
 #include "CppUTest/TestHarness.h"
@@ -9,7 +8,6 @@
  
 TEST_GROUP (ThreadManager)
 {
-
     // Reset priorities of ktimersoftd threads.
     void teardown()
     {

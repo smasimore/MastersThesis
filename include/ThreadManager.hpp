@@ -3,6 +3,10 @@
  * ThreadManager::getInstance to get the singleton. The first time this is 
  * called, ThreadManager::init will be called to initialize the kernel 
  * scheduling environment.
+ *    
+ * NOTE: This object is intended to be called from only one thread and is not
+ *       threadsafe.
+ * 
  * 
  *                    ---------- SCHEDULING ------------
  * SCHEDULING POLICY: 
@@ -40,10 +44,6 @@
  *    read sensors, process data, communicate over the network, and set 
  *    actuators. Their priorities are to be >= 1 and < 49 so that the hw and sw
  *    timer IRQ threads have no risk of starvation.
- *    
- * 
- * NOTE: This object is intended to be called from only one thread and is not
- *       threadsafe.
  */
 
 # ifndef THREAD_MANAGER_HPP
@@ -61,9 +61,10 @@ public:
 
     /* PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER 
        PID's of the kernel threads that ThreadManager updates the priorities of.
-       Hardcode the PID's of the ktimersoftd threads since these do not appear 
-       to change per system boot and getting the PID's dynamically is tricky. 
-       These are verified using verifyProcess. */
+       There is one per core, and the sbRIO-96<2|3>7 has 2 cores. Hardcode the 
+       PID's of the ktimersoftd threads since these do not appear to change per 
+       system boot and getting the PID's dynamically is tricky. These are 
+       verified on initialization using verifyProcess. */
     static const uint8_t KTIMERSOFTD_0_PID;
     static const uint8_t KTIMERSOFTD_1_PID;
 
@@ -72,27 +73,18 @@ public:
 
     /**
      * Construct the ThreadManager if it does not already exist and return it
-     * in the pThreadManager param.
+     * in the pThreadManager param. Initializes kernel scheduling environment
+     * the first time it is called.
      * 
-     * @param   pThreadManager      Pointer to pointer to ThreadManager object.     
+     * @param   pThreadManager              Pointer to pointer to ThreadManager 
+     *                                      object.     
      * 
-     * @ret     E_SUCCESS           Successfully pointed pThreadManager to
-     *                              ThreadManager object.
+     * @ret     E_SUCCESS                   Successfully pointed pThreadManager 
+     *                                      to ThreadManager object.
+     *          E_FAILED_TO_INIT_KERNEL_ENV Failed to initialize kernel 
+     *                                      environment.
      */
     static Error_t getInstance (ThreadManager **ppThreadManager);
-
-    /**
-     * Create a thread.
-     * 
-     * @param   pThread         Pointer to pthread_t object to fill.
-     * @param   schedPolicy     SCHED_FIFO or SCHED_RR (round robin)
-     * 
-     * @ret     E_SUCCESS           Successfully pointed pThreadManager to
-     *                              ThreadManager object
-     */
-    Error_t createThread (pthread_t *pThread, uint8_t schedPolicy, 
-                          uint8_t priority, uint8_t cpuAffinity, 
-                          void *(threadFunc) (void *));
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT CALL OUTSIDE OF THREADMANAGER 
@@ -102,7 +94,6 @@ public:
      * used during ThreadManager initialization to verify that the correct 
      * system threads are being modified. It is static so that it can be done
      * before the ThreadManager object is constructed.
-     * 
      * 
      * @param   pid                     PID of the process to verify.
      * @param   expectedName            Expected name of process.
@@ -128,7 +119,6 @@ public:
      * used during ThreadManager initialization to update the priorities of
      * time-critical kernel threads.It is static so that it can be done before 
      * the ThreadManager object is constructed.
-     * 
      * 
      * @param   pid                         PID of the process to verify.
      * @param   priority                    SCHED_FIFO priority to set process 
@@ -177,7 +167,7 @@ private:
      *          E_FAILED_TO_SET_PRIORITY    Could not update the priorities of
      *                                      the kernel threads.
      */
-    static Error_t init ();
+    static Error_t initKernelSchedulingEnvironment ();
 };
 
 #endif

@@ -12,14 +12,14 @@ const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 20;
 const uint8_t ThreadManager::KTIMERSOFTD_TARGET_PRIORITY = 49;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
+
 Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
 {
-    // 1) Initialize the kernel environment (e.g. set priorities for the timer's
-    //    soft interrupt threads.
+    // 1) Initialize the kernel scheduling environment.
     static bool initialized = false;
     if (initialized == false)
     {
-        Error_t ret = ThreadManager::init ();
+        Error_t ret = ThreadManager::initKernelSchedulingEnvironment ();
         if (ret != E_SUCCESS)
         {
             return E_FAILED_TO_INIT_KERNEL_ENV;
@@ -100,6 +100,7 @@ Error_t ThreadManager::setProcessPriority (const uint8_t pid,
 }
 
 /**************************** PRIVATE FUNCTIONS *******************************/
+
 ThreadManager::ThreadManager () {}
 
 ThreadManager::ThreadManager (ThreadManager const &) {}
@@ -108,7 +109,7 @@ ThreadManager& ThreadManager::operator=(ThreadManager const &) {
     return *this;
 };
 
-Error_t ThreadManager::init () {
+Error_t ThreadManager::initKernelSchedulingEnvironment () {
     // 1) Verify that the PID's map to the correct processes.
     const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
     const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
