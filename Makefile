@@ -18,8 +18,8 @@ fsw_test:
 	@# Only make build folder if doesn't already exist.
 	mkdir -p build
 	@# Compile & link
-	$(CC) -o build/$@ $(FLAGS) $(INCLUDE) $(SRC) $(TEST_SRC) $(TEST_INCLUDE)   \
-		$(LIBRARIES) $(TEST_LIBRARIES)
+	sudo $(CC) -o build/$@ $(FLAGS) $(INCLUDE) $(SRC) $(TEST_SRC) 			   \
+		$(TEST_INCLUDE) $(LIBRARIES) $(TEST_LIBRARIES)
 
 # Remove binaries
 clean:

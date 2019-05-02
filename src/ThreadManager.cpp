@@ -89,6 +89,7 @@ Error_t ThreadManager::setProcessPriority (const uint8_t pid,
     schedParam.__sched_priority = priority;
     if (sched_setparam (pid, &schedParam) != 0)
     {
+        std::cout << strerror (errno) << std::endl;
         return E_FAILED_TO_SET_PRIORITY;
     }
 
