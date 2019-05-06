@@ -1,3 +1,4 @@
+// All #include statements should come before the CppUTest include
 #include "Errors.h"
 #include "Example.hpp"
 
