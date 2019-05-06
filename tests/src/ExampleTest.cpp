@@ -1,8 +1,8 @@
-#include "CppUTest/TestHarness.h"
-
 #include "Errors.h"
 #include "Example.hpp"
- 
+
+#include "CppUTest/TestHarness.h"
+
 TEST_GROUP (Examples)
 {
 };

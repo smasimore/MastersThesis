@@ -1,7 +1,7 @@
-#include "CppUTest/TestHarness.h"
-
 #include "Errors.h"
 #include "Log.hpp"
+
+#include "CppUTest/TestHarness.h"
  
 TEST_GROUP (Logger)
 {
