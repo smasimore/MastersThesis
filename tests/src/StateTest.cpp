@@ -2,7 +2,6 @@
 
 #include "State.hpp"
 #include "Errors.h"
-#include <unordered_map>
 
 TEST_GROUP(States) {
 };
