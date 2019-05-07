@@ -1,10 +1,10 @@
+/** All #include statements should come before the CppUTest include */
 #include <sched.h>
-
-#include "CppUTest/TestHarness.h"
-
 #include "Errors.h"
 #include "Log.hpp"
 #include "ThreadManager.hpp"
+
+#include "CppUTest/TestHarness.h"
  
 TEST_GROUP (ThreadManager)
 {
