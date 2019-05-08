@@ -1,19 +1,22 @@
 #include "State.hpp"
-#include "Errors.h"
 
-State::State() {
-	StateData = { 1, 2, 3, 4 };
-};
-State::State(std::vector<int> int_data) {
-	StateData = int_data;
+/******************** PUBLIC FUNCTIONS **************************/
+
+State::State (std::vector<int32_t> int_data)
+{
+    StateData = int_data;
 }
-Error_t State::printData() {
-	for (int i:StateData) {
-		printf("data@%d: %d\n", i, StateData[i]);
-	}
-	return E_SUCCESS;
+
+Error_t State::printData ()
+{
+    for (int32_t i : StateData) {
+        printf ("data@%" PRId32 ": %" PRId32 "\n", i, StateData[i]);
+    }
+    return E_SUCCESS;
 }
-Error_t State::getData(std::vector<int> &result) {
-	result = StateData;
-	return E_SUCCESS;
+
+Error_t State::getData (std::vector<int32_t> &result)
+{
+    result = StateData;
+    return E_SUCCESS;
 }

@@ -1,28 +1,76 @@
+/**
+ * StateMachine struct that will eventually do great things aboard the flight computer. 
+ * For now, provide basic skeleton functionality of data management and object initialization.
+ * 
+ * StateMachine should use "named constructor idioms" rather than public overloaded constructors
+ * Initialize StateMachine with an appropriate static funciton that will return a StateMachineTest object.
+ * 
+ */
+
 #ifndef StateMachine_HPP
 #define StateMachine_HPP
 
-#include <cstdio>
 #include "Errors.h"
+#include <stdint.h>
+#include <inttypes.h>
+#include <stdio.h>
 
 struct StateMachine {
 public:
-	// StateMachineTest should use "named constructor idioms" rather than public overloaded constructors
-	// Each below static function will return a StateMachineTest object from certain parameters.
 
-	// There should be a hardcoded default case alongside any parser configurations.
-	static StateMachine from_default();
-	// Example of creating an object from data
-	static StateMachine from_arr(int c[]);
-	// Print the data for user verification, for now
-	Error_t printData();
-	// Attempt to access data for testing purposes
-	Error_t getA(int &result);
-	Error_t getB(int &result);
+	/** 
+     * Create a statemachine from a default hardcoded case. This is important in case of parser, config, or other external failures.
+     * 
+     * @ret StateMachine struct from private constructor
+     */
+	static StateMachine fromDefault ();
+
+	/**
+     * Create a statemachine from data in an array. This is a placeholder function to demonstrate creation from user-defined data.
+     *
+     * @param   c[] array of int32_t, an arbitrary data type
+     *
+     * @ret     StateMachine struct from private constructor and parameter data
+     */
+
+	static StateMachine fromArr (int32_t c[]);
+	/**
+     * Print the data in the StateMachine (skeleton data in this case)
+     *
+     * @ret     E_SUCCESS   Printing successful
+     */
+
+	Error_t printData ();
+
+	/**
+     * Returns the value of temporary StateMachine data A
+     * 
+     * @param   result      Reference to int32_t to store value of A
+     * 
+     * @ret     E_SUCCESS   value of A succesfully stored in result   
+     */
+    Error_t getA (int32_t &result);
+
+    /**
+     * Returns the value of temporary StateMachine data B
+     *
+     * @param   result      Reference to int32_t to store value of B
+     *
+     * @ret     E_SUCCESS   value of B succesfully stored in result
+     */
+	Error_t getB (int32_t &result);
+
 private:
-	// Constructor can be kept private to avoid confusion with "named constructor idioms"
-	StateMachine(int a, int b);
-	// Skeleton data for testing purposes
-	int p_a;
-	int p_b;
+
+	/**
+     * Private constructor to ensure named constructor idoims are used
+     */
+	StateMachine (int32_t a, int32_t b);
+
+	/**
+     * Placeholder skeleton data for temporary testing purposes only
+     */
+	int32_t a;
+	int32_t b;
 };
 #endif
