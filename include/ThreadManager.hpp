@@ -1,8 +1,8 @@
 /**
  * Singleton class to manage threads. To use this class call 
  * ThreadManager::getInstance to get the singleton. The first time this is 
- * called, ThreadManager::init will be called to initialize the kernel 
- * scheduling environment.
+ * called, ThreadManager::initKernelSchedulingEnvironment will be called to 
+ * initialize the kernel scheduling environment.
  *    
  * NOTE: This object is intended to be called from only one thread and is not
  *       threadsafe.

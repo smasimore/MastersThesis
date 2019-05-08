@@ -106,11 +106,13 @@ ThreadManager::ThreadManager () {}
 
 ThreadManager::ThreadManager (ThreadManager const &) {}
 
-ThreadManager& ThreadManager::operator=(ThreadManager const &) {
+ThreadManager& ThreadManager::operator= (ThreadManager const &) 
+{
     return *this;
 };
 
-Error_t ThreadManager::initKernelSchedulingEnvironment () {
+Error_t ThreadManager::initKernelSchedulingEnvironment () 
+{
     // 1) Verify that the PID's map to the correct processes.
     const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
     const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
