@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "Log.hpp"
 
 Log::Log (Error_t &ret) : log ()
@@ -81,6 +83,23 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
                 (pLogOneVec->at (i).info != pLogTwoVec->at (i).info))
             {
                 areEqual = false;
+            }
+        }
+
+        // Print logs for debugging.
+        if (areEqual == false)
+        {
+            std::cout << "\nLog One   |   Log Two" << std::endl;
+            for (uint32_t i = 0; i < pLogOneVec->size (); i++)
+            {
+                std::cout << (int32_t) pLogOneVec->at (i).event 
+                    << ", "
+                    << (int32_t) pLogOneVec->at (i).info 
+                    << "       |   "
+                    << (int32_t) pLogTwoVec->at (i).event 
+                    << ", "
+                    << (int32_t) pLogTwoVec->at (i).info 
+                    << std::endl;
             }
         }
     }
