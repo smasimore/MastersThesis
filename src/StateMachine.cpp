@@ -10,14 +10,9 @@ Error_t StateMachine::fromDefault ()
 
 Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
 {
-	// Arbitrary calculations to obtain A, B data from array
-	int a = c[0];
-	int b = 0;
-	for (int32_t i = 0; i < 4; i++) {
-		b += c[i];
-	}
-    // Create case from array and store in param
-	return StateMachine (a, b);
+StateMachine StateMachine::fromDefault () {
+	// Arbitrary default declaration
+	return StateMachine(1, 2);
 }
 
 Error_t StateMachine::printData ()
@@ -32,7 +27,7 @@ Error_t StateMachine::getA (int32_t &result)
 	return E_SUCCESS;
 }
 
-Error_t StateMachine::getB (int32_t &result)
+Error_t StateMachine::getB (int32_t &result) 
 {
 	result = b;
 	return E_SUCCESS;
@@ -40,8 +35,12 @@ Error_t StateMachine::getB (int32_t &result)
 
 /******************** PRIVATE FUNCTIONS **************************/
 
+<<<<<<< HEAD
 StateMachine::StateMachine (int32_t a, int32_t b)
 {
+=======
+StateMachine::StateMachine (int32_t a, int32_t b) {
+>>>>>>> c10e065b5bdd0951b3eca9c9c8437a339e7491b1
 	StateMachine::a = a;
 	StateMachine::b = b;
 }
