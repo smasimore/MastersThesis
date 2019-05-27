@@ -23,7 +23,7 @@ public:
      * 
      * @ret StateMachine struct from private constructor
      */
-	static StateMachine fromDefault ();
+	static Error_t fromDefault (StateMachine **ppStateMachine);
 
 	/**
      * Create a statemachine from data in an array. This is a placeholder function to demonstrate creation from user-defined data.
@@ -33,7 +33,7 @@ public:
      * @ret     StateMachine struct from private constructor and parameter data
      */
 
-	static StateMachine fromArr (int32_t c[]);
+	static Error_t fromArr (StateMachine **ppStateMachine, int32_t c[]);
 	/**
      * Print the data in the StateMachine (skeleton data in this case)
      *
