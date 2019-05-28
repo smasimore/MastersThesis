@@ -2,6 +2,11 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
+State::State ()
+{
+
+}
+
 State::State (std::vector<int32_t> int_data)
 {
     StateData = int_data;

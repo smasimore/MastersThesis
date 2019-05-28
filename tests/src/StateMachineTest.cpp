@@ -1,7 +1,7 @@
-#include "CppUTest/TestHarness.h"
-
 #include "StateMachine.hpp"
 #include "Errors.h"
+
+#include "CppUTest/TestHarness.h"
 
 TEST_GROUP (StateMachines) 
 {

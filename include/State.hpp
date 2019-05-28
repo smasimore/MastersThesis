@@ -17,8 +17,16 @@ class State
 public:
 
     /**
-     * Construct the State from skeleton data type.
-     * 
+     * Default Constructor to resolve mapping issues
+     *
+     * The unordered_map seems to require a default constructor to map objects. 
+     */
+
+    State ();
+
+    /**
+     * Constructor for the state, public for testing purposes only
+     *
      * @param   int_data    vector of int32_t to serve as placeholder data
      *
      * @ret     State       State class with corresponding data as input
