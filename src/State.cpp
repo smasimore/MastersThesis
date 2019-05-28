@@ -4,24 +4,29 @@
 
 State::State ()
 {
-
 }
 
-State::State (std::vector<int32_t> int_data)
+State::State (std::vector<int32_t> intData)
 {
-    StateData = int_data;
+    State::stateData = intData;
+}
+
+State::State (std::string stateName, std::vector<std::string> targetTransitions)
+{
+    State::stateName = stateName;
+    State::targetTransitions = targetTransitions;
 }
 
 Error_t State::printData ()
 {
     for (int32_t i : StateData) {
-        printf ("data@%" PRId32 ": %" PRId32 "\n", i, StateData[i]);
+        printf ("data@%" PRId32 ": %" PRId32 "\n", i, stateData[i]);
     }
     return E_SUCCESS;
 }
 
 Error_t State::getData (std::vector<int32_t> &result)
 {
-    result = StateData;
+    result = stateData;
     return E_SUCCESS;
 }
