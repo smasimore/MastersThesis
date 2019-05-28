@@ -7,8 +7,8 @@
  * 
  */
 
-#ifndef StateMachine_HPP
-#define StateMachine_HPP
+#ifndef STATEMACHINE_HPP
+#define STATEMACHINE_HPP
 
 #include "Errors.h"
 #include <stdint.h>

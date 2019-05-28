@@ -8,10 +8,11 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <vector>
+
 #include "Errors.h"
 
-#ifndef State_HPP
-#define State_HPP
+#ifndef STATE_HPP
+#define STATE_HPP
 class State 
 {
 public:
