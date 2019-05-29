@@ -21,7 +21,7 @@ TEST (States, AccessData)
 }
 
 
-/* Test if states can be mapped by name; code will live under StateMachine eventually */
+/* Test if states can be mapped by name; code will live under StateMachine */
 TEST (States, Map_States)
 {
     std::unordered_map<std::string, State> stateMap;

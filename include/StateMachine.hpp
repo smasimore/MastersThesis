@@ -1,9 +1,10 @@
 /**
- * StateMachine struct that will eventually do great things aboard the flight computer. 
- * For now, provide basic skeleton functionality of data management and object initialization.
+ * StateMachine struct to manage states aboard the flight computer. 
+ * Prove basic skeleton functionality of data and initialization.
  * 
- * StateMachine should use "named constructor idioms" rather than public overloaded constructors
- * Initialize StateMachine with an appropriate static funciton that will return a StateMachineTest object.
+ * StateMachine should be created with static functions.
+ * Initialize StateMachine with an appropriate static funciton that will 
+ * return a StateMachineTest object.
  * 
  */
 
@@ -19,14 +20,16 @@ struct StateMachine {
 public:
 
 	/** 
-     * Create a statemachine from a default hardcoded case. This is important in case of parser, config, or other external failures.
+     * Create a statemachine from a default hardcoded case. This is important 
+     * in case of parser, config, or other external failures.
      * 
      * @ret StateMachine struct from private constructor
      */
 	static Error_t fromDefault (StateMachine **ppStateMachine);
 
 	/**
-     * Create a statemachine from data in an array. This is a placeholder function to demonstrate creation from user-defined data.
+     * Create a statemachine from data in an array. This is a placeholder 
+     * function to demonstrate creation from user-defined data.
      *
      * @param   c[] array of int32_t, an arbitrary data type
      *

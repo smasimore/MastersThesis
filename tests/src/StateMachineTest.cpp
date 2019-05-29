@@ -7,7 +7,8 @@ TEST_GROUP (StateMachines)
 {
 };
 
-/* Test to create a StateMachine from default hardcoded case, then verify StateMachine data */
+/* Test to create a StateMachine from default hardcoded case, 
+ then verify StateMachine data */
 TEST (StateMachines, DefaultCase) 
 {   
     StateMachine *pSM = nullptr;
@@ -25,7 +26,8 @@ TEST (StateMachines, DefaultCase)
     CHECK_EQUAL (2, resultB);
 }
 
-/* Test to create a StateMachine from a defined case using data from an array, then verify internal calculations from data */
+/* Test to create a StateMachine from a defined case using data from an array, 
+then verify internal calculations from data */
 TEST (StateMachines, DefinedCase) 
 {
     int32_t data_example[] = { 1, 1, 1, 1 };

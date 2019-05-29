@@ -11,7 +11,8 @@ State::State (std::vector<int32_t> intData)
     State::stateData = intData;
 }
 
-State::State (std::string stateName, std::vector<std::string> targetTransitions)
+State::State (std::string stateName, 
+    std::vector<std::string> targetTransitions)
 {
     State::stateName = stateName;
     State::targetTransitions = targetTransitions;
