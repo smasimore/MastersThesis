@@ -27,6 +27,7 @@ public:
     enum class LogEvent_t : uint32_t 
     {
         THREAD_START,
+        THREAD_WAITED,
         LAST
     };
 
@@ -85,7 +86,8 @@ public:
 private:
 
     /* Struct representing a row in the log. */
-    struct LogRow {
+    struct LogRow 
+    {
         LogEvent_t event;
         LogInfo_t info;
     };
