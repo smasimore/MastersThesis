@@ -11,6 +11,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <vector>
+#include <string>
 
 #include "Errors.h"
 
@@ -47,7 +48,7 @@ public:
      *
      * @ret     State               State class with data from params
      */
-    State (std::string stateName, std::vector<State> validTransitions);
+    State (std::string stateName, std::vector<std::string> targetTransitions);
 
     /**
      * Print the State data
