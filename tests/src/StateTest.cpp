@@ -27,9 +27,9 @@ TEST (States, Map_States)
     std::vector<int> dataA = { 1, 2, 3, 4 };
     std::vector<int> dataB = { 2, 3, 4, 5 };
     std::vector<int> dataC = { 3, 4, 5, 6 };
-    stateMap["stateA"] = State (dataA);
-    stateMap["stateB"] = State (dataB);
-    stateMap["stateC"] = State (dataC);
+    stateMap.insert (std::make_pair ("stateA", State (dataA)));
+    stateMap.insert (std::make_pair ("stateB", State (dataB)));
+    stateMap.insert (std::make_pair ("stateC", State (dataC)));
 
     auto search = stateMap.find ("stateA");
     CHECK_EQUAL (search->first, "stateA");

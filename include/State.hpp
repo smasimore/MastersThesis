@@ -20,17 +20,6 @@ class State
 public:
 
     /**
-     * Default Constructor to resolve mapping issues
-     *
-     * The unordered_map seems to require a default constructor to correctly
-     * map the objects.
-     *
-     * @ret     State       State class with empty data
-     */
-
-    State ();
-
-    /**
      * Constructor for the state, public for testing purposes only
      *
      * @param   intData     vector of int32_t to serve as placeholder data

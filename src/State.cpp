@@ -2,10 +2,6 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-State::State ()
-{
-}
-
 State::State (std::vector<int32_t> intData)
 {
     this->stateData = intData;
