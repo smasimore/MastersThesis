@@ -206,18 +206,20 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
     ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *) 
                                                     &threadFuncLog;
     struct ThreadFuncArgs args = {&testLog, 1};
-    ret = pThreadManager->createThread (thread1, nullptr, &args, 
+    ret = pThreadManager->createThread (thread1, nullptr, &args, sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL);
     CHECK_EQUAL (E_INVALID_POINTER, ret);
 
     // Invalid priority. 
     ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+                                        sizeof (args),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY 
                                             + 1, 
                                         ThreadManager::Affinity_t::ALL);
     CHECK_EQUAL (E_INVALID_PRIORITY, ret);
     ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+                                        sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY 
                                             - 1, 
                                         ThreadManager::Affinity_t::ALL);
@@ -225,6 +227,7 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
 
     // Invalid affinity. 
     ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+                                        sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::LAST);
     CHECK_EQUAL (E_INVALID_AFFINITY, ret);
@@ -247,6 +250,7 @@ TEST (ThreadManagerCreate, CreateThreadAndWait)
                                                     &threadFuncLog;
     ThreadManager::Affinity_t affinity = ThreadManager::Affinity_t::ALL;
     ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+                                        sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         affinity);
     CHECK_EQUAL (E_SUCCESS, ret);
@@ -289,18 +293,18 @@ TEST (ThreadManagerCreate, Priorities)
     // affinity of 0 (same as cpputest thread), and cpputest thread has the
     // highest priority.
     ret = pThreadManager->createThread (lowPriThread3, pThreadFuncLog, 
-                                        &argsThread3,
+                                        &argsThread3, sizeof (argsThread3),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                         ThreadManager::Affinity_t::CORE_0);
     CHECK_EQUAL (E_SUCCESS, ret);
     ret = pThreadManager->createThread (medPriThread2, pThreadFuncLog, 
-                                        &argsThread2,
+                                        &argsThread2, sizeof (argsThread2),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY
                                             + 1,
                                         ThreadManager::Affinity_t::CORE_0);
     CHECK_EQUAL (E_SUCCESS, ret);
     ret = pThreadManager->createThread (highPriThread1, pThreadFuncLog, 
-                                        &argsThread1, 
+                                        &argsThread1, sizeof (argsThread1),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::CORE_0);
     CHECK_EQUAL (E_SUCCESS, ret);
@@ -321,6 +325,11 @@ TEST (ThreadManagerCreate, Priorities)
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2);
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 3);
     VERIFY_LOGS (logsEqual);
+
+    // Clean up threads.
+    pThreadManager->waitForThread (highPriThread1, ret); 
+    pThreadManager->waitForThread (medPriThread2, ret); 
+    pThreadManager->waitForThread (lowPriThread3, ret); 
 }
 
 /* Test affinity by creating a spinning thread with a high priority on CPU 0. 
@@ -342,7 +351,7 @@ TEST (ThreadManagerCreate, AffinityCore0)
     ThreadManager::ThreadFunc_t *pThreadFuncSpin = 
         (ThreadManager::ThreadFunc_t *) &threadFuncSpin;
     ret = pThreadManager->createThread (highPriThread1, pThreadFuncSpin, 
-                                        &argsThread1, 
+                                        &argsThread1, sizeof (argsThread1),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::CORE_0);
 
@@ -350,7 +359,7 @@ TEST (ThreadManagerCreate, AffinityCore0)
     ThreadManager::ThreadFunc_t *pThreadFuncLog = 
         (ThreadManager::ThreadFunc_t *) &threadFuncLog;
     ret = pThreadManager->createThread (lowPriThread2, pThreadFuncLog, 
-                                        &argsThread2,
+                                        &argsThread2, sizeof (argsThread2),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                         ThreadManager::Affinity_t::CORE_0);
     CHECK_EQUAL (E_SUCCESS, ret);
@@ -374,4 +383,8 @@ TEST (ThreadManagerCreate, AffinityCore0)
     // Now low pri thread should have run as well.
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2);
     VERIFY_LOGS (logsEqual);
+
+    // Clean up threads.
+    pThreadManager->waitForThread (highPriThread1, ret); 
+    pThreadManager->waitForThread (lowPriThread2, ret); 
 }
