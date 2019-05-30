@@ -4,11 +4,11 @@
 
 Error_t StateMachine::fromDefault (StateMachine **ppStateMachine)
 {
-	// Create StateMachine case and store in param
+    // Create StateMachine case and store in param
     static StateMachine stateMachineInstance = StateMachine (1, 2);
     *ppStateMachine = &stateMachineInstance;
     return E_SUCCESS;
-   
+
 }
 
 Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
@@ -28,27 +28,27 @@ Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
 
 Error_t StateMachine::printData ()
 {
-	printf("A: %" PRId32 "B: %" PRId32 "", StateMachine::a, StateMachine::b);
-	return E_SUCCESS;
+    printf ("A: %" PRId32 "B: %" PRId32 "", this->a, this->b);
+    return E_SUCCESS;
 }
 
 Error_t StateMachine::getA (int32_t &result)
 {
-	result = StateMachine::a;
-	return E_SUCCESS;
+    result = this->a;
+    return E_SUCCESS;
 }
 
-Error_t StateMachine::getB (int32_t &result) 
+Error_t StateMachine::getB (int32_t &result)
 {
-	result = StateMachine::b;
-	return E_SUCCESS;
+    result = this->b;
+    return E_SUCCESS;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/
 
 StateMachine::StateMachine (int32_t a, int32_t b)
 {
-	StateMachine::a = a;
-	StateMachine::b = b;
+    this->a = a;
+    this->b = b;
 }
 

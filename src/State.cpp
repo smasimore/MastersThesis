@@ -8,26 +8,27 @@ State::State ()
 
 State::State (std::vector<int32_t> intData)
 {
-    State::stateData = intData;
+    this->stateData = intData;
 }
 
-State::State (std::string stateName, 
-    std::vector<std::string> targetTransitions)
+State::State (std::string stateName,
+              std::vector<std::string> targetTransitions)
 {
-    State::stateName = stateName;
-    State::targetTransitions = targetTransitions;
+    this->stateName = stateName;
+    this->targetTransitions = targetTransitions;
 }
 
 Error_t State::printData ()
 {
-    for (int32_t i : StateData) {
-        printf ("data@%" PRId32 ": %" PRId32 "\n", i, stateData[i]);
+    for (int32_t i : this->stateData)
+    {
+        printf ("data@%" PRId32 ": %" PRId32 "\n", i, this->stateData[i]);
     }
     return E_SUCCESS;
 }
 
 Error_t State::getData (std::vector<int32_t> &result)
 {
-    result = stateData;
+    result = this->stateData;
     return E_SUCCESS;
 }

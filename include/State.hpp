@@ -1,8 +1,11 @@
 /**
  * State class that will be created and manipulated by the StateMachine
- * Each state must be initialized with important data, such as associated 
+ * Each state must be initialized with important data, such as associated
  * transition and target states.
  */
+
+#ifndef STATE_HPP
+#define STATE_HPP
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -11,16 +14,14 @@
 
 #include "Errors.h"
 
-#ifndef STATE_HPP
-#define STATE_HPP
-class State 
+class State
 {
 public:
 
     /**
      * Default Constructor to resolve mapping issues
      *
-     * The unordered_map seems to require a default constructor to correctly 
+     * The unordered_map seems to require a default constructor to correctly
      * map the objects.
      *
      * @ret     State       State class with empty data
@@ -35,14 +36,13 @@ public:
      *
      * @ret     State       State class with data from param
      */
-	State (std::vector<int32_t> intData);
+    State (std::vector<int32_t> intData);
 
     /**
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
-     *
-     *          validTransitions    vector of States that the State can 
+     * @param   validTransitions    vector of States that the State can
      *                              transition to
      *
      * @ret     State               State class with data from params
@@ -54,17 +54,17 @@ public:
      *
      * @ret     E_SUCCESS   Succesfully printed the State data
      */
-	Error_t printData ();
+    Error_t printData ();
 
     /**
      * Get the State data
-     * 
-     * @param   result      Reference to vector of type int32_t to store State 
+     *
+     * @param   result      Reference to vector of type int32_t to store State
      *                      data in
      *
      * @ret     E_SUCCESS   Successfully stored State data in result
      */
-	Error_t getData (std::vector<int32_t> &result);
+    Error_t getData (std::vector<int32_t> &result);
 
 private:
 
@@ -74,13 +74,13 @@ private:
     std::string stateName;
 
     /**
-     * The first iteration skeleton State data, vector of type int32_t to be 
+     * The first iteration skeleton State data, vector of type int32_t to be
      * used temporarily
      */
-	std::vector<int32_t> stateData;
+    std::vector<int32_t> stateData;
 
     /**
-     * The second iteration valid State transitions, vector of type State to 
+     * The second iteration valid State transitions, vector of type State to
      * use for now
      */
     std::vector<std::string> targetTransitions;
