@@ -68,6 +68,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <vector>
+#include <string>
 
 #include "Errors.h"
 
