@@ -7,6 +7,10 @@ environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.16854
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804/PATH/value=${NILRT_CROSS_GCC_PATH}/usr/bin/arm-nilrt-linux-gnueabi
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804/append=true
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.23206677/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.23206677/appendContributed=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.28843775/append=true
+environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.28843775/appendContributed=true
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983/CWD/delimiter=;
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983/CWD/operation=replace
 environment/project/cdt.managedbuild.config.gnu.cross.exe.debug.1776709983/CWD/value=C\:\\Users\\Jonathan\\workspace\\FlightSoftware\\build\\Debug

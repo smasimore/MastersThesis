@@ -7,3 +7,5 @@ build/
 /Debug
 
 /Release
+/Debug_x86/
+/Test_x86/
