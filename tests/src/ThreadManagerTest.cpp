@@ -13,11 +13,13 @@
 /******************************** MACROS **************************************/
 
 #define INIT_THREAD_MANAGER_AND_LOGS                                           \
+    Error_t ret;                                                               \
     ThreadManager *pThreadManager = nullptr;                                   \
-    ThreadManager::getInstance (&pThreadManager);                              \
-    Error_t ret = E_SUCCESS;                                                   \
+    ret = ThreadManager::getInstance (&pThreadManager);                        \
+    CHECK_EQUAL(E_SUCCESS, ret);                                               \
     Log expectedLog = Log (ret);                                               \
-    Log testLog = Log (ret);                                                   \
+    Log testLog = Log (ret);
+
 
 #define VERIFY_LOGS(logsEqual)                                                 \
 {                                                                              \
@@ -103,7 +105,8 @@ TEST_GROUP (ThreadManagerInit)
 TEST (ThreadManagerInit, VerifyProcess)
 {
     // Test using process watchdog/0. On RT Linux this is PID 14. 
-    static const uint8_t SYSTEMD_PID = 14;
+    // NOTE: this test does not apply to NILRT
+    /*static const uint8_t SYSTEMD_PID = 14;
     static const std::string SYSTEMD_NAME = "watchdog/0";
 
     // Test incorrect name.
@@ -117,7 +120,7 @@ TEST (ThreadManagerInit, VerifyProcess)
     ret = ThreadManager::verifyProcess (SYSTEMD_PID, SYSTEMD_NAME, 
                                         verified);
     CHECK_EQUAL (E_SUCCESS, ret);
-    CHECK_EQUAL (true, verified);
+    CHECK_EQUAL (true, verified);*/
 }
 
 /* Test setProcessPriority function. */
@@ -125,8 +128,10 @@ TEST (ThreadManagerInit, SetProcessPriority)
 {
     static const uint8_t DEFAULT_PRIORITY = 1;
 
+
     // Set priority and verify.
-    Error_t ret = ThreadManager::setProcessPriority (
+    // NOTE: this test does not apply to NILRT
+    /*Error_t ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KTIMERSOFTD_0_PID,
                                     ThreadManager::KTIMERSOFTD_PRIORITY); 
     CHECK_EQUAL (E_SUCCESS, ret);
@@ -139,20 +144,21 @@ TEST (ThreadManagerInit, SetProcessPriority)
     ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
                                        DEFAULT_PRIORITY);
     sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
-    CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);
+    CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);*/
 }
 
 /* Test passing in an invalid priority to setProcessPriority. */
 TEST (ThreadManagerInit, SetProcessPriorityInvalidPri)
 {
-    Error_t ret = ThreadManager::setProcessPriority (
+    // NOTE: This test does not apply to NILRT
+    /*Error_t ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KTIMERSOFTD_0_PID,
                                     ThreadManager::HW_IRQ_PRIORITY); 
     CHECK_EQUAL (E_INVALID_PRIORITY, ret);
     ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KTIMERSOFTD_0_PID,
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY - 1); 
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
+    CHECK_EQUAL (E_INVALID_PRIORITY, ret);*/
 }
 
 /* Test ThreadManager singleton. This test will fail if not run on RT Linux. */
@@ -176,13 +182,16 @@ TEST (ThreadManagerInit, ConstructTwo)
     CHECK_TRUE (pThreadManagerOne == pThreadManagerTwo);
 
     // Verify that ktimersoftd thread priorities set.
+
     struct sched_param schedParam;
-    sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
+
+    //NOTE The below code does not apply to NILRT
+    /*sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
     CHECK_EQUAL (ThreadManager::KTIMERSOFTD_PRIORITY, 
                  schedParam.__sched_priority);
     sched_getparam (ThreadManager::KTIMERSOFTD_1_PID, &schedParam);
     CHECK_EQUAL (ThreadManager::KTIMERSOFTD_PRIORITY, 
-                 schedParam.__sched_priority);
+                 schedParam.__sched_priority);*/
 
     // Verify that the current thread sched policy and priority was set.
     int policy;

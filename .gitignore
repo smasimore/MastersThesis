@@ -1,2 +1,9 @@
 build/
 .vscode
+/Debug
+
+/Test
+
+/Debug
+
+/Release
