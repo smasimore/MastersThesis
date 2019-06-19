@@ -1,11 +1,7 @@
 build/
 .vscode
 /Debug
-
 /Test
-
-/Debug
-
 /Release
 /Debug_x86/
 /Test_x86/

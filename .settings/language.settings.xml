@@ -44,7 +44,7 @@
 			</provider>
 		</extension>
 	</configuration>
-	<configuration id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.23206677" name="Test_x86">
+	<configuration id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.802866292" name="Test_x86">
 		<extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
 			<provider copy-of="extension" id="org.eclipse.cdt.ui.UserLanguageSettingsProvider"/>
 			<provider-reference id="org.eclipse.cdt.core.ReferencedProjectsLanguageSettingsProvider" ref="shared-provider"/>
