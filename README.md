@@ -25,7 +25,7 @@ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 #### Linux
 ```
 $ cd ~/eclipse-workspace
-git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
+$ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 ```
 
 
@@ -42,7 +42,7 @@ $ cd ~/eclipse-workspace/FlightSoftware
 $ sh run_eclipse_linux.sh
 ```
 
-*Note that* `run_eclipse_linux.sh` *assumes that the FlightSoftware repo is in* `~/eclipse-workspace/FlightSoftware` *and eclipse is installed to* `~/eclipse`.
+*Note that* `run_eclipse_linux.sh` *assumes that the FlightSoftware repo is in* `~/eclipse-workspace/FlightSoftware` *and eclipse is installed in* `~/eclipse`.
 
 *Also note that the repo* will not build *if Eclipse is opened by some method other than the provided script. The script is required to set the environment variables that point to the nilrt cross compiler.*
 
