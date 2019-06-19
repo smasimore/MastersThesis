@@ -111,9 +111,9 @@ The last 8 digits of the hostname are the board's serial number and will differ 
 ### Adding a Run configuration
 The first time you deploy to the sbRIO, you will need to add a run configuration. 
 
-Follow the instructions in section 7 of (this guide from NI](http://www.ni.com/tutorial/14625/en/), creating one run configuration called **FlightSoftwareMainDebug** that points to the `Debug/FlightSoftware` executable (by selecting it in the **C/C++ Application** field). Then create another configuration called **FlightSoftwareRunTest** that points to the `Test/FlightSoftwareTest` executable. 
+Follow the instructions in section 7 of [this guide from NI](http://www.ni.com/tutorial/14625/en/), creating a run configuration called **FlightSoftwareMainDebug** that points to the `Debug/FlightSoftware` executable (by selecting it in the **C/C++ Application** field). Then create another configuration called **FlightSoftwareRunTest** that points to the `Test/FlightSoftwareTest` executable. 
 
-Note, on Linux, the sbRIO may not in the connection dropdown. If this happens, you will need to click **New** next to **Connection**, select **SSH** from the dropdown, and click **OK**. Then under **Host** enter the board's hostname (e.g. `NI-sbRIO-9637-01dea4db.local`), under **User** enter `admin`, and then select **Password Based Authentication** and enter the password for the admin user. 
+Note, on Linux, the sbRIO may not available in the **Connection** dropdown. If this happens, you will need to click **New** next to **Connection**, select **SSH** from the dropdown, and click **OK**. Then under **Host** enter the board's hostname (e.g. `NI-sbRIO-9637-01dea4db.local`), under **User** enter `admin`, and then select **Password Based Authentication** and enter the password for the admin user. 
 
 
 ## Running
