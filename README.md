@@ -28,7 +28,8 @@ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 #### Linux
 ```
 $ cd ~/eclipse-workspace
-$ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git  
+$ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git 
+``` 
   
 ### 3 Set environment variables 
 
