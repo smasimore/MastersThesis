@@ -32,7 +32,13 @@ $ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 ### 3 Set environment variables 
 
 #### Windows 
- ... TODO
+ Open the start menu and search for **environment variables**. Select **Edit the System Environment Variables**. 
+ In the window that opens, click the **Environment Variables** button. 
+ A seconIn the **System Variables** section, click **New**. 
+ Enter `NILRT_CROSS_GCC_PATH` as the variable name and `C:\build\17.0\arm\sysroots\i686-nilrtsdk-mingw32` as the variable value. 
+ Click  **OK** and then click **New** again to create another variable. 
+ Enter `NILRT_TOOLCHAIN_PATH` as the name and `C:\build\17.0\arm\sysroots` as the value. 
+ Click **OK** on all windows. 
  
 #### Linux
 No additional setup needed. The `run_eclipse_linux.sh` script will start Eclipse with the correct environment variables set. 
