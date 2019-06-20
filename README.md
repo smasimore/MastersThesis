@@ -1,6 +1,10 @@
 # FlightSoftware
 All code flying on the rocket must be in this repository.
 
+
+
+
+
 ## Environment Setup
 ### 1 Install Eclipse and NI Linux Real-Time toolchain
 
@@ -10,6 +14,8 @@ Follow the instructions in sections 1-3 of [this guide from NI](http://www.ni.co
 #### Linux
 [Install Eclipse](https://www.eclipse.org/downloads/)  
 Then install the [nilrt toolchain](http://www.ni.com/download/labview-real-time-module-2017/6760/en/)
+
+
 
 ### 2 Clone the repository
 
@@ -27,6 +33,7 @@ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 $ cd ~/eclipse-workspace
 $ git clone git@github.austin.utexas.edu:trel/FlightSoftware.git
 ```
+
 
 
 ### 3 Set environment variables 
@@ -61,17 +68,33 @@ $ sh run_eclipse_linux.sh
 *Also note that the repo* will not build *if Eclipse is opened by some method other than the provided script. The script is required to set the environment variables that point to the nilrt cross compiler.*
 
 
+
+
+
+
 ## Building the Code
 Right click the project in Eclipse. Under **Build Configurations** > **Set Active** ensure **Debug** or **Release** is selected.
 Right click the project again and select **Build Project** (also **ctrl-b**).
+
+
+
+
 
 ## Deploying and Running
 Ensure Eclipse is connected to the sbRIO [see section 6 of [this guide from NI](http://www.ni.com/tutorial/14625/en/)].
  Right click the project and select **Run As** > **FlightSoftwareMainDebug** or **FlightSoftwareMainRelease**. 
  Stdout will be displayed in the Eclipse console window. 
  
+ 
+ 
+ 
+ 
 ## Running Tests
 Follow the instructions above for building and deploying, but select **Test** as the build configuration and **FlightSoftwareTest** as the run configuration.
+
+
+
+
 
 ## Building and Running for x86 Linux
 It is possible to build and run the code on an x86 Linux system (like a PC). Note however that this is only a last resort if access to an NILRT system is not available. 
