@@ -218,6 +218,7 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
                                       const std::string expectedName, 
                                       bool &verified)
 {
+
     verified = true;
 
     // 1) Build path to file 
@@ -263,6 +264,7 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
 Error_t ThreadManager::setProcessPriority (const uint8_t pid, 
                                            const uint8_t priority)
 {
+
     // Only allow priorities below hw IRQ thread priority and above min
     // SCHED_FIFO priority.
     if (priority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
@@ -323,7 +325,9 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
 
     // 3) Verify that the hardcoded ktimersoftd/n PID's map to the correct 
     //     processes.
-    const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
+
+    // Note the below process names are not valid for NILRT and will need to be updated
+   /* const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
     const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
     bool verified = false;
     Error_t ret = ThreadManager::verifyProcess (KTIMERSOFTD_0_PID, 
@@ -355,7 +359,7 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
-    }
+    }*/
 
     return E_SUCCESS;
 }
