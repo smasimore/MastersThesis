@@ -68,6 +68,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <vector>
+#include <string>
 
 #include "Errors.h"
 
@@ -122,7 +123,8 @@ public:
     static Error_t getInstance (ThreadManager **ppThreadManager);
 
     /**
-     * Create a thread with SCHED_FIFO scheduling policy. 
+     * Create a thread with SCHED_FIFO scheduling policy. All created threads
+     * must be waited on using waitForThread for proper cleanup.
      * 
      * Note: Affinity is set after thread is created due to pthread API 
      *       limitations.
@@ -131,7 +133,12 @@ public:
      * @param   pFunc                       Pointer to ThreadFunc_t function new 
      *                                      thread will execute.
      * @param   pArgs                       Pointer to arguments passed to new 
-     *                                      thread's function.
+     *                                      thread's function. These arguments
+     *                                      will be copied to the heap, so the
+     *                                      caller does not need to keep the
+     *                                      memory pArgs points to after this
+     *                                      function returns successfully.
+     * @param   numArgBytes                 Number of bytes pArgs points to.
      * @param   priority                    Priority to set new thread. Must be
      *                                      >= MIN_NEW_THREAD_PRIORITY and <= 
      *                                      MAX_NEW_THREAD_PRIORITY.
@@ -141,6 +148,8 @@ public:
      *          E_INVALID_POINTER           Invalid pFunc param.
      *          E_INVALID_PRIORITY          Priority invalid.
      *          E_INVALID_AFFINITY          CPU affinity invalid.
+     *          E_FAILED_TO_ALLOCATE_ARGS   Malloc failed for args.
+     *          E_FAILED_TO_ALLOCATE_THREAD Malloc failed for thread struct.
      *          E_FAILED_TO_INIT_THREAD_ATR Failed to init thread attribute.
      *          E_FAILED_TO_SET_SCHED_POL   Failed to set scheduling policy.
      *          E_FAILED_TO_SET_PRIORITY    Failed to set thread priority.
@@ -149,11 +158,13 @@ public:
      *          E_FAILED_TO_CREATE_THREAD   Failed to create thread.
      *          E_FAILED_TO_SET_AFFINITY    Failed to set thread affinity.
      */
-    Error_t createThread (pthread_t &thread, ThreadFunc_t *pFunc, void *pArgs, 
-                          Priority_t priority, Affinity_t cpuAffinity);
+    Error_t createThread (pthread_t &thread, ThreadFunc_t *pFunc, void *pArgs,
+                          uint32_t numArgBytes, Priority_t priority,
+                          Affinity_t cpuAffinity);
 
     /**
-     * Block until specified thread returns.
+     * Block until specified thread returns. Waiting on an invalid thread has
+     * undefined behavior (most likely a seg fault).
      * 
      * @param   thread                      Thread to wait on.
      * @param   threadReturn                Reference to Error_t to fill with
@@ -161,6 +172,8 @@ public:
      * 
      * @ret     E_SUCCESS                   Successfully waited on thread.
      *          E_FAILED_TO_WAIT_ON_THREAD  Failed to wait on thread.
+     *          E_THREAD_NOT_FOUND          Failed to find thread and free
+     *                                      memory.
      */
     Error_t waitForThread (pthread_t &thread, Error_t &threadReturn); 
 
@@ -233,10 +246,19 @@ public:
 
 private:
 
-    /** 
-     * Whether or not the init function has been called. 
+    /**
+     * Struct to contain relevant info per thread.
      */
-    static bool initialized;
+    struct Thread {
+        pthread_t thread;
+        void *pArgs;
+        struct Thread *next;
+    };
+
+    /**
+     * List of active threads.
+     */
+    struct Thread *ThreadList;
 
     /**
      * Constructor.

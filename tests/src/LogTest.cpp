@@ -1,7 +1,8 @@
-#include "CppUTest/TestHarness.h"
-
+/** All #include statements should come before the CppUTest include */
 #include "Errors.h"
 #include "Log.hpp"
+
+#include "CppUTest/TestHarness.h"
  
 TEST_GROUP (Logger)
 {

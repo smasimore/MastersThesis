@@ -14,8 +14,8 @@ Error_t StateMachine::fromDefault (StateMachine **ppStateMachine)
 Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
 {
     // Arbitrary calculations to obtain A, B data from array
-    int a = c[0];
-    int b = 0;
+    int32_t a = c[0];
+    int32_t b = 0;
     for (int32_t i = 0; i < 4; i++)
     {
         b += c[i];
@@ -26,9 +26,62 @@ Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
     return E_SUCCESS;
 }
 
+Error_t StateMachine::fromStates (StateMachine **ppStateMachine,
+                                  std::vector<State> stateList)
+{
+    static StateMachine stateMachineInstance = StateMachine (0, 0);
+    for (State state : stateList)
+    {
+        Error_t retState = stateMachineInstance.addState (state);
+        if (retState == E_DUPLICATE_NAME)
+        {
+            return E_DUPLICATE_NAME;
+        }
+    }
+    *ppStateMachine = &stateMachineInstance;
+    return E_SUCCESS;
+    
+}
+
+Error_t StateMachine::addState (State newState)
+{
+    // Add the state to unordered_map using State object and State name
+    std::string stateName;
+    Error_t ret = newState.getName (stateName);
+    // Insert returns pair containing bool; true if inserted, false if not.
+    // Will not insert if there exists a duplicate key, aka duplicate name
+    auto resultPair = (this->stateMap)->insert (std::make_pair (stateName,
+                                                                newState));
+    bool resultBool = std::get<1> (resultPair);
+    if (resultBool)
+    {
+        return E_SUCCESS;
+    }
+    else
+    {
+        return E_DUPLICATE_NAME;
+    }
+}
+
+Error_t StateMachine::findState (State &stateResult, std::string stateName)
+{
+    // search the unordered map
+    auto search = stateMap->find (stateName);
+    // if element is not found, will point to end of the map
+    if (search == stateMap->end ())
+    {
+        return E_NAME_NOTFOUND;
+    }
+    else
+    {
+        stateResult = search->second;
+        return E_SUCCESS;
+    }
+}
+
 Error_t StateMachine::printData ()
 {
-    printf ("A: %" PRId32 "B: %" PRId32 "", this->a, this->b);
+    //printf ("A: %" PRId32 "B: %" PRId32 "", this->a, this->b);
     return E_SUCCESS;
 }
 
@@ -44,11 +97,33 @@ Error_t StateMachine::getB (int32_t &result)
     return E_SUCCESS;
 }
 
+Error_t StateMachine::deleteMap ()
+{
+    // using unordered_map::clear() function causes memory leak;
+    // swap with original empty map to avoid memory leak
+    //std::unordered_map<std::string, State> emptyMap;
+    //emptyMap.swap (this->stateMap);
+    //stateMap->clear();
+    delete stateMap;
+    return E_SUCCESS;
+}
+
 /******************** PRIVATE FUNCTIONS **************************/
 
 StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
+    stateMap = new std::unordered_map<std::string, State>();
 }
 
+StateMachine::StateMachine (StateMachine const &)
+{
+    //this->a = 1;
+    //this->b = 2;
+}
+
+StateMachine& StateMachine::operator= (StateMachine const &)
+{
+    return *this;
+};

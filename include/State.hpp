@@ -56,6 +56,17 @@ public:
      */
     Error_t getData (std::vector<int32_t> &result);
 
+    /**
+     * Get the State name
+     *
+     * @param   result      Reference to String type to store State name in
+     *
+     * @ret     #_SUCCESS   Successfully stored State name in result
+     */
+    Error_t getName (std::string &result);
+
+    Error_t getTransitions (std::vector<std::string> &result);
+
 private:
 
     /**
@@ -70,8 +81,8 @@ private:
     std::vector<int32_t> stateData;
 
     /**
-     * The second iteration valid State transitions, vector of type State to
-     * use for now
+     * The second iteration of valid State transitions, vector of type String
+     * representing name of the states to use for now
      */
     std::vector<std::string> targetTransitions;
 };

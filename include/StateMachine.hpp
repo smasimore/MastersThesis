@@ -6,10 +6,13 @@
 #ifndef STATEMACHINE_HPP
 #define STATEMACHINE_HPP
 
-#include "Errors.h"
 #include <stdint.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <string>
+#include <unordered_map>
+#include "State.hpp"
+#include "Errors.h"
 
 class StateMachine
 {
@@ -19,7 +22,9 @@ public:
      * Create a statemachine from a default hardcoded case. This is important
      * in case of parser, config, or other external failures.
      *
-     * @ret StateMachine struct from private constructor
+     * @param   ppStateMachine      pointer to a pointer to StateMachine object
+     *
+     * @ret     StateMachine        struct from private constructor
      */
     static Error_t fromDefault (StateMachine **ppStateMachine);
 
@@ -27,11 +32,55 @@ public:
      * Create a statemachine from data in an array. This is a placeholder
      * function to demonstrate creation from user-defined data.
      *
-     * @param   c[] array of int32_t, an arbitrary data type
+     * @param   ppStateMachine  pointer to a pointer to StateMachine object
+     *          c[]             array of int32_t, an arbitrary data type
      *
-     * @ret     StateMachine struct from private constructor and parameter data
+     * @ret     StateMachine    struct from private constructor and parameter 
+                                data
      */
     static Error_t fromArr (StateMachine **ppStateMachine, int32_t c[]);
+
+    /**
+     * Create a statemachine from a defined list of states.
+     * @param   ppStateMachine  pointer to a pointer to StateMachine object
+     *          stateList       vector of type State
+     *
+     * @ret     
+     */
+    static Error_t fromStates (StateMachine **ppStateMachine,
+        std::vector<State> stateList);
+
+    /**
+     * Intermediate function to add and map State to the State Map/
+     *
+     * @param   newState            State object of state to add
+     *
+     * @ret     E_SUCCESS           State object successfully added and mapped
+     *          E_DUPLICATE_NAME    State with same name already exists
+     */
+    Error_t addState (State newState);
+
+    /**
+     * Intermediate function to find and store a State in the map by State Name
+     *
+     * @param   stateResult     Reference to State object to store the result
+     * @param   stateName       Name of the state to find
+     *
+     * @ret     E_SUCCESS       Successfully found State with name
+     *          E_NAME_NOTFOUND Could not find a state with this name
+     */
+    Error_t findState (State &stateResult, std::string stateName);
+
+    /**
+     * Intermediate function to force a State Transition
+     *
+     * @param   targetState             String containing name of target state
+     *
+     * @ret     E_SUCCESS               Successfully transitioned to state
+                E_INVALID_NAME          Target state name does not exist
+     *          E_INVALID_TRANSITION    Target state not a valid transition
+     */
+    //Error_t switchState (std::string targetState);
 
     /**
      * Print the data in the StateMachine (skeleton data in this case)
@@ -58,6 +107,15 @@ public:
      */
     Error_t getB (int32_t &result);
 
+    /**
+     * Deletes the state map to avoid memory leaks
+     *
+     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
+     *
+     * @ret     E_SUCCESS   successfully cleared the state map
+     */
+    Error_t deleteMap ();
+
 private:
 
     /**
@@ -66,9 +124,26 @@ private:
     StateMachine (int32_t a, int32_t b);
 
     /**
+     * Private copy constructor to enforce singleton
+     */
+    StateMachine (StateMachine const &);
+
+    /*
+     * Private assignment operator to enforce singleton
+     */
+    StateMachine& operator=(StateMachine const &);
+
+    /**
      * Placeholder skeleton data for temporary testing purposes only
      */
     int32_t a;
     int32_t b;
+
+    /**
+     * Pointer to Unordered map to create the map of the states using
+     * key type String and value type State
+     */
+    std::unordered_map<std::string, State> *stateMap;
+ 
 };
 #endif
