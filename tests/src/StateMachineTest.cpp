@@ -149,5 +149,3 @@ TEST (StateMachines, DefinedStateCase)
     // Still need to manually clear states despite using this method.
     pSM->deleteMap ();
 }
-
-/* Test to access temporary state data*/
