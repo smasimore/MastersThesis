@@ -48,7 +48,9 @@ typedef enum Error {
     E_THREAD_NOT_FOUND,
 
     /* Network Interface */
-    E_NETWORK_NOT_INITIALIZED,
+    E_SOCKET_NOT_INITIALIZED,
+    E_FAILED_TO_CREATE_SOCKET,
+    E_FAILED_TO_ALLOCATE_SOCKET,
     
 
     LAST
