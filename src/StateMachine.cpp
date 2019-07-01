@@ -33,7 +33,7 @@ Error_t StateMachine::fromStates (StateMachine **ppStateMachine,
     for (State state : stateList)
     {
         Error_t retState = stateMachineInstance.addState (state);
-        if (retState == E_DUPLICATE_NAME)
+        if (retState != E_SUCCESS)
         {
             return E_DUPLICATE_NAME;
         }
@@ -79,12 +79,6 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
     }
 }
 
-Error_t StateMachine::printData ()
-{
-    //printf ("A: %" PRId32 "B: %" PRId32 "", this->a, this->b);
-    return E_SUCCESS;
-}
-
 Error_t StateMachine::getA (int32_t &result)
 {
     result = this->a;
@@ -99,11 +93,7 @@ Error_t StateMachine::getB (int32_t &result)
 
 Error_t StateMachine::deleteMap ()
 {
-    // using unordered_map::clear() function causes memory leak;
-    // swap with original empty map to avoid memory leak
-    //std::unordered_map<std::string, State> emptyMap;
-    //emptyMap.swap (this->stateMap);
-    //stateMap->clear();
+    // Manually delete State Map to pass memory leak tests
     delete stateMap;
     return E_SUCCESS;
 }
@@ -119,8 +109,7 @@ StateMachine::StateMachine (int32_t a, int32_t b)
 
 StateMachine::StateMachine (StateMachine const &)
 {
-    //this->a = 1;
-    //this->b = 2;
+
 }
 
 StateMachine& StateMachine::operator= (StateMachine const &)

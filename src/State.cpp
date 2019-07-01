@@ -14,15 +14,6 @@ State::State (std::string stateName,
     this->targetTransitions = targetTransitions;
 }
 
-Error_t State::printData ()
-{
-    for (int32_t i : this->stateData)
-    {
-        //printf ("data@%" PRId32 ": %" PRId32 "\n", i, this->stateData[i]);
-    }
-    return E_SUCCESS;
-}
-
 Error_t State::getData (std::vector<int32_t> &result)
 {
     result = this->stateData;

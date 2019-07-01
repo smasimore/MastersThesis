@@ -61,7 +61,7 @@ public:
     Error_t addState (State newState);
 
     /**
-     * Intermediate function to find and store a State in the map by State Name
+     * Intermediate function to find and store a State in the map by State name
      *
      * @param   stateResult     Reference to State object to store the result
      * @param   stateName       Name of the state to find
@@ -70,17 +70,6 @@ public:
      *          E_NAME_NOTFOUND Could not find a state with this name
      */
     Error_t findState (State &stateResult, std::string stateName);
-
-    /**
-     * Intermediate function to force a State Transition
-     *
-     * @param   targetState             String containing name of target state
-     *
-     * @ret     E_SUCCESS               Successfully transitioned to state
-                E_INVALID_NAME          Target state name does not exist
-     *          E_INVALID_TRANSITION    Target state not a valid transition
-     */
-    //Error_t switchState (std::string targetState);
 
     /**
      * Print the data in the StateMachine (skeleton data in this case)

@@ -40,13 +40,6 @@ public:
     State (std::string stateName, std::vector<std::string> targetTransitions);
 
     /**
-     * Print the State data
-     *
-     * @ret     E_SUCCESS   Succesfully printed the State data
-     */
-    Error_t printData ();
-
-    /**
      * Get the State data
      *
      * @param   result      Reference to vector of type int32_t to store State
