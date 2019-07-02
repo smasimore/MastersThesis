@@ -11,10 +11,10 @@
 #include "Errors.h"
 
 
-class UDPSocket
+class UDPServer
 {
 public: 
-    static Error_t createNew(UDPSocket*& pSocketRet, uint16_t port);
+    static Error_t createNew(UDPServer*& pSocketRet, uint16_t port);
 
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
@@ -25,7 +25,7 @@ public:
 
 private:
 
-    UDPSocket(Error_t& ret, uint16_t port);
+    UDPServer(Error_t& ret, uint16_t port);
 
     static const int DOMAIN;
     static const int TYPE;

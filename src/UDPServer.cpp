@@ -1,25 +1,25 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "UDPSocket.hpp"
+#include <UDPServer.hpp>
 
 /* Use Internet Protocol*/
-const int UDPSocket::DOMAIN = AF_INET;
+const int UDPServer::DOMAIN = AF_INET;
 
 /* Specifies that this will be a UDP socket*/
-const int UDPSocket::TYPE = SOCK_DGRAM;
+const int UDPServer::TYPE = SOCK_DGRAM;
 
 /* Default */
-const int UDPSocket::PROTOCOL = 0;
+const int UDPServer::PROTOCOL = 0;
 
 
 
 // TODO: finish reading this http://man7.org/linux/man-pages/man7/udp.7.html
 
-Error_t UDPSocket::createNew(UDPSocket*& pSocketRet, uint16_t port)
+Error_t UDPServer::createNew(UDPServer*& pSocketRet, uint16_t port)
 {
     Error_t ret;
-    pSocketRet = new UDPSocket(ret, port);
+    pSocketRet = new UDPServer(ret, port);
 
     if(pSocketRet == nullptr){
         return E_FAILED_TO_ALLOCATE_SOCKET;
@@ -32,7 +32,7 @@ Error_t UDPSocket::createNew(UDPSocket*& pSocketRet, uint16_t port)
     return E_SUCCESS;
 }
 
-Error_t UDPSocket::send(uint8_t* buf, int len, uint8_t* dstIPAddr, bool blocking)
+Error_t UDPServer::send(uint8_t* buf, int len, uint8_t* dstIPAddr, bool blocking)
 {
     if(!mInitialized)
     {
@@ -44,7 +44,7 @@ Error_t UDPSocket::send(uint8_t* buf, int len, uint8_t* dstIPAddr, bool blocking
     return E_SUCCESS;
 }
 
-Error_t UDPSocket::recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking)
+Error_t UDPServer::recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking)
 {
     if(!mInitialized)
     {
@@ -58,7 +58,7 @@ Error_t UDPSocket::recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking
 Wait, I still need to create separate server and client objects, right?
 
 
-UDPSocket::UDPSocket(Error_t& ret, uint16_t port){
+UDPServer::UDPServer(Error_t& ret, uint16_t port){
     ret = E_SUCCESS;
     mPort = port;
     mInitialized = false;
