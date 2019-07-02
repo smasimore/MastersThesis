@@ -216,28 +216,28 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
                                                     &threadFuncLog;
     struct ThreadFuncArgs args = {&testLog, 1};
     ret = pThreadManager->createThread (thread1, nullptr, &args, sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL);
     CHECK_EQUAL (E_INVALID_POINTER, ret);
 
-    // Invalid priority.
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args,
+    // Invalid priority. 
+    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
                                         sizeof (args),
-                                        ThreadManager::MAX_NEW_THREAD_PRIORITY
-                                            + 1,
+                                        ThreadManager::MAX_NEW_THREAD_PRIORITY 
+                                            + 1, 
                                         ThreadManager::Affinity_t::ALL);
     CHECK_EQUAL (E_INVALID_PRIORITY, ret);
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args,
+    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
                                         sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY
-                                            - 1,
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY 
+                                            - 1, 
                                         ThreadManager::Affinity_t::ALL);
     CHECK_EQUAL (E_INVALID_PRIORITY, ret);
 
-    // Invalid affinity.
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args,
+    // Invalid affinity. 
+    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
                                         sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::LAST);
     CHECK_EQUAL (E_INVALID_AFFINITY, ret);
 
@@ -258,9 +258,9 @@ TEST (ThreadManagerCreate, CreateThreadAndWait)
     ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
                                                     &threadFuncLog;
     ThreadManager::Affinity_t affinity = ThreadManager::Affinity_t::ALL;
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args,
+    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
                                         sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         affinity);
     CHECK_EQUAL (E_SUCCESS, ret);
 

@@ -1,12 +1,14 @@
 build/
 .vscode
 .vs
+
 /Debug
 /Test
 /Release
 /Debug_x86/
 /Test_x86/
 /Test_minGW/
+
 libs/cpputest/INSTALL
 libs/cpputest/Makefile.in
 libs/cpputest/aclocal.m4

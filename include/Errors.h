@@ -47,6 +47,7 @@ typedef enum Error {
     E_FAILED_TO_WAIT_ON_THREAD,
     E_THREAD_NOT_FOUND,
 
+
     /* State Machine */
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,

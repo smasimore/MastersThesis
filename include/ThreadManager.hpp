@@ -135,7 +135,7 @@ public:
      * @param   pArgs                       Pointer to arguments passed to new 
      *                                      thread's function. These arguments
      *                                      will be copied to the heap, so the
-     *                                      caller does not need to keep the
+     *                                      caller does not need to keep the 
      *                                      memory pArgs points to after this
      *                                      function returns successfully.
      * @param   numArgBytes                 Number of bytes pArgs points to.
@@ -159,7 +159,7 @@ public:
      *          E_FAILED_TO_SET_AFFINITY    Failed to set thread affinity.
      */
     Error_t createThread (pthread_t &thread, ThreadFunc_t *pFunc, void *pArgs,
-                          uint32_t numArgBytes, Priority_t priority,
+                          uint32_t numArgBytes, Priority_t priority, 
                           Affinity_t cpuAffinity);
 
     /**
@@ -172,7 +172,7 @@ public:
      * 
      * @ret     E_SUCCESS                   Successfully waited on thread.
      *          E_FAILED_TO_WAIT_ON_THREAD  Failed to wait on thread.
-     *          E_THREAD_NOT_FOUND          Failed to find thread and free
+     *          E_THREAD_NOT_FOUND          Failed to find thread and free 
      *                                      memory.
      */
     Error_t waitForThread (pthread_t &thread, Error_t &threadReturn); 
@@ -250,7 +250,7 @@ private:
      * Struct to contain relevant info per thread.
      */
     struct Thread {
-        pthread_t thread;
+        pthread_t thread;   
         void *pArgs;
         struct Thread *next;
     };
