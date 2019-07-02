@@ -45,8 +45,13 @@ typedef enum Error {
     E_FAILED_TO_CREATE_THREAD,
     E_FAILED_TO_DESTROY_THREAD_ATTR,
     E_FAILED_TO_WAIT_ON_THREAD,
-    E_THREAD_NOT_FOUND
+    E_THREAD_NOT_FOUND,
 
+
+    /* State Machine */
+    E_INVALID_TRANSITION,
+    E_DUPLICATE_NAME,
+    E_NAME_NOTFOUND
 } Error_t;
 
 #endif
