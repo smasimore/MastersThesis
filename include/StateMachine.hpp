@@ -72,13 +72,6 @@ public:
     Error_t findState (State &stateResult, std::string stateName);
 
     /**
-     * Print the data in the StateMachine (skeleton data in this case)
-     *
-     * @ret     E_SUCCESS   Printing successful
-     */
-    Error_t printData ();
-
-    /**
      * Returns the value of temporary StateMachine data A
      *
      * @param   result      Reference to int32_t to store value of A
