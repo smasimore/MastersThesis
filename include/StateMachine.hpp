@@ -72,11 +72,25 @@ public:
     Error_t findState (State &stateResult, std::string stateName);
 
     /**
-     * Print the data in the StateMachine (skeleton data in this case)
+     * Intermediate function to force a State Transition. For now, just update
+     * stored String representing the current State.
      *
-     * @ret     E_SUCCESS   Printing successful
+     * @param   targetState             String containing name of target state
+     *
+     * @ret     E_SUCCESS               Successfully transitioned to state
+                E_INVALID_NAME          Target state name does not exist
+     *          E_INVALID_TRANSITION    Target state not a valid transition
      */
-    Error_t printData ();
+    Error_t switchState (std::string targetState);
+
+    /**
+     * Intermediate function to access the current state
+     * 
+     * @param   stateResult     Reference to State object to store the result
+     *
+     * @ret     E_SUCCESS       Successfully passed current state to reference
+     */
+    Error_t getState (State &stateResult);
 
     /**
      * Returns the value of temporary StateMachine data A
@@ -133,6 +147,16 @@ private:
      * key type String and value type State
      */
     std::unordered_map<std::string, State> *stateMap;
+
+    /**
+     * String containing the name of the current state
+     */
+    std::string stateCurrent;
+
+    // TODO: Should the StateMachine keep a local copy of all the associated
+    //  variables from the State itself that updates as States are switched,
+    //  to allow them to be easier reused in the code? This would only require
+    //  accessing the unordered_map at least once per State change. 
  
 };
 #endif
