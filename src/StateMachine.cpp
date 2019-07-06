@@ -79,8 +79,6 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
     }
 }
 
-<<<<<<< Updated upstream
-=======
 Error_t StateMachine::switchState (std::string stateName)
 {
 
@@ -93,13 +91,6 @@ Error_t StateMachine::getState (State &stateResult)
 
 }
 
-Error_t StateMachine::printData ()
-{
-    //printf ("A: %" PRId32 "B: %" PRId32 "", this->a, this->b);
-    return E_SUCCESS;
-}
-
->>>>>>> Stashed changes
 Error_t StateMachine::getA (int32_t &result)
 {
     result = this->a;
