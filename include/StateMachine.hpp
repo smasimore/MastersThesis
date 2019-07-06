@@ -51,7 +51,9 @@ public:
         std::vector<State> stateList);
 
     /**
-     * Intermediate function to add and map State to the State Map/
+     * Intermediate function to add and map State to the State Map.
+     * When called the first time, will set the first state as the
+     * current state of the StateMachine.
      *
      * @param   newState            State object of state to add
      *

@@ -48,11 +48,11 @@ Error_t StateMachine::addState (State newState)
     // Check if pointer to current state is null; if so, then set as current
     if (stateCurrent == nullptr)
     {
-        *stateCurrent = newState;
+        stateCurrent = &newState;
     }
     // Add the state to unordered_map using State object and State name
     std::string stateName;
-    Error_t ret = newState.getName (stateName);
+    newState.getName (stateName);
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
     auto resultPair = (this->stateMap)->insert (std::make_pair (stateName,
@@ -86,14 +86,14 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
 
 Error_t StateMachine::switchState (std::string stateName)
 {
-
+    return E_SUCCESS;
 }
 
 // TODO: Guarantee that StateMachine always has a current state to access.
 //  Current State variable should never be empty.
 Error_t StateMachine::getState (State &stateResult)
 {
-
+    return E_SUCCESS;
 }
 
 Error_t StateMachine::getA (int32_t &result)
