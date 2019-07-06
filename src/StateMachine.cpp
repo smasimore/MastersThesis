@@ -45,6 +45,11 @@ Error_t StateMachine::fromStates (StateMachine **ppStateMachine,
 
 Error_t StateMachine::addState (State newState)
 {
+    // Check if pointer to current state is null; if so, then set as current
+    if (stateCurrent == nullptr)
+    {
+        *stateCurrent = newState;
+    }
     // Add the state to unordered_map using State object and State name
     std::string stateName;
     Error_t ret = newState.getName (stateName);

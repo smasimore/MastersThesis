@@ -149,14 +149,9 @@ private:
     std::unordered_map<std::string, State> *stateMap;
 
     /**
-     * String containing the name of the current state
+     * Pointer to a copy of the current state
      */
-    std::string stateCurrent;
-
-    // TODO: Should the StateMachine keep a local copy of all the associated
-    //  variables from the State itself that updates as States are switched,
-    //  to allow them to be easier reused in the code? This would only require
-    //  accessing the unordered_map at least once per State change. 
+    State* stateCurrent;
  
 };
 #endif
