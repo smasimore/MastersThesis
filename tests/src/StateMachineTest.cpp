@@ -147,15 +147,39 @@ TEST (StateMachines, DefinedStateCase)
     // Get the current State info (StateA, since first in vector)
     std::string nameResult;
     ret = pSM->getStateName (nameResult);
-
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateA");
 
     std::vector<std::string> transitionsResult;
     ret = pSM->getStateTransitions (transitionsResult);
-
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempA);
+
+    // Force a valid transition from StateA to StateB
+    ret = pSM->switchState ("StateB");
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    // Check if current State is StateB
+    ret = pSM->getStateName (nameResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (nameResult == "StateB");
+
+     ret = pSM->getStateTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitionsResult == tempB);
+
+    // Attempt to force an invalid transition from StateB to StateA
+    ret = pSM->switchState ("StateA");
+    CHECK_TRUE (E_INVALID_TRANSITION == ret);
+
+    // Check if current State is still StateB
+    ret = pSM->getStateName (nameResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (nameResult == "StateB");
+
+     ret = pSM->getStateTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitionsResult == tempB);
 
     // Still need to manually clear states despite using this method.
     pSM->deleteMap ();

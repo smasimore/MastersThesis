@@ -86,11 +86,6 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
     }
 }
 
-Error_t StateMachine::switchState (std::string stateName)
-{
-    return E_SUCCESS;
-}
-
 Error_t StateMachine::getStateName (std::string &result)
 {
     Error_t ret = pStateCurrent->getName (result);
