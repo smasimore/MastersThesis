@@ -88,16 +88,22 @@ public:
     /**
      * Intermediate function to return the name of current State
      * 
-     * @param   ppStateResult    Pointer to pointer of State object
+     * @param   result          Reference to string to store name of State
      *
-     * @ret     E_SUCCESS       Successfully passed current state to reference
+     * @ret     E_SUCCESS       Name of current State stored in result
      */
     Error_t getStateName (std::string &result);
 
     /**
      * Intermediate function to return the valid transitions of current State
      *
-     * @param   result  /
+     * @param   result      Reference to vector of strings to store valid
+     *                      transitions of the state
+     *
+     * @ret     E_SUCCESS   Valid transitions of current State stored in result
+     */
+    Error_t getStateTransitions (std::vector<std::string> &result);
+
     /**
      * Returns the value of temporary StateMachine data A
      *

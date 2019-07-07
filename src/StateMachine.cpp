@@ -48,6 +48,7 @@ Error_t StateMachine::addState (State newState)
     // Check if pointer to current state is null; if so, then set as current
     if (pStateCurrent == nullptr)
     {
+        // Allocate necessary memory for a State, then overwrite it 
         pStateCurrent = new State("", {});
         *pStateCurrent = newState;
     }
@@ -92,10 +93,14 @@ Error_t StateMachine::switchState (std::string stateName)
 
 Error_t StateMachine::getStateName (std::string &result)
 {
-    std::string iResult;
-    Error_t ret = pStateCurrent->getName (iResult);
-    result = "StateA";
-    return E_SUCCESS;
+    Error_t ret = pStateCurrent->getName (result);
+    return ret;
+}
+
+Error_t StateMachine::getStateTransitions (std::vector<std::string> &result)
+{
+    Error_t ret = pStateCurrent->getTransitions (result);
+    return ret;
 }
 
 Error_t StateMachine::getA (int32_t &result)
