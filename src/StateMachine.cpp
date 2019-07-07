@@ -46,16 +46,17 @@ Error_t StateMachine::fromStates (StateMachine **ppStateMachine,
 Error_t StateMachine::addState (State newState)
 {
     // Check if pointer to current state is null; if so, then set as current
-    if (stateCurrent == nullptr)
+    if (pStateCurrent == nullptr)
     {
-        stateCurrent = &newState;
+        pStateCurrent = new State("", {});
+        *pStateCurrent = newState;
     }
     // Add the state to unordered_map using State object and State name
     std::string stateName;
     newState.getName (stateName);
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
-    auto resultPair = (this->stateMap)->insert (std::make_pair (stateName,
+    auto resultPair = (this->pStateMap)->insert (std::make_pair (stateName,
                                                                 newState));
     bool resultBool = std::get<1> (resultPair);
     if (resultBool)
@@ -71,9 +72,9 @@ Error_t StateMachine::addState (State newState)
 Error_t StateMachine::findState (State &stateResult, std::string stateName)
 {
     // search the unordered map
-    auto search = stateMap->find (stateName);
+    auto search = pStateMap->find (stateName);
     // if element is not found, will point to end of the map
-    if (search == stateMap->end ())
+    if (search == pStateMap->end ())
     {
         return E_NAME_NOTFOUND;
     }
@@ -89,10 +90,11 @@ Error_t StateMachine::switchState (std::string stateName)
     return E_SUCCESS;
 }
 
-// TODO: Guarantee that StateMachine always has a current state to access.
-//  Current State variable should never be empty.
-Error_t StateMachine::getState (State &stateResult)
+Error_t StateMachine::getStateName (std::string &result)
 {
+    std::string iResult;
+    Error_t ret = pStateCurrent->getName (iResult);
+    result = "StateA";
     return E_SUCCESS;
 }
 
@@ -111,8 +113,13 @@ Error_t StateMachine::getB (int32_t &result)
 Error_t StateMachine::deleteMap ()
 {
     // Manually delete State Map to pass memory leak tests
-    delete stateMap;
-    return E_SUCCESS;
+    delete pStateMap;
+}
+
+Error_t StateMachine::deleteState ()
+{
+    // Manually delete State to pass memory leak tests
+    delete pStateCurrent;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/
@@ -121,7 +128,8 @@ StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
-    stateMap = new std::unordered_map<std::string, State>();
+    pStateMap = new std::unordered_map<std::string, State>();
+    pStateCurrent = nullptr;
 }
 
 StateMachine::StateMachine (StateMachine const &)

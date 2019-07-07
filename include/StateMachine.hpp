@@ -86,14 +86,18 @@ public:
     Error_t switchState (std::string targetState);
 
     /**
-     * Intermediate function to access the current state
+     * Intermediate function to return the name of current State
      * 
-     * @param   stateResult     Reference to State object to store the result
+     * @param   ppStateResult    Pointer to pointer of State object
      *
      * @ret     E_SUCCESS       Successfully passed current state to reference
      */
-    Error_t getState (State &stateResult);
+    Error_t getStateName (std::string &result);
 
+    /**
+     * Intermediate function to return the valid transitions of current State
+     *
+     * @param   result  /
     /**
      * Returns the value of temporary StateMachine data A
      *
@@ -113,13 +117,22 @@ public:
     Error_t getB (int32_t &result);
 
     /**
-     * Deletes the state map to avoid memory leaks
+     * Deletes the allocated map in StateMachine to avoid memory leaks
      *
      * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
      *
-     * @ret     E_SUCCESS   successfully cleared the state map
+     * @ret     E_SUCCESS   successfully deleted the map
      */
     Error_t deleteMap ();
+
+    /**
+     * Deletes the allocated state in StateMachine to avoid memory leaks
+     *
+     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
+     *
+     * @ret     E_SUCCESS   successfully deleted the state
+     */
+    Error_t deleteState ();
 
 private:
 
@@ -148,12 +161,12 @@ private:
      * Pointer to Unordered map to create the map of the states using
      * key type String and value type State
      */
-    std::unordered_map<std::string, State> *stateMap;
+    std::unordered_map<std::string, State> *pStateMap;
 
     /**
      * Pointer to a copy of the current state
      */
-    State* stateCurrent;
+    State* pStateCurrent;
  
 };
 #endif

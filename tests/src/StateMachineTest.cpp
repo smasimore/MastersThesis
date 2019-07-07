@@ -100,6 +100,7 @@ TEST (StateMachines, AddStates)
 
     // Need to manually clear the states at end to avoid a memory leak.
     pSM->deleteMap ();
+    pSM->deleteState ();
 }
 
 /* Test to create a State Machine from existing vector of states. 
@@ -139,6 +140,49 @@ TEST (StateMachines, DefinedStateCase)
     retFind = pSM->findState(stateResult, "StateD");
     CHECK_TRUE (retFind == E_NAME_NOTFOUND);
 
+    // Get the current state info (StateA, since first in vector)
+    std::string nameResult;
+    ret = pSM->getStateName (nameResult);
+
+    CHECK_TRUE (ret == E_SUCCESS);
+    CHECK_EQUAL (nameResult, "StateA");
+
     // Still need to manually clear states despite using this method.
     pSM->deleteMap ();
+    pSM->deleteState ();
 }
+
+//TEST (StateMachines, StateTransitions)
+//{
+//    // Create State Objects with single "loop" transitions
+//    std::vector<std::string> transA = { "StateB" };
+//    std::vector<std::string> transB = { "StateC" };
+//    std::vector<std::string> transC = { "StateA" };
+//    State stateA ("StateA", transA);
+//    State stateB ("StateB", transB);
+//    State stateC ("StateC", transC);
+//
+//    // Create storage vector for constructor
+//    std::vector<State> storageVec = { stateA, stateB, stateC };
+//
+//    // Create State Machine from vector of States
+//    StateMachine *pSM = nullptr;
+//    Error_t ret = StateMachine::fromStates (&pSM, storageVec);
+//
+//    CHECK_TRUE (ret == E_SUCCESS);
+//
+//    // Get the current state (StateA, since first in vector)
+//    State *pStateCurr = nullptr;
+//    ret = pSM->getState (&pStateCurr);
+//
+//    CHECK_TRUE (ret == E_SUCCESS);
+//
+//    //std::string nameResult;
+//    //ret = pStateCurr->getName (nameResult);
+//
+//    //CHECK_TRUE (ret == E_SUCCESS);
+//    //CHECK_EQUAL (nameResult, "StateA");
+//
+//    // Delete map to pass memory leak tests
+//    pSM->deleteMap ();
+//}
