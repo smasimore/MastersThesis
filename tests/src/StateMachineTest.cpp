@@ -136,8 +136,8 @@ TEST (StateMachines, DefinedStateCase)
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    Error_t retData = stateResult.getTransitions(dataResult);
-    CHECK_TRUE (retData == E_SUCCESS);
+    ret = stateResult.getTransitions(dataResult);
+    CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
     // Attempt to find an invalid state
@@ -148,13 +148,13 @@ TEST (StateMachines, DefinedStateCase)
     std::string nameResult;
     ret = pSM->getStateName (nameResult);
 
-    CHECK_TRUE (ret == E_SUCCESS);
+    CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateA");
 
     std::vector<std::string> transitionsResult;
     ret = pSM->getStateTransitions (transitionsResult);
 
-    CHECK_TRUE (ret == E_SUCCESS);
+    CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempA);
 
     // Still need to manually clear states despite using this method.
