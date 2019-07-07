@@ -5,13 +5,6 @@
 
 #include "CppUTest/TestHarness.h"
 
-/*****TEMPORARY MACRO*****/
-#define INIT_SM                             \
-    Error_t ret;                            \
-    StateMachine *pSM = nullptr;            \
-    ret = StateMachine::fromDefault (&pSM);
-
-
 TEST_GROUP (StateMachines) 
 {
 };
