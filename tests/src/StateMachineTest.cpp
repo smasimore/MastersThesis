@@ -19,11 +19,11 @@ TEST (StateMachines, DefaultCase)
 
     // Default Case returns A = 1, B = 2
     int32_t resultA;
-    Error_t ret = pSM->getA (resultA);
+    ret = pSM->getA (resultA);
     CHECK_TRUE (E_SUCCESS == ret);
 
     int32_t resultB;
-    Error_t ret = pSM->getB (resultB);
+    ret = pSM->getB (resultB);
     CHECK_TRUE (E_SUCCESS == ret);
 
     CHECK_EQUAL (1, resultA);
@@ -41,11 +41,11 @@ TEST (StateMachines, DefinedCase)
 
     // Defined Case for Array returns A = arr[0], B = sum of arr[0] to arr[3]
     int32_t resultA;
-    Error_t ret = pSM->getA (resultA);
+    ret = pSM->getA (resultA);
     CHECK_TRUE (E_SUCCESS == ret);
 
     int32_t resultB;
-    Error_t ret = pSM->getB (resultB);
+    ret = pSM->getB (resultB);
     CHECK_TRUE (E_SUCCESS == ret);
 
     CHECK_EQUAL (1, resultA);
