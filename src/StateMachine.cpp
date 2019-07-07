@@ -103,6 +103,36 @@ Error_t StateMachine::getStateTransitions (std::vector<std::string> &result)
     return ret;
 }
 
+Error_t StateMachine::switchState(std::string targetState)
+{
+    // Get the valid transitions (using intermediate function)
+    std::vector<std::string> validTrans;
+    getStateTransitions(validTrans);
+
+    // Check if valid transitions contains the target state
+    if (std::find (validTrans.begin (), validTrans.end (), targetState) !=
+        validTrans.end())
+    {
+        // if not equal to end, transition is valid; switch the current state
+        // create a temporary empty state
+        State stateResult ("", {});
+        // get the target state from the state map and check if found
+        Error_t ret = findState (stateResult, targetState);
+        if (ret != E_SUCCESS)
+        {
+            return E_NAME_NOTFOUND;
+        }
+        // overwrite current state with the target state
+        *pStateCurrent = stateResult;
+        return E_SUCCESS;
+    }
+    else
+    {
+        // otherwise, transition is invalid; cannot switch to the new state
+        return E_INVALID_TRANSITION;
+    }
+}
+
 Error_t StateMachine::getA (int32_t &result)
 {
     result = this->a;
