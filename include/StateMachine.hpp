@@ -51,7 +51,7 @@ public:
      *                          ppStateMachine using States from vector
      */
     static Error_t fromStates (StateMachine **ppStateMachine,
-        std::vector<State> stateList);
+                               std::vector<State> stateList);
 
     /**
      * Intermediate function to add and map State to the State Map.
