@@ -149,16 +149,6 @@ private:
     StateMachine (int32_t a, int32_t b);
 
     /**
-     * Private copy constructor to enforce singleton
-     */
-    StateMachine (StateMachine const &);
-
-    /*
-     * Private assignment operator to enforce singleton
-     */
-    StateMachine& operator=(StateMachine const &);
-
-    /**
      * Placeholder skeleton data for temporary testing purposes only
      */
     int32_t a;

@@ -5,8 +5,9 @@
 Error_t StateMachine::fromDefault (StateMachine **ppStateMachine)
 {
     // Create StateMachine case and store in param
-    static StateMachine stateMachineInstance = StateMachine (1, 2);
-    *ppStateMachine = &stateMachineInstance;
+    //static StateMachine stateMachineInstance = StateMachine (1, 2);
+    StateMachine* pStateMachineInstance = new StateMachine (1, 2);
+    *ppStateMachine = pStateMachineInstance;
     return E_SUCCESS;
 
 }
@@ -163,13 +164,3 @@ StateMachine::StateMachine (int32_t a, int32_t b)
     pStateMap = new std::unordered_map<std::string, State>();
     pStateCurrent = nullptr;
 }
-
-StateMachine::StateMachine (StateMachine const &)
-{
-
-}
-
-StateMachine& StateMachine::operator= (StateMachine const &)
-{
-    return *this;
-};

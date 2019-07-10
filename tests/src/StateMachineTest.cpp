@@ -28,6 +28,9 @@ TEST (StateMachines, DefaultCase)
 
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (2, resultB);
+
+    pSM->deleteMap();
+    delete pSM;
 }
 
 /* Test to create a StateMachine from a defined case using data from an array, 
@@ -105,6 +108,8 @@ TEST (StateMachines, AddStates)
     // Need to manually clear the states at end to avoid a memory leak.
     pSM->deleteMap ();
     pSM->deleteState ();
+
+    delete pSM;
 }
 
 /* Test to create a State Machine from existing vector of states. 
