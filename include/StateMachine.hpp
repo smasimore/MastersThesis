@@ -34,7 +34,7 @@ public:
      * function to demonstrate creation from user-defined data.
      *
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
-     *          c[]             array of int32_t, an arbitrary data type
+     * @param   c[]             array of int32_t, an arbitrary data type
      *
      * @ret     StateMachine    struct from private constructor and parameter 
                                 data
@@ -44,7 +44,7 @@ public:
     /**
      * Create a statemachine from a defined list of states.
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
-     *          stateList       vector of type State
+     * @param   stateList       vector of type State
      *
      * @ret     
      */
