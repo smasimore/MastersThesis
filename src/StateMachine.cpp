@@ -144,12 +144,14 @@ Error_t StateMachine::deleteMap ()
 {
     // Manually delete State Map to pass memory leak tests
     delete pStateMap;
+    return E_SUCCESS;
 }
 
 Error_t StateMachine::deleteState ()
 {
     // Manually delete State to pass memory leak tests
     delete pStateCurrent;
+    return E_SUCCESS;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/
