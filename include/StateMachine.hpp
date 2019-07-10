@@ -47,8 +47,9 @@ public:
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
      * @param   stateList       vector of type State
      *
-     * @ret     E_SUCCESS       successfully passed StateMachine object into
-     *                          ppStateMachine using States from vector
+     * @ret     E_SUCCESS           successfully passed StateMachine object
+     *                              into ppStateMachine using States in vector
+     *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
     static Error_t fromStates (StateMachine **ppStateMachine,
                                std::vector<State> stateList);
