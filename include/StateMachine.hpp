@@ -23,9 +23,10 @@ public:
      * Create a statemachine from a default hardcoded case. This is important
      * in case of parser, config, or other external failures.
      *
-     * @param   ppStateMachine      pointer to a pointer to StateMachine object
+     * @param   ppStateMachine  pointer to a pointer to StateMachine object
      *
-     * @ret     StateMachine        struct from private constructor
+     * @ret     E_SUCCESS       successfully passed StateMachine object into
+     *                          ppStateMachine using default case
      */
     static Error_t fromDefault (StateMachine **ppStateMachine);
 
@@ -36,8 +37,8 @@ public:
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
      * @param   c[]             array of int32_t, an arbitrary data type
      *
-     * @ret     StateMachine    struct from private constructor and parameter 
-                                data
+     * @ret     E_SUCCESS       successfully passed StateMachine object into
+     *                          ppStateMachine using data from array
      */
     static Error_t fromArr (StateMachine **ppStateMachine, int32_t c[]);
 
@@ -46,7 +47,8 @@ public:
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
      * @param   stateList       vector of type State
      *
-     * @ret     
+     * @ret     E_SUCCESS       successfully passed StateMachine object into
+     *                          ppStateMachine using States from vector
      */
     static Error_t fromStates (StateMachine **ppStateMachine,
         std::vector<State> stateList);
