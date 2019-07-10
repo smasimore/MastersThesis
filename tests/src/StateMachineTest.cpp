@@ -13,8 +13,9 @@ TEST_GROUP (StateMachines)
    then verify StateMachine data */
 TEST (StateMachines, DefaultCase) 
 {
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromDefault (&pSM);
+    //StateMachine *pSM = nullptr;
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromDefault (pSM);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Default Case returns A = 1, B = 2
@@ -30,7 +31,6 @@ TEST (StateMachines, DefaultCase)
     CHECK_EQUAL (2, resultB);
 
     pSM->deleteMap();
-    delete pSM;
 }
 
 /* Test to create a StateMachine from a defined case using data from an array, 
@@ -61,8 +61,9 @@ TEST (StateMachines, DefinedCase)
 /* Test to create a StateMachine as before, then run State Mapping code*/
 TEST (StateMachines, AddStates)
 {
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromDefault (&pSM);
+    //StateMachine *pSM = nullptr;
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromDefault (pSM);
 
     // Check state machine initialization
     CHECK_TRUE (E_SUCCESS == ret);
@@ -108,8 +109,6 @@ TEST (StateMachines, AddStates)
     // Need to manually clear the states at end to avoid a memory leak.
     pSM->deleteMap ();
     pSM->deleteState ();
-
-    delete pSM;
 }
 
 /* Test to create a State Machine from existing vector of states. 

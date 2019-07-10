@@ -2,17 +2,15 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-Error_t StateMachine::fromDefault (StateMachine **ppStateMachine)
+Error_t StateMachine::fromDefault (std::unique_ptr<StateMachine> &rSM)
 {
-    // Create StateMachine case and store in param
-    //static StateMachine stateMachineInstance = StateMachine (1, 2);
-    StateMachine* pStateMachineInstance = new StateMachine (1, 2);
-    *ppStateMachine = pStateMachineInstance;
+    // reset the smart pointer, using corresponding default case
+    rSM.reset (new StateMachine (1, 2));
     return E_SUCCESS;
 
 }
 
-Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
+Error_t StateMachine::fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[])
 {
     // Arbitrary calculations to obtain A, B data from array
     int32_t a = c[0];
@@ -21,9 +19,8 @@ Error_t StateMachine::fromArr (StateMachine **ppStateMachine, int32_t c[])
     {
         b += c[i];
     }
-    // Create StateMachine case and store in param
-    static StateMachine stateMachineInstance = StateMachine (a, b);
-    *ppStateMachine = &stateMachineInstance;
+    // reset the smart pointer, using case generated from array
+    rSM.reset (new StateMachine (a, b));
     return E_SUCCESS;
 }
 

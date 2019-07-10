@@ -12,6 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm>
+#include <memory>
 #include "State.hpp"
 #include "Errors.h"
 
@@ -23,18 +24,18 @@ public:
      * Create a statemachine from a default hardcoded case. This is important
      * in case of parser, config, or other external failures.
      *
-     * @param   ppStateMachine      pointer to a pointer to StateMachine object
+     * @param   rSM                 reference to smart pointer of StateMachine
      *
      * @ret     StateMachine        struct from private constructor
      */
-    static Error_t fromDefault (StateMachine **ppStateMachine);
+    static Error_t fromDefault (std::unique_ptr<StateMachine> &rStateMachine);
 
     /**
      * Create a statemachine from data in an array. This is a placeholder
      * function to demonstrate creation from user-defined data.
      *
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
-     *          c[]             array of int32_t, an arbitrary data type
+     * @param   c[]             array of int32_t, an arbitrary data type
      *
      * @ret     StateMachine    struct from private constructor and parameter 
                                 data
@@ -44,7 +45,7 @@ public:
     /**
      * Create a statemachine from a defined list of states.
      * @param   ppStateMachine  pointer to a pointer to StateMachine object
-     *          stateList       vector of type State
+     * @param   stateList       vector of type State
      *
      * @ret     
      */
