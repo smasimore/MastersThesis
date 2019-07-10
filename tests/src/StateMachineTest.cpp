@@ -13,7 +13,6 @@ TEST_GROUP (StateMachines)
    then verify StateMachine data */
 TEST (StateMachines, DefaultCase) 
 {
-    //StateMachine *pSM = nullptr;
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromDefault (pSM);
     CHECK_TRUE (E_SUCCESS == ret);
@@ -38,8 +37,8 @@ TEST (StateMachines, DefaultCase)
 TEST (StateMachines, DefinedCase)
 {
     int32_t data_example[] = { 1, 1, 1, 1 };
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromArr (&pSM, data_example);
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromArr (pSM, data_example);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Defined Case for Array returns A = arr[0], B = sum of arr[0] to arr[3]
@@ -128,8 +127,8 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<State> storageVec = { stateA, stateB, stateC };
 
     // Create State Machine from vector of States
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromStates (&pSM, storageVec);
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
 
     CHECK_TRUE (E_SUCCESS == ret);
 

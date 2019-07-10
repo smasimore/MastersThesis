@@ -24,19 +24,18 @@ Error_t StateMachine::fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[])
     return E_SUCCESS;
 }
 
-Error_t StateMachine::fromStates (StateMachine **ppStateMachine,
+Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
                                   std::vector<State> stateList)
 {
-    static StateMachine stateMachineInstance = StateMachine (0, 0);
+    rSM.reset (new StateMachine (0, 0));
     for (State state : stateList)
     {
-        Error_t retState = stateMachineInstance.addState (state);
+        Error_t retState = rSM->addState (state);
         if (retState != E_SUCCESS)
         {
             return E_DUPLICATE_NAME;
         }
     }
-    *ppStateMachine = &stateMachineInstance;
     return E_SUCCESS;
     
 }

@@ -24,33 +24,37 @@ public:
      * Create a statemachine from a default hardcoded case. This is important
      * in case of parser, config, or other external failures.
      *
-     * @param   rSM                 reference to smart pointer of StateMachine
+     * @param   rSM             reference to smart pointer of type StateMachine
      *
-     * @ret     StateMachine        struct from private constructor
+     * @ret     E_SUCCESS       successfully passed a StateMachine object into
+     *                          rSM using the default case
      */
-    static Error_t fromDefault (std::unique_ptr<StateMachine> &rStateMachine);
+    static Error_t fromDefault (std::unique_ptr<StateMachine> &rSM);
 
     /**
      * Create a statemachine from data in an array. This is a placeholder
      * function to demonstrate creation from user-defined data.
      *
-     * @param   ppStateMachine  pointer to a pointer to StateMachine object
+     * @param   rSM             reference to smart pointer of type StateMachine
      * @param   c[]             array of int32_t, an arbitrary data type
      *
-     * @ret     StateMachine    struct from private constructor and parameter 
-                                data
+     * @ret     E_SUCCESS       successfully passed a StateMachine object into
+     *                          rSM using data from array
      */
-    static Error_t fromArr (StateMachine **ppStateMachine, int32_t c[]);
+    static Error_t fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[]);
 
     /**
      * Create a statemachine from a defined list of states.
-     * @param   ppStateMachine  pointer to a pointer to StateMachine object
-     * @param   stateList       vector of type State
+     * @param   rSM                 reference to smart pointer of type 
+     *                              StateMachine
+     * @param   stateList           vector of type State
      *
-     * @ret     
+     * @ret     E_SUCCESS           successfully passed a StateMachine object 
+     *                              into rSM using States in stateList
+     *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
-    static Error_t fromStates (StateMachine **ppStateMachine,
-        std::vector<State> stateList);
+    static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
+                               std::vector<State> stateList);
 
     /**
      * Intermediate function to add and map State to the State Map.
