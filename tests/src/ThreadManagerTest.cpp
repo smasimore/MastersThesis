@@ -210,9 +210,9 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
 {
     INIT_THREAD_MANAGER_AND_LOGS;
 
-    // Invalid function. 
+    // Invalid function.
     pthread_t thread1;
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *) 
+    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
                                                     &threadFuncLog;
     struct ThreadFuncArgs args = {&testLog, 1};
     ret = pThreadManager->createThread (thread1, nullptr, &args, sizeof (args),
@@ -255,7 +255,7 @@ TEST (ThreadManagerCreate, CreateThreadAndWait)
     // Create thread.
     pthread_t thread1;
     struct ThreadFuncArgs args = {&testLog, 1};
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *) 
+    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
                                                     &threadFuncLog;
     ThreadManager::Affinity_t affinity = ThreadManager::Affinity_t::ALL;
     ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
@@ -271,7 +271,7 @@ TEST (ThreadManagerCreate, CreateThreadAndWait)
     CHECK_EQUAL (E_SUCCESS, threadReturn);
 
     // Log that this thread returned from wait.
-    testLog.logEvent (Log::LogEvent_t::THREAD_WAITED, 0); 
+    testLog.logEvent (Log::LogEvent_t::THREAD_WAITED, 0);
 
     // Set expected log.
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);

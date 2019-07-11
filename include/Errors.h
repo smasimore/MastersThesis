@@ -54,6 +54,11 @@ typedef enum Error {
     E_FAILED_TO_BIND_TO_SOCKET,
     
 
+    /* State Machine */
+    E_INVALID_TRANSITION,
+    E_DUPLICATE_NAME,
+    E_NAME_NOTFOUND,
+
     LAST
 
 } Error_t;
