@@ -15,6 +15,8 @@
 class UDPClient
 {
 public: 
+    ~UDPClient();
+
     static Error_t createNew(std::shared_ptr<UDPClient>& pClientRet, uint16_t port);
 
 
@@ -23,6 +25,8 @@ public:
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
     Error_t recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking);
+
+    Error_t closeSocket();
 
 private:
 

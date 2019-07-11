@@ -14,7 +14,8 @@
 
 class UDPServer
 {
-public: 
+public:
+
     static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t port);
 
 
@@ -23,6 +24,7 @@ public:
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
     Error_t recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking);
+
 
 private:
 

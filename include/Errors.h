@@ -52,8 +52,8 @@ typedef enum Error {
     E_FAILED_TO_CREATE_SOCKET,
     E_FAILED_TO_ALLOCATE_SOCKET,
     E_FAILED_TO_BIND_TO_SOCKET,
+    E_FAILED_TO_CLOSE_SOCKET,
     
-
     /* State Machine */
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,

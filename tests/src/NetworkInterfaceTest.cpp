@@ -28,6 +28,9 @@ TEST(NetworkInterface, NetworkInit)
     ret = UDPClient::createNew(pClient, port);
     CHECK_EQUAL(E_SUCCESS, ret);
 
+    ret = pClient->closeSocket();
+    CHECK_EQUAL(E_SUCCESS, ret);
+
 }
 
 TEST(NetworkInterface, SendRecv)
@@ -59,6 +62,9 @@ TEST(NetworkInterface, SendRecv)
     for(int i=0; i<4; i++){
         CHECK_EQUAL(recBuf[i], buf[i]);
     }
+
+    ret = pClient->closeSocket();
+    CHECK_EQUAL(E_SUCCESS, ret);
 
 }
 
