@@ -3,8 +3,8 @@
  * 
  */
 
-# ifndef UDP_SERVER_HPP
-# define UDP_SERVER_HPP
+# ifndef UDP_CLIENT_HPP
+# define UDP_CLIENT_HPP
 
 #include <stdint.h>
 #include <memory>
@@ -12,10 +12,10 @@
 #include "Errors.h"
 
 
-class UDPServer
+class UDPClient
 {
 public: 
-    static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t port);
+    static Error_t createNew(std::shared_ptr<UDPClient>& pClientRet, uint16_t port);
 
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
@@ -26,7 +26,7 @@ public:
 
 private:
 
-    UDPServer(Error_t& ret, uint16_t port);
+    UDPClient(Error_t& ret, uint16_t port);
 
     static const int DOMAIN;
     static const int TYPE;
@@ -39,4 +39,4 @@ private:
 
 
 
-# endif // UDP_SERVER_HPP
+# endif // UDP_CLIENT_HPP

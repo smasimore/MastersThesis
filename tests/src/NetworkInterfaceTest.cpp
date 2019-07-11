@@ -1,6 +1,8 @@
 #include "CppUTest/TestHarness.h"
 #include "Errors.h"
-#include "UDPSocket.hpp"
+#include <memory.h>
+#include "UDPClient.hpp"
+#include "UDPServer.hpp"
 
 
 
@@ -16,12 +18,16 @@ TEST(NetworkInterface, NetworkInit)
 
     Error_t ret;
     uint16_t port = 50000;
-    UDPSocket* pSocket = nullptr;
 
-    ret = UDPSocket::createNew(pSocket, port);
+    std::shared_ptr<UDPServer> pServer;
+    std::shared_ptr<UDPClient> pClient;
+
+    ret = UDPServer::createNew(pServer, port);
     CHECK_EQUAL(E_SUCCESS, ret);
 
-    delete pSocket;
+    ret = UDPClient::createNew(pClient, port);
+    CHECK_EQUAL(E_SUCCESS, ret);
+
 }
 
 TEST(NetworkInterface, SendRecv)
@@ -32,22 +38,27 @@ TEST(NetworkInterface, SendRecv)
     uint8_t buf[4] = {0,1,2,3};
     uint8_t recBuf[4];
 
-    UDPSocket* pSocket = nullptr;
+    // Create Server and Client objects
+    std::shared_ptr<UDPServer> pServer;
+    std::shared_ptr<UDPClient> pClient;
 
-    ret = UDPSocket::createNew(pSocket, port);
+    ret = UDPServer::createNew(pServer, port);
     CHECK_EQUAL(E_SUCCESS, ret);
 
-    ret = pSocket->send(buf, 4, loopbackIPAddr, false);
+    ret = UDPClient::createNew(pClient, port);
     CHECK_EQUAL(E_SUCCESS, ret);
 
-    ret = pSocket->recv(recBuf, 4, loopbackIPAddr, false);
+
+    // Test non-blocking send/receive functionality
+    ret = pServer->send(buf, 4, loopbackIPAddr, false);
+    CHECK_EQUAL(E_SUCCESS, ret);
+
+    ret = pClient->recv(recBuf, 4, loopbackIPAddr, false);
     CHECK_EQUAL(E_SUCCESS, ret);
 
     for(int i=0; i<4; i++){
         CHECK_EQUAL(recBuf[i], buf[i]);
     }
-
-    delete pSocket;
 
 }
 
