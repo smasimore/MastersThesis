@@ -45,6 +45,7 @@ public:
 
     /**
      * Create a statemachine from a defined list of states.
+     *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
      * @param   stateList           vector of type State
