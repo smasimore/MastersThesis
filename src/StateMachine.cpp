@@ -43,20 +43,24 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
 Error_t StateMachine::addState (State newState)
 {
     // Check if pointer to current state is null; if so, then set as current
-    if (pStateCurrent == nullptr)
+    if (mPStateCurrent == nullptr)
     {
         // Allocate necessary memory for a State, then overwrite it 
-        pStateCurrent = new State("", {});
-        *pStateCurrent = newState;
+        mPStateCurrent = new State("", {});
+        *mPStateCurrent = newState;
     }
     // Add the state to unordered_map using State object and State name
     std::string stateName;
-    newState.getName (stateName);
+    Error_t ret = newState.getName (stateName);
+    // Check if name was able to be retrieved successfully
+    if (ret != E_SUCCESS)
+    {
+        return E_DUPLICATE_NAME;
+    }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
-    auto resultPair = (this->pStateMap)->insert (std::make_pair (stateName,
-                                                                newState));
-    bool resultBool = std::get<1> (resultPair);
+    bool resultBool = (this->mPStateMap)->
+        insert (std::make_pair (stateName, newState)).second;
     if (resultBool)
     {
         return E_SUCCESS;
@@ -70,9 +74,10 @@ Error_t StateMachine::addState (State newState)
 Error_t StateMachine::findState (State &stateResult, std::string stateName)
 {
     // search the unordered map
-    auto search = pStateMap->find (stateName);
+    std::unordered_map<std::string, State>::const_iterator search = 
+        mPStateMap->find (stateName);
     // if element is not found, will point to end of the map
-    if (search == pStateMap->end ())
+    if (search == mPStateMap->end ())
     {
         return E_NAME_NOTFOUND;
     }
@@ -83,15 +88,24 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
     }
 }
 
-Error_t StateMachine::getStateName (std::string &result)
+Error_t StateMachine::getCurrentStateName (std::string &result)
 {
-    Error_t ret = pStateCurrent->getName (result);
-    return ret;
+    if (mPStateCurrent != nullptr)
+    {
+        return E_NO_STATES;
+    }
+    Error_t ret = mPStateCurrent->getName (result);
+    return ret;    
 }
 
-Error_t StateMachine::getStateTransitions (std::vector<std::string> &result)
+Error_t StateMachine::getCurrentStateTransitions (std::vector<std::string> 
+                                                  &result)
 {
-    Error_t ret = pStateCurrent->getTransitions (result);
+    if (mPStateCurrent != nullptr)
+    {
+        return E_NO_STATES;
+    }
+    Error_t ret = mPStateCurrent->getTransitions (result);
     return ret;
 }
 
@@ -99,8 +113,12 @@ Error_t StateMachine::switchState(std::string targetState)
 {
     // Get the valid transitions (using intermediate function)
     std::vector<std::string> validTrans;
-    getStateTransitions(validTrans);
+    Error_t ret = getCurrentStateTransitions(validTrans);
+    // getter function only returns E_SUCCESS for now, if block for future use
+    if (ret != E_SUCCESS)
+    {
 
+    }
     // Check if valid transitions contains the target state
     if (std::find (validTrans.begin (), validTrans.end (), targetState) !=
         validTrans.end())
@@ -115,7 +133,7 @@ Error_t StateMachine::switchState(std::string targetState)
             return E_NAME_NOTFOUND;
         }
         // overwrite current state with the target state
-        *pStateCurrent = stateResult;
+        *mPStateCurrent = stateResult;
         return E_SUCCESS;
     }
     else
@@ -140,14 +158,14 @@ Error_t StateMachine::getB (int32_t &result)
 Error_t StateMachine::deleteMap ()
 {
     // Manually delete State Map to pass memory leak tests
-    delete pStateMap;
+    delete mPStateMap;
     return E_SUCCESS;
 }
 
 Error_t StateMachine::deleteState ()
 {
     // Manually delete State to pass memory leak tests
-    delete pStateCurrent;
+    delete mPStateCurrent;
     return E_SUCCESS;
 }
 
@@ -157,6 +175,6 @@ StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
-    pStateMap = new std::unordered_map<std::string, State>();
-    pStateCurrent = nullptr;
+    mPStateMap = new std::unordered_map<std::string, State>();
+    mPStateCurrent = nullptr;
 }

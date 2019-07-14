@@ -16,6 +16,7 @@ TEST (StateMachines, DefaultCase)
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromDefault (pSM);
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Default Case returns A = 1, B = 2
     int32_t resultA;
@@ -40,6 +41,7 @@ TEST (StateMachines, DefinedCase)
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromArr (pSM, data_example);
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Defined Case for Array returns A = arr[0], B = sum of arr[0] to arr[3]
     int32_t resultA;
@@ -66,6 +68,7 @@ TEST (StateMachines, AddStates)
 
     // Check state machine initialization
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Create states using secondary iteration of temporary constructor
     std::vector<std::string> tempA = { "A", "B", "C" };
@@ -131,6 +134,7 @@ TEST (StateMachines, DefinedStateCase)
     Error_t ret = StateMachine::fromStates (pSM, storageVec);
 
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Attempt to call function to find states
     State stateResult ("", {});
@@ -149,12 +153,12 @@ TEST (StateMachines, DefinedStateCase)
 
     // Get the current State info (StateA, since first in vector)
     std::string nameResult;
-    ret = pSM->getStateName (nameResult);
+    ret = pSM->getCurrentStateName (nameResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateA");
 
     std::vector<std::string> transitionsResult;
-    ret = pSM->getStateTransitions (transitionsResult);
+    ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempA);
 
@@ -163,11 +167,11 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Check if current State is StateB
-    ret = pSM->getStateName (nameResult);
+    ret = pSM->getCurrentStateName (nameResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateB");
 
-     ret = pSM->getStateTransitions (transitionsResult);
+     ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempB);
 
@@ -176,11 +180,11 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (E_INVALID_TRANSITION == ret);
 
     // Check if current State is still StateB
-    ret = pSM->getStateName (nameResult);
+    ret = pSM->getCurrentStateName (nameResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateB");
 
-     ret = pSM->getStateTransitions (transitionsResult);
+     ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempB);
 

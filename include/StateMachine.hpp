@@ -87,7 +87,7 @@ public:
      * @param   targetState             String containing name of target state
      *
      * @ret     E_SUCCESS               Successfully transitioned to state
-                E_INVALID_NAME          Target state name does not exist
+     *          E_INVALID_NAME          Target state name does not exist
      *          E_INVALID_TRANSITION    Target state not a valid transition
      */
     Error_t switchState (std::string targetState);
@@ -98,8 +98,9 @@ public:
      * @param   result          Reference to string to store name of State
      *
      * @ret     E_SUCCESS       Name of current State stored in result
+     *          E_NO_STATES     No states have been added to StateMachine
      */
-    Error_t getStateName (std::string &result);
+    Error_t getCurrentStateName (std::string &result);
 
     /**
      * Intermediate function to return the valid transitions of current State
@@ -108,8 +109,9 @@ public:
      *                      transitions of the state
      *
      * @ret     E_SUCCESS   Valid transitions of current State stored in result
+     *          E_NO_STATES No states have been added to StateMachine
      */
-    Error_t getStateTransitions (std::vector<std::string> &result);
+    Error_t getCurrentStateTransitions (std::vector<std::string> &result);
 
     /**
      * Returns the value of temporary StateMachine data A
@@ -164,12 +166,12 @@ private:
      * Pointer to Unordered map to create the map of the states using
      * key type String and value type State
      */
-    std::unordered_map<std::string, State> *pStateMap;
+    std::unordered_map<std::string, State> *mPStateMap;
 
     /**
      * Pointer to a copy of the current state
      */
-    State* pStateCurrent;
+    State* mPStateCurrent;
  
 };
 #endif

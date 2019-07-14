@@ -51,7 +51,8 @@ typedef enum Error {
     /* State Machine */
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,
-    E_NAME_NOTFOUND
+    E_NAME_NOTFOUND,
+    E_NO_STATES
 } Error_t;
 
 #endif
