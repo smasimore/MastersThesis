@@ -90,7 +90,7 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
 
 Error_t StateMachine::getCurrentStateName (std::string &result)
 {
-    if (mPStateCurrent != nullptr)
+    if (mPStateCurrent == nullptr)
     {
         return E_NO_STATES;
     }
@@ -101,7 +101,7 @@ Error_t StateMachine::getCurrentStateName (std::string &result)
 Error_t StateMachine::getCurrentStateTransitions (std::vector<std::string> 
                                                   &result)
 {
-    if (mPStateCurrent != nullptr)
+    if (mPStateCurrent == nullptr)
     {
         return E_NO_STATES;
     }
