@@ -25,42 +25,37 @@ Error_t StateMachine::fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[])
 }
 
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
-                                  std::vector<State> stateList)
+                                  std::vector<std::tuple<std::string, 
+                                  std::vector<std::string>>> stateList)
 {
     rSM.reset (new StateMachine (0, 0));
-    for (State state : stateList)
+    for (std::tuple<std::string, std::vector<std::string>> tup : stateList)
     {
-        Error_t retState = rSM->addState (state);
+        Error_t retState = rSM->addState (std::get<0> (tup), std:;get<1>(tup));
         if (retState != E_SUCCESS)
         {
             return E_DUPLICATE_NAME;
         }
     }
-    return E_SUCCESS;
-    
+    return E_SUCCESS;    
 }
 
-Error_t StateMachine::addState (State newState)
+Error_t StateMachine::addState (std::string stateName, 
+                                std::vector<std::string> stateTransitions)
 {
+    // Allocate the state from parameter data, and create shared pointer
+    State addedState = new State (stateName, stateTransitions);
+    std::shared_ptr<State> pNewState (addedState);
     // Check if pointer to current state is null; if so, then set as current
     if (mPStateCurrent == nullptr)
     {
-        // Allocate necessary memory for a State, then overwrite it 
-        mPStateCurrent = new State("", {});
-        *mPStateCurrent = newState;
-    }
-    // Add the state to unordered_map using State object and State name
-    std::string stateName;
-    Error_t ret = newState.getName (stateName);
-    // Check if name was able to be retrieved successfully
-    if (ret != E_SUCCESS)
-    {
-        return E_DUPLICATE_NAME;
+        // overwrite memory of current state
+        *mPStateCurrent = addedState;
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
     bool resultBool = (this->mPStateMap)->
-        insert (std::make_pair (stateName, newState)).second;
+        insert (std::make_pair (stateName, pNewState)).second;
     if (resultBool)
     {
         return E_SUCCESS;
@@ -175,6 +170,7 @@ StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
-    mPStateMap = new std::unordered_map<std::string, State>();
+    mPStateMap = new std::unordered_map <std::string, 
+                                         std::shared_ptr<State>>();
     mPStateCurrent = nullptr;
 }

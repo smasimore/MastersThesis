@@ -44,30 +44,33 @@ public:
     static Error_t fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[]);
 
     /**
-     * Create a statemachine from a defined list of states.
+     * Create a statemachine from a list of state names and transitions.
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
-     * @param   stateList           vector of type State
+     * @param   nameList            vector of type String 
      *
      * @ret     E_SUCCESS           successfully passed a StateMachine object 
      *                              into rSM using States in stateList
      *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
     static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
-                               std::vector<State> stateList);
+                               std::vector<std::tuple<std::string, std::vector<
+                               std::string>>> stateList);
 
     /**
-     * Intermediate function to add and map State to the State Map.
+     * Intermediate function to add, allocate, and map State to the State Map.
      * When called the first time, will set the first state as the
      * current state of the StateMachine.
      *
-     * @param   newState            State object of state to add
+     * @param   stateName           String containing name of State to add
+     * @param   stateTransitions    Vector of Strings of valid transition names
      *
      * @ret     E_SUCCESS           State object successfully added and mapped
      *          E_DUPLICATE_NAME    State with same name already exists
      */
-    Error_t addState (State newState);
+    Error_t addState (std::string stateName, 
+                      std::vector<std::string> stateTransitions);
 
     /**
      * Intermediate function to find and store a State in the map by State name
@@ -164,9 +167,9 @@ private:
 
     /**
      * Pointer to Unordered map to create the map of the states using
-     * key type String and value type State
+     * key type String and value type pointer to State
      */
-    std::unordered_map<std::string, State> *mPStateMap;
+    std::unordered_map < std::string, std::shared_ptr<State> > *mPStateMap;
 
     /**
      * Pointer to a copy of the current state
