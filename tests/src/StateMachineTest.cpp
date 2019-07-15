@@ -74,33 +74,30 @@ TEST (StateMachines, AddStates)
     std::vector<std::string> tempA = { "A", "B", "C" };
     std::vector<std::string> tempB = { "B", "C", "D" };
     std::vector<std::string> tempC = { "C", "D", "E" };
-    State stateA ("StateA", tempA);
-    State stateB ("StateB", tempB);
-    State stateC ("StateC", tempC);
 
     // Add states to StateMachine
-    ret = pSM->addState (stateA);
+    ret = pSM->addState ("StateA", tempA);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState (stateB);
+    ret = pSM->addState ("StateB", tempB);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState (stateC);
+    ret = pSM->addState ("StateC", tempC);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Attempt to add a State with duplicate name
-    State stateD ("StateA", tempA);
-    ret = pSM->addState (stateD);
+    ret = pSM->addState ("StateA", tempA);
     CHECK_TRUE (E_DUPLICATE_NAME == ret);
 
     // Attempt to call function to find states
-    State stateResult ("", {});
+    std::shared_ptr<State> stateResult(nullptr);
     ret = pSM->findState(stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    ret = stateResult.getTransitions(dataResult);
+    ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
@@ -122,12 +119,12 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> tempA = { "StateB" };
     std::vector<std::string> tempB = { "StateC" };
     std::vector<std::string> tempC = { "StateA" };
-    State stateA ("StateA", tempA);
-    State stateB ("StateB", tempB);
-    State stateC ("StateC", tempC);
 
     // Create storage vector for constructor
-    std::vector<State> storageVec = { stateA, stateB, stateC };
+    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+        = { std::make_tuple("StateA", tempA),
+            std::make_tuple("StateB", tempB),
+            std::make_tuple("StateC", tempC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -137,13 +134,14 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (pSM != nullptr);
 
     // Attempt to call function to find states
-    State stateResult ("", {});
+    std::shared_ptr<State> stateResult (nullptr);
     ret = pSM->findState(stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    ret = stateResult.getTransitions(dataResult);
+    ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
