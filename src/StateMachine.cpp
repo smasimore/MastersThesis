@@ -112,13 +112,12 @@ Error_t StateMachine::switchState(std::string targetState)
     // getter function only returns E_SUCCESS for now, if block for future use
     if (ret != E_SUCCESS)
     {
-
+        return ret;
     }
     // Check if valid transitions contains the target state
     if (std::find (validTrans.begin (), validTrans.end (), targetState) !=
         validTrans.end())
-    {
-        // if not equal to end, transition is valid; switch the current state
+    {   // if not equal to end, transition is valid; switch the current state
         // create a temporary empty state
         std::shared_ptr<State> stateResult (nullptr);
         // get the target state from the state map and check if found
