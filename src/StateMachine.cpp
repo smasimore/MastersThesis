@@ -66,7 +66,8 @@ Error_t StateMachine::addState (std::string stateName,
     }
 }
 
-Error_t StateMachine::findState (State &stateResult, std::string stateName)
+Error_t StateMachine::findState (std::shared_ptr<State> &rStateResult,
+                                 std::string stateName)
 {
     // search the unordered map
     std::unordered_map<std::string, State>::const_iterator search = 
@@ -78,7 +79,7 @@ Error_t StateMachine::findState (State &stateResult, std::string stateName)
     }
     else
     {
-        stateResult = search->second;
+        rStateResult.reset(search->second);
         return E_SUCCESS;
     }
 }

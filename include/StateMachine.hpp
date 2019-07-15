@@ -48,7 +48,8 @@ public:
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
-     * @param   nameList            vector of type String 
+     * @param   stateList           vector containing tuples of the state names
+     *                              and their valid transitions
      *
      * @ret     E_SUCCESS           successfully passed a StateMachine object 
      *                              into rSM using States in stateList
@@ -75,13 +76,14 @@ public:
     /**
      * Intermediate function to find and store a State in the map by State name
      *
-     * @param   stateResult     Reference to State object to store the result
+     * @param   rStateResult    Reference to shared pointer of state
      * @param   stateName       Name of the state to find
      *
-     * @ret     E_SUCCESS       Successfully found State with name
+     * @ret     E_SUCCESS       Successfully found State and stored in param
      *          E_NAME_NOTFOUND Could not find a state with this name
      */
-    Error_t findState (State &stateResult, std::string stateName);
+    Error_t findState (std::shared_ptr<State> &rStateResult,
+                       std::string stateName);
 
     /**
      * Intermediate function to force a State Transition. For now, just update
