@@ -29,8 +29,6 @@ TEST (StateMachines, DefaultCase)
 
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (2, resultB);
-
-    pSM->deleteMap();
 }
 
 /* Test to create a StateMachine from a defined case using data from an array, 
@@ -54,9 +52,6 @@ TEST (StateMachines, DefinedCase)
 
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (4, resultB);
-
-    // Delete the map to resolve memory leaks
-    pSM->deleteMap();
 }
 
 /* Test to create a StateMachine as before, then run State Mapping code*/
@@ -104,9 +99,6 @@ TEST (StateMachines, AddStates)
     // Attempt to find an invalid state
     ret = pSM->findState(stateResult, "StateD");
     CHECK_TRUE (E_NAME_NOTFOUND == ret);
-
-    // Need to manually clear the states at end to avoid a memory leak.
-    pSM->deleteMap ();
 }
 
 /* Test to create a State Machine from existing vector of states. 
@@ -184,7 +176,4 @@ TEST (StateMachines, DefinedStateCase)
      ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempB);
-
-    // Still need to manually clear states despite using this method.
-    pSM->deleteMap ();
 }

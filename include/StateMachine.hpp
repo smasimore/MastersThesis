@@ -136,15 +136,6 @@ public:
      */
     Error_t getB (int32_t &result);
 
-    /**
-     * Deletes the allocated map in StateMachine to avoid memory leaks
-     *
-     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
-     *
-     * @ret     E_SUCCESS   successfully deleted the map
-     */
-    Error_t deleteMap ();
-
 private:
 
     /**
@@ -162,7 +153,8 @@ private:
      * Pointer to Unordered map to create the map of the states using
      * key type String and value type pointer to State
      */
-    std::unordered_map < std::string, std::shared_ptr<State> > *mPStateMap;
+    std::unique_ptr<std::unordered_map<std::string, std::shared_ptr<State>>>
+        mPStateMap;
 
     /**
      * Shared pointer to a copy of the current state

@@ -150,20 +150,13 @@ Error_t StateMachine::getB (int32_t &result)
     return E_SUCCESS;
 }
 
-Error_t StateMachine::deleteMap ()
-{
-    // Manually delete State Map to pass memory leak tests
-    delete mPStateMap;
-    return E_SUCCESS;
-}
-
 /******************** PRIVATE FUNCTIONS **************************/
 
 StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
-    mPStateMap = new std::unordered_map <std::string, 
-                                         std::shared_ptr<State>>();
+    mPStateMap.reset(new std::unordered_map <std::string,
+                                             std::shared_ptr<State>>());
     mPStateCurrent = nullptr;
 }
