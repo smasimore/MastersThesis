@@ -55,7 +55,7 @@ Error_t StateMachine::addState (State newState)
     // Check if name was able to be retrieved successfully
     if (ret != E_SUCCESS)
     {
-        return E_DUPLICATE_NAME;
+        return ret;
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
@@ -117,7 +117,7 @@ Error_t StateMachine::switchState(std::string targetState)
     // getter function only returns E_SUCCESS for now, if block for future use
     if (ret != E_SUCCESS)
     {
-
+        return ret;
     }
     // Check if valid transitions contains the target state
     if (std::find (validTrans.begin (), validTrans.end (), targetState) !=
