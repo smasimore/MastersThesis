@@ -58,9 +58,9 @@ typedef enum Error {
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,
     E_NAME_NOTFOUND,
+    E_NO_STATES,
 
     LAST
-
 } Error_t;
 
 #endif

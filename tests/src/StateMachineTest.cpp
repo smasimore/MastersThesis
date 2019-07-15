@@ -5,13 +5,6 @@
 
 #include "CppUTest/TestHarness.h"
 
-/*****TEMPORARY MACRO*****/
-#define INIT_SM                             \
-    Error_t ret;                            \
-    StateMachine *pSM = nullptr;            \
-    ret = StateMachine::fromDefault (&pSM);
-
-
 TEST_GROUP (StateMachines) 
 {
 };
@@ -20,19 +13,24 @@ TEST_GROUP (StateMachines)
    then verify StateMachine data */
 TEST (StateMachines, DefaultCase) 
 {
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromDefault (&pSM);
-    int32_t resultA;
-    int32_t resultB;
-    Error_t retA = pSM->getA (resultA);
-    Error_t retB = pSM->getB (resultB);
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromDefault (pSM);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Default Case returns A = 1, B = 2
+    int32_t resultA;
+    ret = pSM->getA (resultA);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (E_SUCCESS == retA);
-    CHECK_TRUE (E_SUCCESS == retB);
+
+    int32_t resultB;
+    ret = pSM->getB (resultB);
+    CHECK_TRUE (E_SUCCESS == ret);
+
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (2, resultB);
+
+    pSM->deleteMap();
 }
 
 /* Test to create a StateMachine from a defined case using data from an array, 
@@ -40,17 +38,20 @@ TEST (StateMachines, DefaultCase)
 TEST (StateMachines, DefinedCase)
 {
     int32_t data_example[] = { 1, 1, 1, 1 };
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromArr (&pSM, data_example);
-    int32_t resultA;
-    int32_t resultB;
-    Error_t retA = pSM->getA (resultA);
-    Error_t retB = pSM->getB (resultB);
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromArr (pSM, data_example);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Defined Case for Array returns A = arr[0], B = sum of arr[0] to arr[3]
+    int32_t resultA;
+    ret = pSM->getA (resultA);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (E_SUCCESS == retA);
-    CHECK_TRUE (E_SUCCESS == retB);
+
+    int32_t resultB;
+    ret = pSM->getB (resultB);
+    CHECK_TRUE (E_SUCCESS == ret);
+
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (4, resultB);
 
@@ -61,11 +62,13 @@ TEST (StateMachines, DefinedCase)
 /* Test to create a StateMachine as before, then run State Mapping code*/
 TEST (StateMachines, AddStates)
 {
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromDefault (&pSM);
+    //StateMachine *pSM = nullptr;
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromDefault (pSM);
 
     // Check state machine initialization
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Create states using secondary iteration of temporary constructor
     std::vector<std::string> tempA = { "A", "B", "C" };
@@ -76,37 +79,38 @@ TEST (StateMachines, AddStates)
     State stateC ("StateC", tempC);
 
     // Add states to StateMachine
-    Error_t retA = pSM->addState (stateA);
-    Error_t retB = pSM->addState (stateB);
-    Error_t retC = pSM->addState (stateC);
+    ret = pSM->addState (stateA);
+    CHECK_TRUE (E_SUCCESS == ret);
 
-    CHECK_TRUE (retA == E_SUCCESS);
-    CHECK_TRUE (retB == E_SUCCESS);
-    CHECK_TRUE (retC == E_SUCCESS);
+    ret = pSM->addState (stateB);
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    ret = pSM->addState (stateC);
+    CHECK_TRUE (E_SUCCESS == ret);
 
     // Attempt to add a State with duplicate name
     State stateD ("StateA", tempA);
-    Error_t retD = pSM->addState (stateD);
-
-    CHECK_TRUE (retD == E_DUPLICATE_NAME);
+    ret = pSM->addState (stateD);
+    CHECK_TRUE (E_DUPLICATE_NAME == ret);
 
     // Attempt to call function to find states
     State stateResult ("", {});
-    Error_t retFind = pSM->findState(stateResult, "StateA");
-    CHECK_TRUE (retFind == E_SUCCESS);
+    ret = pSM->findState(stateResult, "StateA");
+    CHECK_TRUE (E_SUCCESS == ret);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    Error_t retData = stateResult.getTransitions(dataResult);
-    CHECK_TRUE (retData == E_SUCCESS);
+    ret = stateResult.getTransitions(dataResult);
+    CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
     // Attempt to find an invalid state
-    retFind = pSM->findState(stateResult, "StateD");
-    CHECK_TRUE (retFind == E_NAME_NOTFOUND);
+    ret = pSM->findState(stateResult, "StateD");
+    CHECK_TRUE (E_NAME_NOTFOUND == ret);
 
     // Need to manually clear the states at end to avoid a memory leak.
     pSM->deleteMap ();
+    pSM->deleteState ();
 }
 
 /* Test to create a State Machine from existing vector of states. 
@@ -114,10 +118,10 @@ TEST (StateMachines, AddStates)
    instead of having to add states after the object is constructed. */
 TEST (StateMachines, DefinedStateCase)
 {
-    // Create State Objects
-    std::vector<std::string> tempA = { "A", "B", "C" };
-    std::vector<std::string> tempB = { "B", "C", "D" };
-    std::vector<std::string> tempC = { "C", "D", "E" };
+    // Create State Objects with basic, loop transitions
+    std::vector<std::string> tempA = { "StateB" };
+    std::vector<std::string> tempB = { "StateC" };
+    std::vector<std::string> tempC = { "StateA" };
     State stateA ("StateA", tempA);
     State stateB ("StateB", tempB);
     State stateC ("StateC", tempC);
@@ -126,26 +130,65 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<State> storageVec = { stateA, stateB, stateC };
 
     // Create State Machine from vector of States
-    StateMachine *pSM = nullptr;
-    Error_t ret = StateMachine::fromStates (&pSM, storageVec);
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
 
-    CHECK_TRUE (ret == E_SUCCESS);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Attempt to call function to find states
     State stateResult ("", {});
-    Error_t retFind = pSM->findState(stateResult, "StateA");
-    CHECK_TRUE (retFind == E_SUCCESS);
+    ret = pSM->findState(stateResult, "StateA");
+    CHECK_TRUE (E_SUCCESS == ret);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    Error_t retData = stateResult.getTransitions(dataResult);
-    CHECK_TRUE (retData == E_SUCCESS);
+    ret = stateResult.getTransitions(dataResult);
+    CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
     // Attempt to find an invalid state
-    retFind = pSM->findState(stateResult, "StateD");
-    CHECK_TRUE (retFind == E_NAME_NOTFOUND);
+    ret = pSM->findState(stateResult, "StateD");
+    CHECK_TRUE (E_NAME_NOTFOUND == ret);
+
+    // Get the current State info (StateA, since first in vector)
+    std::string nameResult;
+    ret = pSM->getCurrentStateName (nameResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (nameResult == "StateA");
+
+    std::vector<std::string> transitionsResult;
+    ret = pSM->getCurrentStateTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitionsResult == tempA);
+
+    // Force a valid transition from StateA to StateB
+    ret = pSM->switchState ("StateB");
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    // Check if current State is StateB
+    ret = pSM->getCurrentStateName (nameResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (nameResult == "StateB");
+
+     ret = pSM->getCurrentStateTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitionsResult == tempB);
+
+    // Attempt to force an invalid transition from StateB to StateA
+    ret = pSM->switchState ("StateA");
+    CHECK_TRUE (E_INVALID_TRANSITION == ret);
+
+    // Check if current State is still StateB
+    ret = pSM->getCurrentStateName (nameResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (nameResult == "StateB");
+
+     ret = pSM->getCurrentStateTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitionsResult == tempB);
 
     // Still need to manually clear states despite using this method.
     pSM->deleteMap ();
+    pSM->deleteState ();
 }
