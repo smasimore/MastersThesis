@@ -107,7 +107,6 @@ TEST (StateMachines, AddStates)
 
     // Need to manually clear the states at end to avoid a memory leak.
     pSM->deleteMap ();
-    pSM->deleteState ();
 }
 
 /* Test to create a State Machine from existing vector of states. 
@@ -188,5 +187,4 @@ TEST (StateMachines, DefinedStateCase)
 
     // Still need to manually clear states despite using this method.
     pSM->deleteMap ();
-    pSM->deleteState ();
 }

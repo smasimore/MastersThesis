@@ -44,13 +44,12 @@ Error_t StateMachine::addState (std::string stateName,
                                 std::vector<std::string> stateTransitions)
 {
     // Allocate the state from parameter data, and create shared pointer
-    State* pAddedState = new State (stateName, stateTransitions);
-    std::shared_ptr<State> pNewState (pAddedState);
+    std::shared_ptr<State> pNewState (new State (stateName, stateTransitions));
     // Check if pointer to current state is null; if so, then set as current
     if (mPStateCurrent == nullptr)
     {
         // overwrite memory of current state
-        *mPStateCurrent = *pNewState;
+        mPStateCurrent = pNewState;
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
@@ -129,7 +128,7 @@ Error_t StateMachine::switchState(std::string targetState)
             return E_NAME_NOTFOUND;
         }
         // overwrite current state with the target state
-        *mPStateCurrent = *stateResult;
+        mPStateCurrent = stateResult;
         return E_SUCCESS;
     }
     else
@@ -155,13 +154,6 @@ Error_t StateMachine::deleteMap ()
 {
     // Manually delete State Map to pass memory leak tests
     delete mPStateMap;
-    return E_SUCCESS;
-}
-
-Error_t StateMachine::deleteState ()
-{
-    // Manually delete State to pass memory leak tests
-    delete mPStateCurrent;
     return E_SUCCESS;
 }
 

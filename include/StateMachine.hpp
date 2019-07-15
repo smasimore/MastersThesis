@@ -145,15 +145,6 @@ public:
      */
     Error_t deleteMap ();
 
-    /**
-     * Deletes the allocated state in StateMachine to avoid memory leaks
-     *
-     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
-     *
-     * @ret     E_SUCCESS   successfully deleted the state
-     */
-    Error_t deleteState ();
-
 private:
 
     /**
@@ -174,9 +165,9 @@ private:
     std::unordered_map < std::string, std::shared_ptr<State> > *mPStateMap;
 
     /**
-     * Pointer to a copy of the current state
+     * Shared pointer to a copy of the current state
      */
-    State* mPStateCurrent;
+    std::shared_ptr<State> mPStateCurrent;
  
 };
 #endif
