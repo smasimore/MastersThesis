@@ -152,8 +152,7 @@ private:
      * Pointer to Unordered map to create the map of the states using
      * key type String and value type pointer to State
      */
-    std::unique_ptr<std::unordered_map<std::string, std::shared_ptr<State>>>
-        mPStateMap;
+    std::unordered_map<std::string, std::shared_ptr<State>> mStateMap;
 
     /**
      * Shared pointer to a copy of the current state

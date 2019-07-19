@@ -53,7 +53,7 @@ Error_t StateMachine::addState (std::string stateName,
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
-    bool resultBool = (this->mPStateMap)->
+    bool resultBool = (this->mStateMap).
         insert (std::make_pair (stateName, pNewState)).second;
     if (resultBool)
     {
@@ -70,9 +70,9 @@ Error_t StateMachine::findState (std::shared_ptr<State> &rStateResult,
 {
     // search the unordered map
     std::unordered_map <std::string, std::shared_ptr<State> > ::const_iterator 
-        search = mPStateMap->find (stateName);
+        search = mStateMap.find (stateName);
     // if element is not found, will point to end of the map
-    if (search == mPStateMap->end ())
+    if (search == mStateMap.end ())
     {
         return E_NAME_NOTFOUND;
     }
@@ -155,7 +155,5 @@ StateMachine::StateMachine (int32_t a, int32_t b)
 {
     this->a = a;
     this->b = b;
-    mPStateMap.reset(new std::unordered_map <std::string,
-                                             std::shared_ptr<State>>());
     mPStateCurrent = nullptr;
 }
