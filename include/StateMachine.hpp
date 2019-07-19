@@ -76,14 +76,13 @@ public:
     /**
      * Intermediate function to find and store a State in the map by State name
      *
-     * @param   rStateResult    Reference to shared pointer of state
+     * @param   rState          Reference to shared pointer of state
      * @param   stateName       Name of the state to find
      *
      * @ret     E_SUCCESS       Successfully found State and stored in param
      *          E_NAME_NOTFOUND Could not find a state with this name
      */
-    Error_t findState (std::shared_ptr<State> &rStateResult,
-                       std::string stateName);
+    Error_t findState (std::shared_ptr<State> &rState, std::string stateName);
 
     /**
      * Intermediate function to force a State Transition. For now, just update
