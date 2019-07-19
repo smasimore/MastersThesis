@@ -78,7 +78,7 @@ Error_t StateMachine::findState (std::shared_ptr<State> &rState,
     }
     else
     {
-        rStateResult = search->second;
+        rState = search->second;
         return E_SUCCESS;
     }
 }
