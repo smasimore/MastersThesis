@@ -65,7 +65,7 @@ Error_t StateMachine::addState (std::string stateName,
     }
 }
 
-Error_t StateMachine::findState (std::shared_ptr<State> &rStateResult,
+Error_t StateMachine::findState (std::shared_ptr<State> &rState,
                                  std::string stateName)
 {
     // search the unordered map
