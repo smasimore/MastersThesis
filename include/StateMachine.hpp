@@ -44,41 +44,48 @@ public:
     static Error_t fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[]);
 
     /**
-     * Create a statemachine from a defined list of states.
+     * Create a statemachine from a list of state names and transitions.
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
-     * @param   stateList           vector of type State
+     * @param   stateList           vector of tuples. First element of tuple is
+     *                              type string representing name of State.
+     *                              Second element of tuple is a vector of type
+     *                              string representing the State's respective
+     *                              valid transitions
      *
      * @ret     E_SUCCESS           successfully passed a StateMachine object 
      *                              into rSM using States in stateList
      *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
     static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
-                               std::vector<State> stateList);
+                               std::vector<std::tuple<std::string, std::vector<
+                               std::string>>> stateList);
 
     /**
-     * Intermediate function to add and map State to the State Map.
+     * Intermediate function to add, allocate, and map State to the State Map.
      * When called the first time, will set the first state as the
      * current state of the StateMachine.
      *
-     * @param   newState            State object of state to add
+     * @param   stateName           String containing name of State to add
+     * @param   stateTransitions    Vector of Strings of valid transition names
      *
      * @ret     E_SUCCESS           State object successfully added and mapped
      *          E_DUPLICATE_NAME    State with same name already exists
      */
-    Error_t addState (State newState);
+    Error_t addState (std::string stateName, 
+                      std::vector<std::string> stateTransitions);
 
     /**
      * Intermediate function to find and store a State in the map by State name
      *
-     * @param   stateResult     Reference to State object to store the result
+     * @param   rState          Reference to shared pointer of state
      * @param   stateName       Name of the state to find
      *
-     * @ret     E_SUCCESS       Successfully found State with name
+     * @ret     E_SUCCESS       Successfully found State and stored in param
      *          E_NAME_NOTFOUND Could not find a state with this name
      */
-    Error_t findState (State &stateResult, std::string stateName);
+    Error_t findState (std::shared_ptr<State> &rState, std::string stateName);
 
     /**
      * Intermediate function to force a State Transition. For now, just update
@@ -131,24 +138,6 @@ public:
      */
     Error_t getB (int32_t &result);
 
-    /**
-     * Deletes the allocated map in StateMachine to avoid memory leaks
-     *
-     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
-     *
-     * @ret     E_SUCCESS   successfully deleted the map
-     */
-    Error_t deleteMap ();
-
-    /**
-     * Deletes the allocated state in StateMachine to avoid memory leaks
-     *
-     * ONLY USE FOR TESTING PURPOSES TO PREVENT MEMORY LEAKS.
-     *
-     * @ret     E_SUCCESS   successfully deleted the state
-     */
-    Error_t deleteState ();
-
 private:
 
     /**
@@ -164,14 +153,14 @@ private:
 
     /**
      * Pointer to Unordered map to create the map of the states using
-     * key type String and value type State
+     * key type String and value type pointer to State
      */
-    std::unordered_map<std::string, State> *mPStateMap;
+    std::unordered_map<std::string, std::shared_ptr<State>> mStateMap;
 
     /**
-     * Pointer to a copy of the current state
+     * Shared pointer to a copy of the current state
      */
-    State* mPStateCurrent;
+    std::shared_ptr<State> mPStateCurrent;
  
 };
 #endif

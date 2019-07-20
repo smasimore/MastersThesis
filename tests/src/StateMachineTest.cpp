@@ -29,8 +29,6 @@ TEST (StateMachines, DefaultCase)
 
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (2, resultB);
-
-    pSM->deleteMap();
 }
 
 /* Test to create a StateMachine from a defined case using data from an array, 
@@ -54,9 +52,6 @@ TEST (StateMachines, DefinedCase)
 
     CHECK_EQUAL (1, resultA);
     CHECK_EQUAL (4, resultB);
-
-    // Delete the map to resolve memory leaks
-    pSM->deleteMap();
 }
 
 /* Test to create a StateMachine as before, then run State Mapping code*/
@@ -74,43 +69,36 @@ TEST (StateMachines, AddStates)
     std::vector<std::string> tempA = { "A", "B", "C" };
     std::vector<std::string> tempB = { "B", "C", "D" };
     std::vector<std::string> tempC = { "C", "D", "E" };
-    State stateA ("StateA", tempA);
-    State stateB ("StateB", tempB);
-    State stateC ("StateC", tempC);
 
     // Add states to StateMachine
-    ret = pSM->addState (stateA);
+    ret = pSM->addState ("StateA", tempA);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState (stateB);
+    ret = pSM->addState ("StateB", tempB);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState (stateC);
+    ret = pSM->addState ("StateC", tempC);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Attempt to add a State with duplicate name
-    State stateD ("StateA", tempA);
-    ret = pSM->addState (stateD);
+    ret = pSM->addState ("StateA", tempA);
     CHECK_TRUE (E_DUPLICATE_NAME == ret);
 
     // Attempt to call function to find states
-    State stateResult ("", {});
+    std::shared_ptr<State> stateResult(nullptr);
     ret = pSM->findState(stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    ret = stateResult.getTransitions(dataResult);
+    ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
     // Attempt to find an invalid state
     ret = pSM->findState(stateResult, "StateD");
     CHECK_TRUE (E_NAME_NOTFOUND == ret);
-
-    // Need to manually clear the states at end to avoid a memory leak.
-    pSM->deleteMap ();
-    pSM->deleteState ();
 }
 
 /* Test to create a State Machine from existing vector of states. 
@@ -122,12 +110,12 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> tempA = { "StateB" };
     std::vector<std::string> tempB = { "StateC" };
     std::vector<std::string> tempC = { "StateA" };
-    State stateA ("StateA", tempA);
-    State stateB ("StateB", tempB);
-    State stateC ("StateC", tempC);
 
     // Create storage vector for constructor
-    std::vector<State> storageVec = { stateA, stateB, stateC };
+    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+        = { std::make_tuple("StateA", tempA),
+            std::make_tuple("StateB", tempB),
+            std::make_tuple("StateC", tempC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -137,13 +125,14 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (pSM != nullptr);
 
     // Attempt to call function to find states
-    State stateResult ("", {});
+    std::shared_ptr<State> stateResult (nullptr);
     ret = pSM->findState(stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
     std::vector<std::string> dataResult;
-    ret = stateResult.getTransitions(dataResult);
+    ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (tempA == dataResult);
 
@@ -187,8 +176,4 @@ TEST (StateMachines, DefinedStateCase)
      ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempB);
-
-    // Still need to manually clear states despite using this method.
-    pSM->deleteMap ();
-    pSM->deleteState ();
 }
