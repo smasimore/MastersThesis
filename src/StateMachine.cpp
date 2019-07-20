@@ -119,7 +119,7 @@ Error_t StateMachine::switchState(std::string targetState)
         validTrans.end())
     {   // if not equal to end, transition is valid; switch the current state
         // create a temporary empty state
-        std::shared_ptr<State> stateResult (nullptr);
+        std::shared_ptr<State> stateResult;
         // get the target state from the state map and check if found
         Error_t ret = findState (stateResult, targetState);
         if (ret != E_SUCCESS)

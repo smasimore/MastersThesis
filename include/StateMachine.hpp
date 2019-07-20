@@ -48,8 +48,11 @@ public:
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
-     * @param   stateList           vector containing tuples of the state names
-     *                              and their valid transitions
+     * @param   stateList           vector of tuples. First element of tuple is
+     *                              type string representing name of State.
+     *                              Second element of tuple is a vector of type
+     *                              string representing the State's respective
+     *                              valid transitions
      *
      * @ret     E_SUCCESS           successfully passed a StateMachine object 
      *                              into rSM using States in stateList
