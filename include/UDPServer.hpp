@@ -16,19 +16,19 @@ class UDPServer
 {
 public:
 
-    static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t port);
+    static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t kPort, bool kBlocking);
 
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
-    Error_t send(uint8_t* buf, int len, uint8_t* dstIPAddr, bool blocking);
+    Error_t send(uint8_t* kBuf, int kLen, uint8_t* kDstIPAddr);
 
     // TODO: use std::array<uint8_t> rather than uint8_t*
-    Error_t recv(uint8_t* buf, int len, uint8_t* srcIPAddr, bool blocking);
+    Error_t recv(uint8_t* kBuf, int& kLen, bool kPeek);
 
 
 private:
 
-    UDPServer(Error_t& ret, uint16_t port);
+    UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking);
 
     static const int DOMAIN;
     static const int TYPE;

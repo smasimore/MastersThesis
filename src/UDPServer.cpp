@@ -21,11 +21,12 @@ const int UDPServer::PROTOCOL = 0;
 
 // TODO: finish reading this http://man7.org/linux/man-pages/man7/udp.7.html
 
-Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t port)
+Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
+                            uint16_t kPort, bool kBlocking)
 {
     Error_t ret;
     // Can't use make_shared here, because UDPServer constructor is private
-    pServerRet.reset(new UDPServer(ret, port));
+    pServerRet.reset(new UDPServer(ret, kPort, kBlocking));
 
     if(pServerRet == nullptr){
         return E_FAILED_TO_ALLOCATE_SOCKET;
@@ -38,8 +39,7 @@ Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet, uint16_t po
     return E_SUCCESS;
 }
 
-Error_t UDPServer::send(uint8_t* buf, int len, uint8_t* dstIPAddr,
-                        bool blocking)
+Error_t UDPServer::send(uint8_t* kBuf, int kLen, uint8_t* kDstIPAddr)
 {
     if(!mInitialized)
     {
@@ -47,29 +47,92 @@ Error_t UDPServer::send(uint8_t* buf, int len, uint8_t* dstIPAddr,
     }
 
 
+    struct in_addr dest_addr;
+    memset((void*)(&dest_addr), 0, (unsigned int)sizeof(dest_addr));
+
+    // Fill client information
+    dest_addr.s_addr = kDstIPAddr[0] + (kDstIPAddr[1]<<8) + (kDstIPAddr[2]<<16) +
+            (kDstIPAddr[3]<<24);
+
+    // sendto() will return the number of bytes sent if successful
+    int n = sendto(mSocket, kBuf, kLen, 0, (const struct sockaddr*)&dest_addr,
+            sizeof(dest_addr));
+
+    if(n < 0)
+    {
+        return E_FAILED_TO_SEND_DATA;
+    }
+    else if(n != kLen){
+        return E_PARTIAL_SEND;
+    }
+
+
+
 
     return E_SUCCESS;
 }
 
-Error_t UDPServer::recv(uint8_t* buf, int len, uint8_t* srcIPAddr,
-                        bool blocking)
+Error_t UDPServer::recv(uint8_t* kBuf, int& kLen, bool kPeek)
 {
     if(!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
 
+
+    struct in_addr srcAddr;
+    memset((void*)(&srcAddr), 0, (unsigned int)sizeof(srcAddr));
+
+
+    // MSG_TRUNC causes recvfrom() return the total size of the received packet
+    // even if it is larger than the buffer supplied.
+    int flags = MSG_TRUNC;
+    if(kPeek)
+    {
+        flags |= MSG_PEEK;
+    }
+
+    socklen_t origSrcAddrLen = sizeof(srcAddr);
+    socklen_t srcAddrLen = origSrcAddrLen;
+
+    // recvfrom() will return the number of bytes received if successful
+    // or the number of bytes that could be received if the buffer is too small
+    int n = recvfrom(mSocket, kBuf, kLen, flags, (struct sockaddr*)&srcAddr,
+            &srcAddrLen);
+
+    kLen = n;
+
+    if(n < 0)
+    {
+        return E_FAILED_TO_RECV_DATA;
+    }
+    else if(n > kLen){
+        // Buffer was not large enough for the received message, and it was
+        // truncated
+        return E_RECV_TRUNC;
+    }
+    else if(srcAddrLen > origSrcAddrLen){
+        // Source address was longer than the buffer supplied, and the returned
+        // address was truncated.
+        return E_INVALID_SRC_ADDR;
+    }
+
     return E_SUCCESS;
 }
 
 
-UDPServer::UDPServer(Error_t& ret, uint16_t port)
+UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
 {
-    mPort = port;
+    mPort = kPort;
     mInitialized = false;
 
+    int sockOptions = 0;
+    if(kBlocking)
+    {
+        sockOptions = SOCK_NONBLOCK;
+    }
     // Initialize the socket and hold on to its file descriptor
-    mSocket = socket(DOMAIN, TYPE, PROTOCOL);
+    mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
 
     // Set the socket to reuse the address.
     // If this option is not set, opening a socket on the same port as a
@@ -91,7 +154,7 @@ UDPServer::UDPServer(Error_t& ret, uint16_t port)
     // Fill server information
     addr.sin_family    = AF_INET; // IPv4
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
+    addr.sin_port = htons(mPort);
 
     // Assign a name to the socket
     int retSock = bind(mSocket, (const struct sockaddr *)&addr,

@@ -59,7 +59,8 @@ TEST(NetworkInterface, SendRecv)
     ret = pClient->recv(recBuf, 4, loopbackIPAddr, false);
     CHECK_EQUAL(E_SUCCESS, ret);
 
-    for(int i=0; i<4; i++){
+    for(int i=0; i<4; i++)
+    {
         CHECK_EQUAL(recBuf[i], buf[i]);
     }
 
