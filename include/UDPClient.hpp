@@ -57,7 +57,7 @@ public:
      *                                          kLen bytes were sent
      *
      **/
-    Error_t send(std::vector<uint8_t> kBuf, int kLen, uint32_t kDstIPAddr);
+    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr);
 
     /**
      * Receive a message from a server
@@ -88,7 +88,7 @@ public:
      *                                          device with an ipv6 address.
      *
      **/
-    Error_t recv(std::vector<uint8_t> kBuf, int& lenRet, uint32_t& retSrcAddr,
+    Error_t recv(std::vector<uint8_t> kBuf, size_t& lenRet, uint32_t& retSrcAddr,
                  bool kPeek);
 
 

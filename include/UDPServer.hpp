@@ -57,7 +57,7 @@ public:
      *                                          kLen bytes were sent
      *
      **/
-    Error_t send(std::vector<uint8_t> kBuf, int kLen, uint32_t kDstIPAddr);
+    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr);
 
     /**
      * Receive a message from a client
@@ -90,7 +90,7 @@ public:
      *                                          no more data is available.
      *
      **/
-    Error_t recv(std::vector<uint8_t> kBuf, int& lenRet, uint32_t& srcIPAddrRet,
+    Error_t recv(std::vector<uint8_t> kBuf, size_t& lenRet, uint32_t& srcIPAddrRet,
                  bool kPeek);
 
 

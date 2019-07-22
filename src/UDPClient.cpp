@@ -43,7 +43,7 @@ Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
     return E_SUCCESS;
 }
 
-Error_t UDPClient::send(std::vector<uint8_t> kBuf, int kLen,
+Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
                         uint32_t kDstIPAddr)
 {
     if(!mInitialized)
@@ -70,14 +70,14 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, int kLen,
     {
         return E_FAILED_TO_SEND_DATA;
     }
-    else if(n != kLen){
+    else if((size_t)n != kLen){
         return E_PARTIAL_SEND;
     }
 
     return E_SUCCESS;
 }
 
-Error_t UDPClient::recv(std::vector<uint8_t> kBuf, int& lenRet,
+Error_t UDPClient::recv(std::vector<uint8_t> kBuf, size_t& lenRet,
                         uint32_t& retSrcAddr, bool kPeek)
 {
     if(!mInitialized)

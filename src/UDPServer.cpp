@@ -39,7 +39,7 @@ Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
     return E_SUCCESS;
 }
 
-Error_t UDPServer::send(std::vector<uint8_t> kBuf, int kLen,
+Error_t UDPServer::send(std::vector<uint8_t> kBuf, size_t kLen,
                         uint32_t kDstIPAddr)
 {
     if(!mInitialized)
@@ -58,21 +58,23 @@ Error_t UDPServer::send(std::vector<uint8_t> kBuf, int kLen,
     dest_addr.s_addr = kDstIPAddr;
 
     // sendto() will return the number of bytes sent if successful
-    int n = sendto(mSocket, &kBuf[0], kLen, 0, (const struct sockaddr*)&dest_addr,
-            sizeof(dest_addr));
+    int n = sendto(mSocket, &kBuf[0], kLen, 0,
+                  (const struct sockaddr*)&dest_addr, sizeof(dest_addr));
 
     if(n < 0)
     {
+        // Prints for testing only. TODO: remove
+        std::cout<< "send failed on server " << mSocket << ": " << strerror(errno) << std::endl;
         return E_FAILED_TO_SEND_DATA;
     }
-    else if(n != kLen){
+    else if((size_t)n != kLen){
         return E_PARTIAL_SEND;
     }
 
     return E_SUCCESS;
 }
 
-Error_t UDPServer::recv(std::vector<uint8_t> kBuf, int& lenRet,
+Error_t UDPServer::recv(std::vector<uint8_t> kBuf, size_t& lenRet,
                         uint32_t& srcIPAddrRet, bool kPeek)
 {
     if(!mInitialized)

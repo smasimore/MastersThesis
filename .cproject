@@ -299,12 +299,11 @@
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.328656705" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
 							<tool command="g++" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" errorParsers="org.eclipse.cdt.core.GLDErrorParser" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.658606120" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.libs.248274783" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="cppuTest_x86"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="pthread"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.2014048333" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/FlightSoftware/libs/cpputest/bin}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;C:\MinGW\bin&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.flags.766075009" name="Linker flags" superClass="gnu.cpp.link.option.flags" useByScannerDiscovery="false" value="" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1096425409" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
@@ -320,7 +319,7 @@
 					</folderInfo>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.802866292.474862670" name="ThreadManager.hpp" rcbsApplicability="disable" resourcePath="include/ThreadManager.hpp" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="tests/src/Log.cpp|excludes|tests/src/LogTest.cpp|tests/include/Log.hpp|include/ThreadManager.hpp|src/main.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="excludes|src/main.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -462,6 +461,7 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug_minGW"/>
 		<configuration configurationName="Multiple configurations">
 			<resource resourceType="PROJECT" workspacePath="/FlightSoftware"/>
 		</configuration>
