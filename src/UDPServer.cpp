@@ -39,23 +39,26 @@ Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
     return E_SUCCESS;
 }
 
-Error_t UDPServer::send(uint8_t* kBuf, int kLen, uint8_t* kDstIPAddr)
+Error_t UDPServer::send(std::vector<uint8_t> kBuf, int kLen,
+                        uint32_t kDstIPAddr)
 {
     if(!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
-
+    else if(kLen > kBuf.size() || kBuf.size() <= 0)
+    {
+        return E_INVALID_BUF_LEN;
+    }
 
     struct in_addr dest_addr;
     memset((void*)(&dest_addr), 0, (unsigned int)sizeof(dest_addr));
 
     // Fill client information
-    dest_addr.s_addr = kDstIPAddr[0] + (kDstIPAddr[1]<<8) + (kDstIPAddr[2]<<16) +
-            (kDstIPAddr[3]<<24);
+    dest_addr.s_addr = kDstIPAddr;
 
     // sendto() will return the number of bytes sent if successful
-    int n = sendto(mSocket, kBuf, kLen, 0, (const struct sockaddr*)&dest_addr,
+    int n = sendto(mSocket, &kBuf[0], kLen, 0, (const struct sockaddr*)&dest_addr,
             sizeof(dest_addr));
 
     if(n < 0)
@@ -66,23 +69,23 @@ Error_t UDPServer::send(uint8_t* kBuf, int kLen, uint8_t* kDstIPAddr)
         return E_PARTIAL_SEND;
     }
 
-
-
-
     return E_SUCCESS;
 }
 
-Error_t UDPServer::recv(uint8_t* kBuf, int& kLen, bool kPeek)
+Error_t UDPServer::recv(std::vector<uint8_t> kBuf, int& lenRet,
+                        uint32_t& srcIPAddrRet, bool kPeek)
 {
     if(!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
-
+    else if (kBuf.size() < 1)
+    {
+        return E_INVALID_BUF_LEN;
+    }
 
     struct in_addr srcAddr;
     memset((void*)(&srcAddr), 0, (unsigned int)sizeof(srcAddr));
-
 
     // MSG_TRUNC causes recvfrom() return the total size of the received packet
     // even if it is larger than the buffer supplied.
@@ -97,24 +100,27 @@ Error_t UDPServer::recv(uint8_t* kBuf, int& kLen, bool kPeek)
 
     // recvfrom() will return the number of bytes received if successful
     // or the number of bytes that could be received if the buffer is too small
-    int n = recvfrom(mSocket, kBuf, kLen, flags, (struct sockaddr*)&srcAddr,
-            &srcAddrLen);
+    lenRet = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags,
+            (struct sockaddr*)&srcAddr, &srcAddrLen);
 
-    kLen = n;
+    srcIPAddrRet = srcAddr.s_addr;
 
-    if(n < 0)
+    if(lenRet < 0)
     {
         return E_FAILED_TO_RECV_DATA;
     }
-    else if(n > kLen){
-        // Buffer was not large enough for the received message, and it was
-        // truncated
+    else if(lenRet > kBuf.size()){
+        // Buffer was not large enough for the received message and the message
+        // was truncated
         return E_RECV_TRUNC;
     }
     else if(srcAddrLen > origSrcAddrLen){
         // Source address was longer than the buffer supplied, and the returned
         // address was truncated.
         return E_INVALID_SRC_ADDR;
+    }
+    else if(mBlocking && lenRet == 0 ){
+        return E_CLIENT_SHUTDOWN;
     }
 
     return E_SUCCESS;
@@ -125,6 +131,7 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
 {
     mPort = kPort;
     mInitialized = false;
+    mBlocking = kBlocking;
 
     int sockOptions = 0;
     if(kBlocking)
@@ -134,12 +141,6 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
     // Initialize the socket and hold on to its file descriptor
     mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
 
-    // Set the socket to reuse the address.
-    // If this option is not set, opening a socket on the same port as a
-    // recently closed socket will fail.
-    int option = 1;
-    setsockopt(mSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-
     if(mSocket < 1)
     {
         // Prints for testing only. TODO: remove
@@ -147,6 +148,13 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
         ret = E_FAILED_TO_CREATE_SOCKET;
         return;
     }
+
+    // Set the socket to reuse the address.
+    // If this option is not set, opening a socket on the same port as a
+    // recently closed socket will fail.
+    int option = 1;
+    setsockopt(mSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
 
     struct sockaddr_in addr;
     memset((void*)(&addr), 0, (unsigned int)sizeof(addr));
