@@ -20,7 +20,7 @@ public:
     /**
      * Create a UDPServer
      *
-     * @param   pServerRet      reference to a smart pointer to a UDPServer
+     * @param   pServerRet      Reference to a smart pointer to a UDPServer
      *                          object. Upon completion, this pointer will
      *                          point to the newly created UDPServer.
      * @param   kPort           Network port on which this server will operate
@@ -29,7 +29,7 @@ public:
      *
      * @ret     E_SUCCESS                       Create new UDPServer succeeded
      *          E_FAILED_TO_ALLOCATE_SOCKET     UDPServer object was not created
-     *          [other]                         passed from UDPServer
+     *          [other]                         Passed from UDPServer
      *                                          constructor
      *
      **/
@@ -96,14 +96,21 @@ public:
 
 private:
     /**
+     * UDPServer Constructor
      *
+     * @param   ret             Return value to be populated
      *
-     * @ret      E_SUCCESS                      Socket object successfully
-     *                                          created and bound to port
-     *           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
-     *                                          not created
-     *           E_FAILED_TO_BIND_TO_SOCKET     Socket was not bound to the
-     *                                          specified port
+*           E_SUCCESS                      Socket object successfully
+*                                          created and bound to port
+*           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
+*                                          not created
+*           E_FAILED_TO_BIND_TO_SOCKET     Socket was not bound to the
+     *                                     specified port
+     *
+     * @param   kPort           Network port on which this server will operate
+     * @param   kBlocking       Determines whether send/recv operations will
+     *                          block or complete immediately
+     *
      **/
     UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking);
 
