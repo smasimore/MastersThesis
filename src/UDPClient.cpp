@@ -20,47 +20,111 @@ const int UDPClient::PROTOCOL = 0;
 
 
 
-// TODO: finish reading this http://man7.org/linux/man-pages/man7/udp.7.html
-
 UDPClient::~UDPClient()
 {
     closeSocket();
 }
 
-Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet, uint16_t port)
+Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
+        uint16_t kPort, bool kBlocking)
 {
     Error_t ret;
     // Can't use make_shared here, because UDPClient constructor is private
-    pClientRet.reset(new UDPClient(ret, port));
+    pClientRet.reset(new UDPClient(ret, kPort, kBlocking));
 
     if(pClientRet == nullptr){
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
     if(ret != E_SUCCESS){
-        return E_FAILED_TO_CREATE_SOCKET;
+        return ret;
     }
 
     return E_SUCCESS;
 }
 
-Error_t UDPClient::send(uint8_t* buf, int len, uint8_t* dstIPAddr,
-                        bool blocking)
+Error_t UDPClient::send(std::vector<uint8_t> kBuf, int kLen,
+                        uint32_t kDstIPAddr)
 {
     if(!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
+    else if(kLen > kBuf.size() || kBuf.size() <= 0)
+    {
+        return E_INVALID_BUF_LEN;
+    }
+
+
+    struct in_addr dest_addr;
+    memset((void*)(&dest_addr), 0, (unsigned int)sizeof(dest_addr));
+
+    // Fill client information
+    dest_addr.s_addr = kDstIPAddr;
+
+    // sendto() will return the number of bytes sent if successful
+    int n = sendto(mSocket, &kBuf[0], kLen, 0,
+            (const struct sockaddr*)&dest_addr, sizeof(dest_addr));
+
+    if(n < 0)
+    {
+        return E_FAILED_TO_SEND_DATA;
+    }
+    else if(n != kLen){
+        return E_PARTIAL_SEND;
+    }
 
     return E_SUCCESS;
 }
 
-Error_t UDPClient::recv(uint8_t* buf, int len, uint8_t* srcIPAddr,
-                        bool blocking)
+Error_t UDPClient::recv(std::vector<uint8_t> kBuf, int& lenRet,
+                        uint32_t& retSrcAddr, bool kPeek)
 {
     if(!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
+    }
+    else if (kBuf.size() < 1)
+    {
+        return E_INVALID_BUF_LEN;
+    }
+
+
+    struct in_addr srcAddr;
+    memset((void*)(&srcAddr), 0, (unsigned int)sizeof(srcAddr));
+
+
+    // MSG_TRUNC causes recvfrom() return the total size of the received packet
+    // even if it is larger than the buffer supplied.
+    int flags = MSG_TRUNC;
+    if(kPeek)
+    {
+        flags |= MSG_PEEK;
+    }
+
+    socklen_t origSrcAddrLen = sizeof(srcAddr);
+    socklen_t srcAddrLen = origSrcAddrLen;
+
+    // recvfrom() will return the number of bytes received if successful
+    // or the number of bytes that could be received if the buffer is too small
+    lenRet = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags, (struct sockaddr*)&srcAddr,
+            &srcAddrLen);
+
+    retSrcAddr = srcAddr.s_addr;
+
+    if(lenRet < 0)
+    {
+        return E_FAILED_TO_RECV_DATA;
+    }
+    else if(lenRet > kBuf.size()){
+        // Buffer was not large enough for the received message, and it was
+        // truncated
+        return E_RECV_TRUNC;
+    }
+    else if(srcAddrLen > origSrcAddrLen){
+        // Source address was longer than the buffer supplied, and the returned
+        // address was truncated.
+        return E_INVALID_SRC_ADDR;
     }
 
     return E_SUCCESS;
@@ -79,13 +143,19 @@ Error_t UDPClient::closeSocket()
 }
 
 
-UDPClient::UDPClient(Error_t& ret, uint16_t port)
+UDPClient::UDPClient(Error_t& ret, uint16_t kPort, bool kBlocking)
 {
-    mPort = port;
+    mPort = kPort;
     mInitialized = false;
 
+    int sockOptions = 0;
+    if(kBlocking)
+    {
+        sockOptions = SOCK_NONBLOCK;
+    }
+
     // Initialize the socket and hold on to its file descriptor
-    mSocket = socket(DOMAIN, TYPE, PROTOCOL);
+    mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
 
     if(mSocket < 1)
     {
