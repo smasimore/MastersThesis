@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
+#include <set>
 
 #include "Errors.h"
 
@@ -32,12 +33,25 @@ public:
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
-     * @param   validTransitions    vector of States that the State can
-     *                              transition to
+     * @param   validTransitions    vector of strings representing valid states
      *
      * @ret     State               State class with data from params
      */
     State (std::string stateName, std::vector<std::string> targetTransitions);
+
+    /**
+     * Constructor for a State containing name, transitions, and actions
+     *
+     * @param   stateName           string containing the state name
+     * @param   validTransitions    vector of strings representing valid states
+     * @param   actionSequence      vector of tuples containing function time,
+     *                              pointer to function, and function param
+     *
+     * @ret     State               State class with data from params
+     */
+    State (std::string stateName, std::vector<std::string> targetTransitions,
+           std::vector<std::tuple<int32_t, Error_t (*pFunc) (int32_t), int32_t
+           >>);
 
     /**
      * Get the State data
@@ -54,7 +68,7 @@ public:
      *
      * @param   result      Reference to String type to store State name in
      *
-     * @ret     #_SUCCESS   Successfully stored State name in result
+     * @ret     E_SUCCESS   Successfully stored State name in result
      */
     Error_t getName (std::string &result);
 
@@ -78,6 +92,16 @@ private:
      * representing name of the states to use for now
      */
     std::vector<std::string> targetTransitions;
+
+    /**
+     * The first iteration of the action sequence of the State. Ordered set
+     * containing tuples. Elements of the tuples are the function timestamp and
+     * a vector of tuples containing corresponding pointer to functions, and 
+     * corresponding param for the respective function. Tuples are sorted in 
+     * the set by their first element, which is the timestamp.
+     */
+    std::set < std::tuple < int32_t, std::vector < std::tuple <
+        Error_t (*pFunction)(int32_t), int32_t> > > > >;
 };
 #endif
 
