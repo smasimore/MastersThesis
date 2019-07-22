@@ -72,6 +72,13 @@ public:
      */
     Error_t getName (std::string &result);
 
+    /**
+     * Get the State's valid transitions
+     *
+     * @param   result      Reference to vector of type string to store data in
+     *
+     * @ret     E_SUCCESS   Successfully stored State transitions in result
+     */
     Error_t getTransitions (std::vector<std::string> &result);
 
 private:
