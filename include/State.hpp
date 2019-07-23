@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
-#include <set>
+#include <map>
 
 #include "Errors.h"
 
@@ -45,13 +45,13 @@ public:
      * @param   stateName           string containing the state name
      * @param   validTransitions    vector of strings representing valid states
      * @param   actionSequence      vector of tuples containing function time,
-     *                              pointer to function, and function param
+     *                              pointer to function, and function param.
      *
      * @ret     State               State class with data from params
      */
     State (std::string stateName, std::vector<std::string> targetTransitions,
-           std::vector<std::tuple<int32_t, Error_t (*pFunc) (int32_t), int32_t
-           >>);
+           std::vector<std::tuple<int32_t, Error_t (*) (int32_t), 
+           int32_t>>);
 
     /**
      * Get the State data
@@ -101,14 +101,12 @@ private:
     std::vector<std::string> targetTransitions;
 
     /**
-     * The first iteration of the action sequence of the State. Ordered set
-     * containing tuples. Elements of the tuples are the function timestamp and
-     * a vector of tuples containing corresponding pointer to functions, and 
-     * corresponding param for the respective function. Tuples are sorted in 
-     * the set by their first element, which is the timestamp.
+     * The first iteration of the action sequence of the State. Ordered map
+     * containing vector of tuples, using timestamp as the key. Tuples in the
+     * vector contain the pointer to function, and the parameter.
      */
-    std::set < std::tuple < int32_t, std::vector < std::tuple <
-        Error_t (*pFunction)(int32_t), int32_t> > > > >;
+    std::map <int32_t, std::vector < std::tuple <
+        Error_t (*)(int32_t), int32_t> > > actionSequence;
 };
 #endif
 
