@@ -88,7 +88,7 @@ public:
      *                                          device with an ipv6 address.
      *
      **/
-    Error_t recv(std::vector<uint8_t> kBuf, size_t& lenRet, uint32_t& retSrcAddr,
+    Error_t recv(std::vector<uint8_t>& kBuf, size_t& lenRet, uint32_t& retSrcAddr,
                  bool kPeek);
 
 

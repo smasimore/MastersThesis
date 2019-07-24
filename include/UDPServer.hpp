@@ -86,11 +86,10 @@ public:
      *                                          IP address in srcIPAddrRet. This
      *                                          may happen when receiving from a
      *                                          device with an ipv6 address.
-     *          E_CLIENT_SHUTDOWN               Client has shutdown cleanly and
-     *                                          no more data is available.
+     *          E_WOULD_BLOCK                   No data is currently available.
      *
      **/
-    Error_t recv(std::vector<uint8_t> kBuf, size_t& lenRet, uint32_t& srcIPAddrRet,
+    Error_t recv(std::vector<uint8_t>& kBuf, size_t& lenRet, uint32_t& srcIPAddrRet,
                  bool kPeek);
 
 

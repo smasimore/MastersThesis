@@ -56,15 +56,17 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
     }
 
 
-    struct in_addr dest_addr;
-    memset((void*)(&dest_addr), 0, (unsigned int)sizeof(dest_addr));
+    struct sockaddr_in destAddr;
+    memset((void*)(&destAddr), 0, (unsigned int)sizeof(destAddr));
 
     // Fill client information
-    dest_addr.s_addr = kDstIPAddr;
+    destAddr.sin_family = DOMAIN;
+    destAddr.sin_port = htons(mPort);
+    destAddr.sin_addr.s_addr = kDstIPAddr;
 
     // sendto() will return the number of bytes sent if successful
     int n = sendto(mSocket, &kBuf[0], kLen, 0,
-            (const struct sockaddr*)&dest_addr, sizeof(dest_addr));
+            (const struct sockaddr*)&destAddr, sizeof(destAddr));
 
     if(n < 0)
     {
@@ -77,7 +79,7 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
     return E_SUCCESS;
 }
 
-Error_t UDPClient::recv(std::vector<uint8_t> kBuf, size_t& lenRet,
+Error_t UDPClient::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
                         uint32_t& retSrcAddr, bool kPeek)
 {
     if(!mInitialized)
@@ -107,24 +109,38 @@ Error_t UDPClient::recv(std::vector<uint8_t> kBuf, size_t& lenRet,
 
     // recvfrom() will return the number of bytes received if successful
     // or the number of bytes that could be received if the buffer is too small
-    lenRet = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags, (struct sockaddr*)&srcAddr,
+    int ret = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags, (struct sockaddr*)&srcAddr,
             &srcAddrLen);
 
     retSrcAddr = srcAddr.s_addr;
+    lenRet = (size_t)ret;
 
-    if(lenRet < 0)
+    if(ret < 0)
     {
+        lenRet = 0;
+        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+            // No data available right now
+            return E_WOULD_BLOCK;
+        }
         return E_FAILED_TO_RECV_DATA;
     }
-    else if(lenRet > kBuf.size()){
-        // Buffer was not large enough for the received message, and it was
-        // truncated
-        return E_RECV_TRUNC;
-    }
-    else if(srcAddrLen > origSrcAddrLen){
-        // Source address was longer than the buffer supplied, and the returned
-        // address was truncated.
-        return E_INVALID_SRC_ADDR;
+    else
+    {
+        lenRet = ret;
+        if(lenRet > kBuf.size())
+        {
+            // Buffer was not large enough for the received message, and it was
+            // truncated
+
+            return E_RECV_TRUNC;
+        }
+        else if(srcAddrLen > origSrcAddrLen)
+        {
+            // Source address was longer than the buffer supplied, and the returned
+            // address was truncated.
+            return E_INVALID_SRC_ADDR;
+        }
     }
 
     return E_SUCCESS;
@@ -149,7 +165,7 @@ UDPClient::UDPClient(Error_t& ret, uint16_t kPort, bool kBlocking)
     mInitialized = false;
 
     int sockOptions = 0;
-    if(kBlocking)
+    if(!kBlocking)
     {
         sockOptions = SOCK_NONBLOCK;
     }

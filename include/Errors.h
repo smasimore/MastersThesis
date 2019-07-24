@@ -59,8 +59,8 @@ typedef enum Error {
     E_PARTIAL_RECV,
     E_RECV_TRUNC,
     E_INVALID_SRC_ADDR,
-    E_CLIENT_SHUTDOWN,
     E_INVALID_BUF_LEN,
+    E_WOULD_BLOCK,
     
     /* State Machine */
     E_INVALID_TRANSITION,
