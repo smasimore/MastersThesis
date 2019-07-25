@@ -20,15 +20,15 @@ TEST(Sockets, Init)
 {
 
     Error_t ret;
-    uint16_t port = 8008;
+    uint16_t serverPort = 8008;
 
     std::shared_ptr<UDPClient> pClient;
     std::shared_ptr<UDPServer> pServer;
 
     // Create blocking sockets
-    ret = UDPClient::createNew(pClient, port, true);
+    ret = UDPClient::createNew(pClient, true);
     CHECK_EQUAL(E_SUCCESS, ret);
-    ret = UDPServer::createNew(pServer, port, true);
+    ret = UDPServer::createNew(pServer, serverPort, true);
     CHECK_EQUAL(E_SUCCESS, ret);
     ret = pClient->closeSocket();
     CHECK_EQUAL(E_SUCCESS, ret);
@@ -37,9 +37,9 @@ TEST(Sockets, Init)
     pServer.reset();
 
     //Create non-blocking sockets
-    ret = UDPClient::createNew(pClient, port, false);
+    ret = UDPClient::createNew(pClient, false);
     CHECK_EQUAL(E_SUCCESS, ret);
-    ret = UDPServer::createNew(pServer, port, false);
+    ret = UDPServer::createNew(pServer, serverPort, false);
     CHECK_EQUAL(E_SUCCESS, ret);
     ret = pClient->closeSocket();
     CHECK_EQUAL(E_SUCCESS, ret);
@@ -50,11 +50,7 @@ TEST(Sockets, Init)
 TEST(Sockets, ServerToClient)
 {
     Error_t ret;
-    uint16_t port = 8009;
-//    uint32_t loopbackIPAddr = (127 & 0xFF) << 24 |
-//                              (0 & 0xFF) << 16   |
-//                              (0 & 0xFF) << 8    |
-//                              (1 & 0xFF);
+    uint16_t serverPort = 8009;
     uint32_t loopbackIPAddr = (1 & 0xFF) << 24 |
                               (0 & 0xFF) << 16   |
                               (0 & 0xFF) << 8    |
@@ -67,15 +63,15 @@ TEST(Sockets, ServerToClient)
     std::shared_ptr<UDPClient> pClient;
     std::shared_ptr<UDPServer> pServer;
 
-    ret = UDPClient::createNew(pClient, port, false);
+    ret = UDPClient::createNew(pClient, false);
     CHECK_EQUAL(E_SUCCESS, ret);
-    ret = UDPServer::createNew(pServer, port, false);
+    ret = UDPServer::createNew(pServer, serverPort, false);
     CHECK_EQUAL(E_SUCCESS, ret);
 
     //// Test working case
 
     // Test non-blocking send/receive functionality
-    ret = pClient->send(buf, buf.size(), loopbackIPAddr);
+    ret = pClient->send(buf, buf.size(), loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_SUCCESS, ret);
 
     // recv with peek
@@ -101,7 +97,7 @@ TEST(Sockets, ServerToClient)
 
     // Test sending only a portion of buf
     size_t len = 2;
-    ret = pClient->send(buf, len, loopbackIPAddr);
+    ret = pClient->send(buf, len, loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_SUCCESS, ret);
 
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
@@ -114,16 +110,16 @@ TEST(Sockets, ServerToClient)
 
     // Empty buffer
     std::vector<uint8_t> emptyBuf;
-    ret = pClient->send(emptyBuf, emptyBuf.size(), loopbackIPAddr);
+    ret = pClient->send(emptyBuf, emptyBuf.size(), loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_INVALID_BUF_LEN, ret);
 
     // buf too small
-    ret = pClient->send(buf, buf.size()+1, loopbackIPAddr);
+    ret = pClient->send(buf, buf.size()+1, loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_INVALID_BUF_LEN, ret);
 
     // recvBuf too small
     std::vector<uint8_t> largeBuf{1,2,3,4,5};
-    ret = pClient->send(largeBuf, largeBuf.size(), loopbackIPAddr);
+    ret = pClient->send(largeBuf, largeBuf.size(), loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_SUCCESS, ret);
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
     CHECK_EQUAL(E_RECV_TRUNC, ret);
@@ -141,7 +137,7 @@ TEST(Sockets, ServerToClient)
     ret = pClient->closeSocket();
     CHECK_EQUAL(E_SUCCESS, ret);
 
-    ret = pClient->send(buf, buf.size(), loopbackIPAddr);
+    ret = pClient->send(buf, buf.size(), loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_FAILED_TO_SEND_DATA, ret);
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
     std::cout << "recv returned " << bytesReceived << " bytes" << std::endl;

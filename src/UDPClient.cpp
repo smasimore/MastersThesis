@@ -26,11 +26,11 @@ UDPClient::~UDPClient()
 }
 
 Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
-        uint16_t kPort, bool kBlocking)
+                            bool kBlocking)
 {
     Error_t ret;
     // Can't use make_shared here, because UDPClient constructor is private
-    pClientRet.reset(new UDPClient(ret, kPort, kBlocking));
+    pClientRet.reset(new UDPClient(ret, kBlocking));
 
     if(pClientRet == nullptr){
         return E_FAILED_TO_ALLOCATE_SOCKET;
@@ -44,7 +44,7 @@ Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
 }
 
 Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
-                        uint32_t kDstIPAddr)
+                        uint32_t kDstIPAddr, uint16_t kDstPort)
 {
     if(!mInitialized)
     {
@@ -61,7 +61,7 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
 
     // Fill client information
     destAddr.sin_family = DOMAIN;
-    destAddr.sin_port = htons(mPort);
+    destAddr.sin_port = htons(kDstPort);
     destAddr.sin_addr.s_addr = kDstIPAddr;
 
     // sendto() will return the number of bytes sent if successful
@@ -74,73 +74,6 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
     }
     else if((size_t)n != kLen){
         return E_PARTIAL_SEND;
-    }
-
-    return E_SUCCESS;
-}
-
-Error_t UDPClient::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
-                        uint32_t& retSrcAddr, bool kPeek)
-{
-    if(!mInitialized)
-    {
-        return E_SOCKET_NOT_INITIALIZED;
-    }
-    else if (kBuf.size() < 1)
-    {
-        return E_INVALID_BUF_LEN;
-    }
-
-
-    struct in_addr srcAddr;
-    memset((void*)(&srcAddr), 0, (unsigned int)sizeof(srcAddr));
-
-
-    // MSG_TRUNC causes recvfrom() return the total size of the received packet
-    // even if it is larger than the buffer supplied.
-    int flags = MSG_TRUNC;
-    if(kPeek)
-    {
-        flags |= MSG_PEEK;
-    }
-
-    socklen_t origSrcAddrLen = sizeof(srcAddr);
-    socklen_t srcAddrLen = origSrcAddrLen;
-
-    // recvfrom() will return the number of bytes received if successful
-    // or the number of bytes that could be received if the buffer is too small
-    int ret = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags, (struct sockaddr*)&srcAddr,
-            &srcAddrLen);
-
-    retSrcAddr = srcAddr.s_addr;
-    lenRet = (size_t)ret;
-
-    if(ret < 0)
-    {
-        lenRet = 0;
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
-        {
-            // No data available right now
-            return E_WOULD_BLOCK;
-        }
-        return E_FAILED_TO_RECV_DATA;
-    }
-    else
-    {
-        lenRet = ret;
-        if(lenRet > kBuf.size())
-        {
-            // Buffer was not large enough for the received message, and it was
-            // truncated
-
-            return E_RECV_TRUNC;
-        }
-        else if(srcAddrLen > origSrcAddrLen)
-        {
-            // Source address was longer than the buffer supplied, and the returned
-            // address was truncated.
-            return E_INVALID_SRC_ADDR;
-        }
     }
 
     return E_SUCCESS;
@@ -159,9 +92,8 @@ Error_t UDPClient::closeSocket()
 }
 
 
-UDPClient::UDPClient(Error_t& ret, uint16_t kPort, bool kBlocking)
+UDPClient::UDPClient(Error_t& ret, bool kBlocking)
 {
-    mPort = kPort;
     mInitialized = false;
 
     int sockOptions = 0;

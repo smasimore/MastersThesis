@@ -1,6 +1,8 @@
 /**
  * Class to interface with low level Linux networking 
  * 
+ * UDPServers are used to receive messages on a specified port
+ *
  */
 
 # ifndef UDP_SERVER_HPP
@@ -35,29 +37,6 @@ public:
      **/
     static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking);
-
-    /**
-     * Send a message to a specified client
-     *
-     * @param   kBuf            Buffer of bytes to be sent. Must have at least
-     *                          one element.
-     * @param   kLen            Number of bytes to send. The first kLen bytes
-     *                          in kBuf will be sent. If kLen is larger than
-     *                          kBuf.size(), an error will be returned.
-     * @param   kDstIPAddr      Destination IP address
-     *
-     * @ret     E_SUCCESS                       Send succeeded, and kLen bytes
-     *                                          were sent
-     *          E_SOCKET_NOT_INITIALIZED        createNew() has not been called
-     *                                          or failed when it was called
-     *          E_INVALID_BUF_LEN               kBuf has a size less than 1 or
-     *                                          fewer than kLen elements
-     *          E_FAILED_TO_SEND_DATA           Send failed
-     *          E_PARTIAL_SEND                  Send succeeded, but less than
-     *                                          kLen bytes were sent
-     *
-     **/
-    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr);
 
     /**
      * Receive a message from a client

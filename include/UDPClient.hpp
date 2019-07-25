@@ -1,6 +1,8 @@
 /**
  * Class to interface with low level Linux networking 
  * 
+ * UDPClients are used to send messages to a specified IP address and port
+ *
  */
 
 # ifndef UDP_CLIENT_HPP
@@ -18,14 +20,12 @@ class UDPClient
 public: 
     ~UDPClient();
 
-
     /**
      * Create a UDPClient
      *
      * @param   pClientRet      reference to a smart pointer to a UDPClient
      *                          object. Upon completion, this pointer will
      *                          point to the newly created UDPClient.
-     * @param   kPort           Network port on which this client will operate
      * @param   kBlocking       Determines whether send/recv operations will
      *                          block or complete immediately
      *
@@ -34,7 +34,8 @@ public:
      *          [other]                         Passed from UDPClient
      *                                          constructor
      **/
-    static Error_t createNew(std::shared_ptr<UDPClient>& pClientRet, uint16_t kPort, bool kBlocking);
+    static Error_t createNew(std::shared_ptr<UDPClient>& pClientRet,
+                            bool kBlocking);
 
     /**
      * Send a message to a specified server
@@ -45,6 +46,7 @@ public:
      *                          in kBuf will be sent. If kLen is larger than
      *                          kBuf.size(), an error will be returned.
      * @param   kDstIPAddr      Destination IP address
+     * @param   kDstPort        Destination port
      *
      * @ret     E_SUCCESS                       Send succeeded, and kLen bytes
      *                                          were sent
@@ -57,40 +59,8 @@ public:
      *                                          kLen bytes were sent
      *
      **/
-    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr);
-
-    /**
-     * Receive a message from a server
-     *
-     * @param   kBuf            Buffer where received bytes will be stored
-     * @param   lenRet          Number of bytes received will be stored here
-     * @param   srcIPAddrRet    The IP address of the sending server will be
-     *                          stored here
-     * @param   kPeek           Peek at contents but don't remove them from the
-     *                          network buffer. If true, received bytes will be
-     *                          copied to kBuf and can also be read again with
-     *                          a subsequent call to recv().
-     *
-     * @ret     E_SUCCESS                       Receive succeeded and lenRet
-     *                                          bytes were received.
-     *          E_SOCKET_NOT_INITIALIZED        createNew() has not been called
-     *                                          or failed when it was called
-     *          E_INVALID_BUF_LEN               kBuf has a size less than 1
-     *          E_FAILED_TO_RECV_DATA           Receive failed
-     *          E_RECV_TRUNC                    kBuf is too small to hold the
-     *                                          message that was received. The
-     *                                          first kBuf.size() bytes were
-     *                                          copied to kBuf and the rest were
-     *                                          discarded.
-     *          E_INVALID_SRC_ADDR              Failed to store the server's
-     *                                          IP address in srcIPAddrRet. This
-     *                                          may happen when receiving from a
-     *                                          device with an ipv6 address.
-     *
-     **/
-    Error_t recv(std::vector<uint8_t>& kBuf, size_t& lenRet, uint32_t& retSrcAddr,
-                 bool kPeek);
-
+    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr,
+                 uint16_t kDstPort);
 
     /**
      * Close the socket
@@ -112,24 +82,22 @@ private:
      *
      * @param   ret             Return value to be populated
      *
-*           E_SUCCESS                      Socket object successfully
-*                                          created and bound to port
-*           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
-*                                          not created
+     *           E_SUCCESS                      Socket object successfully
+     *                                          created and bound to port
+     *           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
+     *                                          not created
      *
-     * @param   kPort           Network port on which this client will operate
      * @param   kBlocking       Determines whether send/recv operations will
      *                          block or complete immediately
      *
      **/
-    UDPClient(Error_t& ret, uint16_t kPort, bool kBlocking);
+    UDPClient(Error_t& ret,  bool kBlocking);
 
     static const int DOMAIN;
     static const int TYPE;
     static const int PROTOCOL;
 
     bool mInitialized;
-    uint16_t mPort;
     int mSocket;
 };
 

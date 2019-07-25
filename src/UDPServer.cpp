@@ -28,50 +28,14 @@ Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
     // Can't use make_shared here, because UDPServer constructor is private
     pServerRet.reset(new UDPServer(ret, kPort, kBlocking));
 
-    if(pServerRet == nullptr){
+    if(pServerRet == nullptr)
+    {
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
-    if(ret != E_SUCCESS){
+    if(ret != E_SUCCESS)
+    {
         return ret;
-    }
-
-    return E_SUCCESS;
-}
-
-Error_t UDPServer::send(std::vector<uint8_t> kBuf, size_t kLen,
-                        uint32_t kDstIPAddr)
-{
-    if(!mInitialized)
-    {
-        return E_SOCKET_NOT_INITIALIZED;
-    }
-    else if(kLen > kBuf.size() || kBuf.size() <= 0)
-    {
-        return E_INVALID_BUF_LEN;
-    }
-
-    struct sockaddr_in destAddr;
-    memset((void*)(&destAddr), 0, (unsigned int)sizeof(destAddr));
-
-    // Fill client information
-    destAddr.sin_family = DOMAIN;
-    destAddr.sin_port = htons(mPort);
-    destAddr.sin_addr.s_addr = kDstIPAddr;
-
-
-    // sendto() will return the number of bytes sent if successful
-    int n = sendto(mSocket, &kBuf[0], kLen, 0,
-                  (const struct sockaddr*)&destAddr, sizeof(destAddr));
-
-    if(n < 0)
-    {
-        // Prints for testing only. TODO: remove
-        std::cout<< "send failed on server " << mSocket << ": " << strerror(errno) << std::endl;
-        return E_FAILED_TO_SEND_DATA;
-    }
-    else if((size_t)n != kLen){
-        return E_PARTIAL_SEND;
     }
 
     return E_SUCCESS;
@@ -123,12 +87,14 @@ Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
     else
     {
         lenRet = ret;
-        if(lenRet > kBuf.size()){
+        if(lenRet > kBuf.size())
+        {
             // Buffer was not large enough for the received message and the message
             // was truncated
             return E_RECV_TRUNC;
         }
-        else if(srcAddrLen > origSrcAddrLen){
+        else if(srcAddrLen > origSrcAddrLen)
+        {
             // Source address was longer than the buffer supplied, and the returned
             // address was truncated.
             return E_INVALID_SRC_ADDR;
