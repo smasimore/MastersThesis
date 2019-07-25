@@ -21,7 +21,7 @@ TEST (States, AccessData)
 }
 
 /* Test if states can be mapped by name; code will live under StateMachine */
-TEST (States, Map_States)
+TEST (States, MapStates)
 {
     std::unordered_map<std::string, State> stateMap;
     std::vector<int> dataA = { 1, 2, 3, 4 };
@@ -49,4 +49,10 @@ TEST (States, Map_States)
     ret = search->second.getData (dataResult);
     CHECK_TRUE (dataResult == dataC);
     CHECK_TRUE (ret == E_SUCCESS);
+}
+
+/* Test the storage and retrieval of the State's action sequence */
+TEST (States, ActionSequence)
+{
+
 }

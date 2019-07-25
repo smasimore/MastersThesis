@@ -32,7 +32,6 @@ State::State (std::string stateName,
         this->actionSequence[timestamp].push_back (std::make_tuple (
             std::get<1> (tup), std::get<2> (tup)));
     }
-
 }
 
 Error_t State::getData (std::vector<int32_t> &result)
@@ -50,5 +49,12 @@ Error_t State::getName (std::string &result)
 Error_t State::getTransitions (std::vector<std::string> &result)
 {
     result = this->targetTransitions;
+    return E_SUCCESS;
+}
+
+Error_t State::getActionSequence (std::map<int32_t, std::vector<std::tuple<
+                                  Error_t (*) (int32_t), int32_t> > > &result)
+{
+    result = this->actionSequence;
     return E_SUCCESS;
 }

@@ -81,6 +81,17 @@ public:
      */
     Error_t getTransitions (std::vector<std::string> &result);
 
+    /**
+     * Get the State's action sequence
+     *
+     * @param   result      Reference to map of timestamps and corresponding
+     *                      pointers to functions and params, to store sequence
+     *
+     * @ret     E_SUCCESS   Successfully stored State action sequence in result
+     */
+    Error_t getActionSequence (std::map<int32_t, std::vector<std::tuple<
+                               Error_t (*) (int32_t), int32_t> > > &result);
+
 private:
 
     /**

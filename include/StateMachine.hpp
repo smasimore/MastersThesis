@@ -121,6 +121,19 @@ public:
     Error_t getCurrentStateTransitions (std::vector<std::string> &result);
 
     /**
+     * Intermediate function to return the action sequence of current State
+     *
+     * @param   result      Reference to map of timestamps and corresponding
+     *                      functions and params to store action sequence
+     *
+     * @ret     E_SUCCESS   Action sequence of current state stored in result
+     * @ret     E_NO_STATES No states have been added to StateMachine
+     */
+    Error_t getCurrentActionSequence (std::map<int32_t, std::vector<std::tuple<
+                                      Error_t (*)(int32_t), int32_t> > > 
+                                      &result);
+
+    /**
      * Returns the value of temporary StateMachine data A
      *
      * @param   result      Reference to int32_t to store value of A

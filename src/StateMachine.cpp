@@ -104,6 +104,19 @@ Error_t StateMachine::getCurrentStateTransitions (std::vector<std::string>
     return ret;
 }
 
+Error_t StateMachine::getCurrentActionSequence (std::map<int32_t,
+                                                std::vector<std::tuple<
+                                                Error_t (*) (int32_t), int32_t>
+                                                > > &result)
+{
+    if (mPStateCurrent == nullptr)
+    {
+        return E_NO_STATES;
+    }
+    Error_t ret = mPStateCurrent->getActionSequence (result);
+    return ret;
+}
+
 Error_t StateMachine::switchState(std::string targetState)
 {
     // Get the valid transitions (using intermediate function)
