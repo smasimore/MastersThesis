@@ -47,10 +47,11 @@ TEST(Sockets, Init)
 
 }
 
-TEST(Sockets, ServerToClient)
+TEST(Sockets, SendRecv)
 {
     Error_t ret;
     uint16_t serverPort = 8009;
+    // Local network ip: 127.0.0.1
     uint32_t loopbackIPAddr = (1 & 0xFF) << 24 |
                               (0 & 0xFF) << 16   |
                               (0 & 0xFF) << 8    |
@@ -142,6 +143,9 @@ TEST(Sockets, ServerToClient)
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
     std::cout << "recv returned " << bytesReceived << " bytes" << std::endl;
     CHECK_EQUAL(E_WOULD_BLOCK, ret);
+
+
+    // TODO: Use threads to test blocking sockets
 
 }
 

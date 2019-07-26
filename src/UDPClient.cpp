@@ -7,7 +7,7 @@
 #include <iostream>
 #include <errno.h>
 
-#include <UDPClient.hpp>
+#include "UDPClient.hpp"
 
 /* Use Internet Protocol*/
 const int UDPClient::DOMAIN = AF_INET;
@@ -32,11 +32,13 @@ Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
     // Can't use make_shared here, because UDPClient constructor is private
     pClientRet.reset(new UDPClient(ret, kBlocking));
 
-    if(pClientRet == nullptr){
+    if(pClientRet == nullptr)
+    {
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
-    if(ret != E_SUCCESS){
+    if(ret != E_SUCCESS)
+    {
         return ret;
     }
 
@@ -72,7 +74,8 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
     {
         return E_FAILED_TO_SEND_DATA;
     }
-    else if((size_t)n != kLen){
+    else if((size_t)n != kLen)
+    {
         return E_PARTIAL_SEND;
     }
 
@@ -84,7 +87,8 @@ Error_t UDPClient::closeSocket()
 {
     int retClose = close(mSocket);
 
-    if(retClose < 0){
+    if(retClose < 0)
+    {
         return E_FAILED_TO_CLOSE_SOCKET;
     }
 
@@ -107,8 +111,6 @@ UDPClient::UDPClient(Error_t& ret, bool kBlocking)
 
     if(mSocket < 1)
     {
-        // Prints for testing only. TODO: remove
-        std::cout<< "Socket create failed: " << strerror(errno) << std::endl;
         ret = E_FAILED_TO_CREATE_SOCKET;
         return;
     }

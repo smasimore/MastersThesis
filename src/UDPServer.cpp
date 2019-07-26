@@ -6,7 +6,7 @@
 #include <iostream>
 #include <errno.h>
 
-#include <UDPServer.hpp>
+#include "UDPServer.hpp"
 
 /* Use Internet Protocol*/
 const int UDPServer::DOMAIN = AF_INET;
@@ -17,9 +17,6 @@ const int UDPServer::TYPE = SOCK_DGRAM;
 /* Default */
 const int UDPServer::PROTOCOL = 0;
 
-
-
-// TODO: finish reading this http://man7.org/linux/man-pages/man7/udp.7.html
 
 Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking)
@@ -121,8 +118,6 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
 
     if(mSocket < 1)
     {
-        // Prints for testing only. TODO: remove
-        std::cout<< "Socket create failed: " << strerror(errno) << std::endl;
         ret = E_FAILED_TO_CREATE_SOCKET;
         return;
     }
@@ -149,8 +144,6 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
 
     if (retSock < 0)
     {
-        // Prints for testing only. TODO: remove
-        std::cout<< "Socket bind failed: " << strerror(errno) << std::endl;
         ret = E_FAILED_TO_BIND_TO_SOCKET;
         return;
     }
