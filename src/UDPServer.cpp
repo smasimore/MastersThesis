@@ -10,27 +10,26 @@
 
 /* Use Internet Protocol*/
 const int UDPServer::DOMAIN = AF_INET;
-
 /* Specifies that this will be a UDP socket*/
 const int UDPServer::TYPE = SOCK_DGRAM;
-
 /* Default */
 const int UDPServer::PROTOCOL = 0;
 
+/******************** PUBLIC FUNCTIONS **************************/
 
-Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
+Error_t UDPServer::createNew (std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking)
 {
     Error_t ret;
     // Can't use make_shared here, because UDPServer constructor is private
     pServerRet.reset(new UDPServer(ret, kPort, kBlocking));
 
-    if(pServerRet == nullptr)
+    if (pServerRet == nullptr)
     {
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
-    if(ret != E_SUCCESS)
+    if (ret != E_SUCCESS)
     {
         return ret;
     }
@@ -38,10 +37,10 @@ Error_t UDPServer::createNew(std::shared_ptr<UDPServer>& pServerRet,
     return E_SUCCESS;
 }
 
-Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
+Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
                         uint32_t& srcIPAddrRet, bool kPeek)
 {
-    if(!mInitialized)
+    if (!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
@@ -56,7 +55,7 @@ Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
     // MSG_TRUNC causes recvfrom() return the total size of the received packet
     // even if it is larger than the buffer supplied.
     int flags = MSG_TRUNC;
-    if(kPeek)
+    if (kPeek)
     {
         flags |= MSG_PEEK;
     }
@@ -71,7 +70,7 @@ Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
 
     srcIPAddrRet = srcAddr.sin_addr.s_addr;
 
-    if(ret < 0)
+    if (ret < 0)
     {
         lenRet = 0;
         if(errno == EAGAIN || errno == EWOULDBLOCK)
@@ -84,13 +83,13 @@ Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
     else
     {
         lenRet = ret;
-        if(lenRet > kBuf.size())
+        if (lenRet > kBuf.size())
         {
             // Buffer was not large enough for the received message and the message
             // was truncated
             return E_RECV_TRUNC;
         }
-        else if(srcAddrLen > origSrcAddrLen)
+        else if (srcAddrLen > origSrcAddrLen)
         {
             // Source address was longer than the buffer supplied, and the returned
             // address was truncated.
@@ -101,22 +100,23 @@ Error_t UDPServer::recv(std::vector<uint8_t>& kBuf, size_t& lenRet,
     return E_SUCCESS;
 }
 
+/******************** PRIVATE FUNCTIONS **************************/
 
-UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
+UDPServer::UDPServer (Error_t& ret, uint16_t kPort, bool kBlocking)
 {
     mPort = kPort;
     mInitialized = false;
     mBlocking = kBlocking;
 
     int sockOptions = 0;
-    if(!kBlocking)
+    if (!kBlocking)
     {
         sockOptions = SOCK_NONBLOCK;
     }
     // Initialize the socket and hold on to its file descriptor
     mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
 
-    if(mSocket < 1)
+    if (mSocket < 1)
     {
         ret = E_FAILED_TO_CREATE_SOCKET;
         return;
@@ -127,7 +127,6 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
     // recently closed socket will fail.
     int option = 1;
     setsockopt(mSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-
 
     struct sockaddr_in addr;
     memset((void*)(&addr), 0, (unsigned int)sizeof(addr));
@@ -141,13 +140,11 @@ UDPServer::UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking)
     int retSock = bind(mSocket, (const struct sockaddr *)&addr,
             sizeof(addr));
 
-
     if (retSock < 0)
     {
         ret = E_FAILED_TO_BIND_TO_SOCKET;
         return;
     }
-
 
     ret = E_SUCCESS;
     mInitialized = true;

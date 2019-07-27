@@ -7,8 +7,6 @@
 #include "UDPServer.hpp"
 #include "UDPClient.hpp"
 
-
-
 /********************************* TESTS **************************************/
 
 TEST_GROUP (Sockets)
@@ -16,7 +14,7 @@ TEST_GROUP (Sockets)
 };
 
 /* Test socket initialization */
-TEST(Sockets, Init)
+TEST (Sockets, Init)
 {
 
     Error_t ret;
@@ -43,11 +41,9 @@ TEST(Sockets, Init)
     CHECK_EQUAL(E_SUCCESS, ret);
     ret = pClient->closeSocket();
     CHECK_EQUAL(E_SUCCESS, ret);
-
-
 }
 
-TEST(Sockets, SendRecv)
+TEST (Sockets, SendRecv)
 {
     Error_t ret;
     uint16_t serverPort = 8009;
@@ -143,7 +139,6 @@ TEST(Sockets, SendRecv)
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
     std::cout << "recv returned " << bytesReceived << " bytes" << std::endl;
     CHECK_EQUAL(E_WOULD_BLOCK, ret);
-
 
     // TODO: Use threads to test blocking sockets
 

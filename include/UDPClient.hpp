@@ -14,11 +14,10 @@
 
 #include "Errors.h"
 
-
 class UDPClient
 {
 public: 
-    ~UDPClient();
+    ~UDPClient ();
 
     /**
      * Create a UDPClient
@@ -34,7 +33,7 @@ public:
      *          [other]                         Passed from UDPClient
      *                                          constructor
      **/
-    static Error_t createNew(std::shared_ptr<UDPClient>& pClientRet,
+    static Error_t createNew (std::shared_ptr<UDPClient>& pClientRet,
                             bool kBlocking);
 
     /**
@@ -59,7 +58,7 @@ public:
      *                                          kLen bytes were sent
      *
      **/
-    Error_t send(std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr,
+    Error_t send (std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr,
                  uint16_t kDstPort);
 
     /**
@@ -73,7 +72,7 @@ public:
      *                                          interrupting this function
      *
      **/
-    Error_t closeSocket();
+    Error_t closeSocket ();
 
 private:
 
@@ -91,7 +90,7 @@ private:
      *                          block or complete immediately
      *
      **/
-    UDPClient(Error_t& ret,  bool kBlocking);
+    UDPClient (Error_t& ret,  bool kBlocking);
 
     static const int DOMAIN;
     static const int TYPE;
@@ -100,7 +99,5 @@ private:
     bool mInitialized;
     int mSocket;
 };
-
-
 
 # endif // UDP_CLIENT_HPP

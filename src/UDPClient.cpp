@@ -11,33 +11,31 @@
 
 /* Use Internet Protocol*/
 const int UDPClient::DOMAIN = AF_INET;
-
 /* Specifies that this will be a UDP socket*/
 const int UDPClient::TYPE = SOCK_DGRAM;
-
 /* Default */
 const int UDPClient::PROTOCOL = 0;
 
+/******************** PUBLIC FUNCTIONS **************************/
 
-
-UDPClient::~UDPClient()
+UDPClient::~UDPClient ()
 {
     closeSocket();
 }
 
-Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
+Error_t UDPClient::createNew (std::shared_ptr<UDPClient>& pClientRet,
                             bool kBlocking)
 {
     Error_t ret;
     // Can't use make_shared here, because UDPClient constructor is private
     pClientRet.reset(new UDPClient(ret, kBlocking));
 
-    if(pClientRet == nullptr)
+    if (pClientRet == nullptr)
     {
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
-    if(ret != E_SUCCESS)
+    if (ret != E_SUCCESS)
     {
         return ret;
     }
@@ -45,18 +43,17 @@ Error_t UDPClient::createNew(std::shared_ptr<UDPClient>& pClientRet,
     return E_SUCCESS;
 }
 
-Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
+Error_t UDPClient::send (std::vector<uint8_t> kBuf, size_t kLen,
                         uint32_t kDstIPAddr, uint16_t kDstPort)
 {
-    if(!mInitialized)
+    if (!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
-    else if(kLen > kBuf.size() || kBuf.size() <= 0)
+    else if (kLen > kBuf.size() || kBuf.size() <= 0)
     {
         return E_INVALID_BUF_LEN;
     }
-
 
     struct sockaddr_in destAddr;
     memset((void*)(&destAddr), 0, (unsigned int)sizeof(destAddr));
@@ -70,7 +67,7 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
     int n = sendto(mSocket, &kBuf[0], kLen, 0,
             (const struct sockaddr*)&destAddr, sizeof(destAddr));
 
-    if(n < 0)
+    if (n < 0)
     {
         return E_FAILED_TO_SEND_DATA;
     }
@@ -83,11 +80,11 @@ Error_t UDPClient::send(std::vector<uint8_t> kBuf, size_t kLen,
 }
 
 
-Error_t UDPClient::closeSocket()
+Error_t UDPClient::closeSocket ()
 {
     int retClose = close(mSocket);
 
-    if(retClose < 0)
+    if (retClose < 0)
     {
         return E_FAILED_TO_CLOSE_SOCKET;
     }
@@ -95,13 +92,14 @@ Error_t UDPClient::closeSocket()
     return E_SUCCESS;
 }
 
+/******************** PRIVATE FUNCTIONS **************************/
 
-UDPClient::UDPClient(Error_t& ret, bool kBlocking)
+UDPClient::UDPClient (Error_t& ret, bool kBlocking)
 {
     mInitialized = false;
 
     int sockOptions = 0;
-    if(!kBlocking)
+    if (!kBlocking)
     {
         sockOptions = SOCK_NONBLOCK;
     }
@@ -109,7 +107,7 @@ UDPClient::UDPClient(Error_t& ret, bool kBlocking)
     // Initialize the socket and hold on to its file descriptor
     mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
 
-    if(mSocket < 1)
+    if (mSocket < 1)
     {
         ret = E_FAILED_TO_CREATE_SOCKET;
         return;

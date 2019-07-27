@@ -14,7 +14,6 @@
 
 #include "Errors.h"
 
-
 class UDPServer
 {
 public:
@@ -35,7 +34,7 @@ public:
      *                                          constructor
      *
      **/
-    static Error_t createNew(std::shared_ptr<UDPServer>& pServerRet,
+    static Error_t createNew (std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking);
 
     /**
@@ -68,9 +67,8 @@ public:
      *          E_WOULD_BLOCK                   No data is currently available.
      *
      **/
-    Error_t recv(std::vector<uint8_t>& kBuf, size_t& lenRet, uint32_t& srcIPAddrRet,
+    Error_t recv (std::vector<uint8_t>& kBuf, size_t& lenRet, uint32_t& srcIPAddrRet,
                  bool kPeek);
-
 
 private:
     /**
@@ -78,19 +76,19 @@ private:
      *
      * @param   ret             Return value to be populated
      *
-*           E_SUCCESS                      Socket object successfully
-*                                          created and bound to port
-*           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
-*                                          not created
-*           E_FAILED_TO_BIND_TO_SOCKET     Socket was not bound to the
-     *                                     specified port
+     *           E_SUCCESS                      Socket object successfully
+     *                                          created and bound to port
+     *           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
+     *                                          not created
+     *           E_FAILED_TO_BIND_TO_SOCKET     Socket was not bound to the
+     *                                          specified port
      *
      * @param   kPort           Network port on which this server will operate
      * @param   kBlocking       Determines whether send/recv operations will
      *                          block or complete immediately
      *
      **/
-    UDPServer(Error_t& ret, uint16_t kPort, bool kBlocking);
+    UDPServer (Error_t& ret, uint16_t kPort, bool kBlocking);
 
     static const int DOMAIN;
     static const int TYPE;
@@ -101,7 +99,5 @@ private:
     int mSocket;
     bool mBlocking;
 };
-
-
 
 # endif // UDP_SERVER_HPP
