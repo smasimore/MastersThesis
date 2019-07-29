@@ -20,18 +20,49 @@ const int UDPServer::PROTOCOL = 0;
 Error_t UDPServer::createNew (std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking)
 {
-    Error_t ret;
-    // Can't use make_shared here, because UDPServer constructor is private
-    pServerRet.reset(new UDPServer(ret, kPort, kBlocking));
+
+    int sockOptions = 0;
+    if (!kBlocking)
+    {
+        sockOptions = SOCK_NONBLOCK;
+    }
+    // Initialize the socket and hold on to its file descriptor
+    int sockFD = socket (DOMAIN, TYPE | sockOptions, PROTOCOL);
+
+    if (sockFD < 1)
+    {
+        return E_FAILED_TO_CREATE_SOCKET;
+    }
+
+    // Set the socket to reuse the address.
+    // If this option is not set, opening a socket on the same port as a
+    // recently closed socket will fail.
+    int option = 1;
+    setsockopt (sockFD, SOL_SOCKET, SO_REUSEADDR, &option, sizeof (option) );
+
+    struct sockaddr_in addr;
+    memset ( (void*)(&addr), 0, (unsigned int)sizeof(addr) );
+
+    // Fill server information
+    addr.sin_family = AF_INET; // IPv4
+    addr.sin_addr.s_addr = INADDR_ANY;
+    // Convert port to from host to network byte order
+    addr.sin_port = htons (kPort);
+
+    // Assign a name to the socket
+    int retBind = bind (sockFD, (const struct sockaddr *)&addr,
+            sizeof (addr) );
+
+    if (retBind < 0)
+    {
+        return E_FAILED_TO_BIND_TO_SOCKET;
+    }
+
+    pServerRet.reset (new UDPServer (sockFD, kPort) );
 
     if (pServerRet == nullptr)
     {
         return E_FAILED_TO_ALLOCATE_SOCKET;
-    }
-
-    if (ret != E_SUCCESS)
-    {
-        return ret;
     }
 
     return E_SUCCESS;
@@ -44,13 +75,13 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
-    else if (kBuf.size() < 1)
+    else if (kBuf.size () < 1)
     {
         return E_INVALID_BUF_LEN;
     }
 
     struct sockaddr_in srcAddr;
-    memset((void*)(&srcAddr), 0, (unsigned int)sizeof(srcAddr));
+    memset ( (void*)(&srcAddr), 0, (unsigned int)sizeof (srcAddr) );
 
     // MSG_TRUNC causes recvfrom() return the total size of the received packet
     // even if it is larger than the buffer supplied.
@@ -60,12 +91,12 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
         flags |= MSG_PEEK;
     }
 
-    socklen_t origSrcAddrLen = sizeof(srcAddr);
+    socklen_t origSrcAddrLen = sizeof (srcAddr);
     socklen_t srcAddrLen = origSrcAddrLen;
 
     // recvfrom() will return the number of bytes received if successful
     // or the number of bytes that could be received if the buffer is too small
-    int ret = recvfrom(mSocket, &kBuf[0], kBuf.size(), flags,
+    int ret = recvfrom (mSocket, &kBuf[0], kBuf.size (), flags,
             (struct sockaddr*)&srcAddr, &srcAddrLen);
 
     srcIPAddrRet = srcAddr.sin_addr.s_addr;
@@ -73,7 +104,7 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
     if (ret < 0)
     {
         lenRet = 0;
-        if(errno == EAGAIN || errno == EWOULDBLOCK)
+        if (errno == EAGAIN || errno == EWOULDBLOCK)
         {
             // No data available right now
             return E_WOULD_BLOCK;
@@ -83,7 +114,7 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
     else
     {
         lenRet = ret;
-        if (lenRet > kBuf.size())
+        if (lenRet > kBuf.size () )
         {
             // Buffer was not large enough for the received message and the message
             // was truncated
@@ -102,50 +133,14 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
 
 /******************** PRIVATE FUNCTIONS **************************/
 
-UDPServer::UDPServer (Error_t& ret, uint16_t kPort, bool kBlocking)
+UDPServer::UDPServer (int kSockFD, uint16_t kPort)
 {
-    mPort = kPort;
     mInitialized = false;
-    mBlocking = kBlocking;
+    mPort = kPort;
+    mSocket = kSockFD;
 
-    int sockOptions = 0;
-    if (!kBlocking)
+    if (mSocket > 0)
     {
-        sockOptions = SOCK_NONBLOCK;
+        mInitialized = true;
     }
-    // Initialize the socket and hold on to its file descriptor
-    mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
-
-    if (mSocket < 1)
-    {
-        ret = E_FAILED_TO_CREATE_SOCKET;
-        return;
-    }
-
-    // Set the socket to reuse the address.
-    // If this option is not set, opening a socket on the same port as a
-    // recently closed socket will fail.
-    int option = 1;
-    setsockopt(mSocket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
-
-    struct sockaddr_in addr;
-    memset((void*)(&addr), 0, (unsigned int)sizeof(addr));
-
-    // Fill server information
-    addr.sin_family    = AF_INET; // IPv4
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(mPort);
-
-    // Assign a name to the socket
-    int retSock = bind(mSocket, (const struct sockaddr *)&addr,
-            sizeof(addr));
-
-    if (retSock < 0)
-    {
-        ret = E_FAILED_TO_BIND_TO_SOCKET;
-        return;
-    }
-
-    ret = E_SUCCESS;
-    mInitialized = true;
 }

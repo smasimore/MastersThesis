@@ -49,8 +49,8 @@ TEST (Sockets, SendRecv)
     uint16_t serverPort = 8009;
     // Local network ip: 127.0.0.1
     uint32_t loopbackIPAddr = (1 & 0xFF) << 24 |
-                              (0 & 0xFF) << 16   |
-                              (0 & 0xFF) << 8    |
+                              (0 & 0xFF) << 16 |
+                              (0 & 0xFF) << 8  |
                               (127 & 0xFF);
 
     std::vector<uint8_t> buf{0,1,2,3};
@@ -137,7 +137,6 @@ TEST (Sockets, SendRecv)
     ret = pClient->send(buf, buf.size(), loopbackIPAddr, serverPort);
     CHECK_EQUAL(E_FAILED_TO_SEND_DATA, ret);
     ret = pServer->recv(recvBuf, bytesReceived, srcAddr, false);
-    std::cout << "recv returned " << bytesReceived << " bytes" << std::endl;
     CHECK_EQUAL(E_WOULD_BLOCK, ret);
 
     // TODO: Use threads to test blocking sockets

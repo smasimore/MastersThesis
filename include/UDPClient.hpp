@@ -30,8 +30,9 @@ public:
      *
      * @ret     E_SUCCESS                       Create new UDPClient succeeded
      *          E_FAILED_TO_ALLOCATE_SOCKET     UDPClient object was not created
-     *          [other]                         Passed from UDPClient
-     *                                          constructor
+     *          E_FAILED_TO_CREATE_SOCKET       Internal linux socket object was
+     *                                          not created. pClientRet was not
+     *                                          modified.
      **/
     static Error_t createNew (std::shared_ptr<UDPClient>& pClientRet,
                             bool kBlocking);
@@ -58,7 +59,7 @@ public:
      *                                          kLen bytes were sent
      *
      **/
-    Error_t send (std::vector<uint8_t> kBuf, size_t kLen, uint32_t kDstIPAddr,
+    Error_t send (std::vector<uint8_t>& kBuf, size_t kLen, uint32_t kDstIPAddr,
                  uint16_t kDstPort);
 
     /**
@@ -79,18 +80,10 @@ private:
     /**
      * UDPClient Constructor
      *
-     * @param   ret             Return value to be populated
-     *
-     *           E_SUCCESS                      Socket object successfully
-     *                                          created and bound to port
-     *           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
-     *                                          not created
-     *
-     * @param   kBlocking       Determines whether send/recv operations will
-     *                          block or complete immediately
+     * @param   sockFD         Socket file descriptor
      *
      **/
-    UDPClient (Error_t& ret,  bool kBlocking);
+    UDPClient (int sockFD);
 
     static const int DOMAIN;
     static const int TYPE;

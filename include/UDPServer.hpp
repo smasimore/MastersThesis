@@ -30,9 +30,12 @@ public:
      *
      * @ret     E_SUCCESS                       Create new UDPServer succeeded
      *          E_FAILED_TO_ALLOCATE_SOCKET     UDPServer object was not created
-     *          [other]                         Passed from UDPServer
-     *                                          constructor
-     *
+     *          E_FAILED_TO_CREATE_SOCKET       Internal linux socket object was
+     *                                          not created. pServerRet was not
+     *                                          modified.
+     *          E_FAILED_TO_BIND_TO_SOCKET      Socket was not bound to the
+     *                                          specified port. pServerRet was
+     *                                          not modified.
      **/
     static Error_t createNew (std::shared_ptr<UDPServer>& pServerRet,
                             uint16_t kPort, bool kBlocking);
@@ -74,21 +77,11 @@ private:
     /**
      * UDPServer Constructor
      *
-     * @param   ret             Return value to be populated
-     *
-     *           E_SUCCESS                      Socket object successfully
-     *                                          created and bound to port
-     *           E_FAILED_TO_CREATE_SOCKET      Internal linux socket object was
-     *                                          not created
-     *           E_FAILED_TO_BIND_TO_SOCKET     Socket was not bound to the
-     *                                          specified port
-     *
+     * @param   kSockFD         Socket file descriptor
      * @param   kPort           Network port on which this server will operate
-     * @param   kBlocking       Determines whether send/recv operations will
-     *                          block or complete immediately
      *
      **/
-    UDPServer (Error_t& ret, uint16_t kPort, bool kBlocking);
+    UDPServer (int kSockFD, uint16_t kPort);
 
     static const int DOMAIN;
     static const int TYPE;
@@ -97,7 +90,6 @@ private:
     bool mInitialized;
     uint16_t mPort;
     int mSocket;
-    bool mBlocking;
 };
 
 # endif // UDP_SERVER_HPP

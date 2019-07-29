@@ -20,58 +20,67 @@ const int UDPClient::PROTOCOL = 0;
 
 UDPClient::~UDPClient ()
 {
-    closeSocket();
+    closeSocket ();
 }
 
 Error_t UDPClient::createNew (std::shared_ptr<UDPClient>& pClientRet,
                             bool kBlocking)
 {
-    Error_t ret;
+    int sockOptions = 0;
+    if (!kBlocking)
+    {
+        sockOptions = SOCK_NONBLOCK;
+    }
+
+    // Initialize the socket and hold on to its file descriptor
+    int sockFD = socket (DOMAIN, TYPE | sockOptions, PROTOCOL);
+
+    if (sockFD < 1)
+    {
+        return E_FAILED_TO_CREATE_SOCKET;
+    }
+
     // Can't use make_shared here, because UDPClient constructor is private
-    pClientRet.reset(new UDPClient(ret, kBlocking));
+    pClientRet.reset (new UDPClient (sockFD) );
 
     if (pClientRet == nullptr)
     {
         return E_FAILED_TO_ALLOCATE_SOCKET;
     }
 
-    if (ret != E_SUCCESS)
-    {
-        return ret;
-    }
-
     return E_SUCCESS;
 }
 
-Error_t UDPClient::send (std::vector<uint8_t> kBuf, size_t kLen,
+Error_t UDPClient::send (std::vector<uint8_t>& kBuf, size_t kLen,
                         uint32_t kDstIPAddr, uint16_t kDstPort)
 {
     if (!mInitialized)
     {
         return E_SOCKET_NOT_INITIALIZED;
     }
-    else if (kLen > kBuf.size() || kBuf.size() <= 0)
+    else if (kLen > kBuf.size () || kBuf.size () <= 0)
     {
         return E_INVALID_BUF_LEN;
     }
 
     struct sockaddr_in destAddr;
-    memset((void*)(&destAddr), 0, (unsigned int)sizeof(destAddr));
+    memset ( (void*)(&destAddr), 0, (unsigned int)sizeof (destAddr) );
 
     // Fill client information
     destAddr.sin_family = DOMAIN;
-    destAddr.sin_port = htons(kDstPort);
+
+    destAddr.sin_port = htons (kDstPort);
     destAddr.sin_addr.s_addr = kDstIPAddr;
 
     // sendto() will return the number of bytes sent if successful
-    int n = sendto(mSocket, &kBuf[0], kLen, 0,
-            (const struct sockaddr*)&destAddr, sizeof(destAddr));
+    int n = sendto (mSocket, &kBuf[0], kLen, 0,
+            (const struct sockaddr*)&destAddr, sizeof (destAddr) );
 
     if (n < 0)
     {
         return E_FAILED_TO_SEND_DATA;
     }
-    else if((size_t)n != kLen)
+    else if ( (size_t)n != kLen)
     {
         return E_PARTIAL_SEND;
     }
@@ -82,7 +91,7 @@ Error_t UDPClient::send (std::vector<uint8_t> kBuf, size_t kLen,
 
 Error_t UDPClient::closeSocket ()
 {
-    int retClose = close(mSocket);
+    int retClose = close (mSocket);
 
     if (retClose < 0)
     {
@@ -94,25 +103,12 @@ Error_t UDPClient::closeSocket ()
 
 /******************** PRIVATE FUNCTIONS **************************/
 
-UDPClient::UDPClient (Error_t& ret, bool kBlocking)
+UDPClient::UDPClient (int kSockFD)
 {
     mInitialized = false;
-
-    int sockOptions = 0;
-    if (!kBlocking)
+    mSocket = kSockFD;
+    if (mSocket > 0)
     {
-        sockOptions = SOCK_NONBLOCK;
+        mInitialized = true;
     }
-
-    // Initialize the socket and hold on to its file descriptor
-    mSocket = socket(DOMAIN, TYPE | sockOptions, PROTOCOL);
-
-    if (mSocket < 1)
-    {
-        ret = E_FAILED_TO_CREATE_SOCKET;
-        return;
-    }
-
-    ret = E_SUCCESS;
-    mInitialized = true;
 }
