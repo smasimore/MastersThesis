@@ -51,7 +51,7 @@ public:
      */
     State (std::string stateName, std::vector<std::string> targetTransitions,
            std::vector<std::tuple<int32_t, Error_t (*) (int32_t), 
-           int32_t>>);
+           int32_t>> actionList);
 
     /**
      * Get the State data
