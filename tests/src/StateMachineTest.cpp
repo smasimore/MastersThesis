@@ -234,7 +234,8 @@ TEST (StateMachines, ManageActionSequence)
     std::vector<std::string> tempC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
+        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
         = { std::make_tuple ("StateA", tempA, vecInA),
             std::make_tuple ("StateB", tempB, vecInB),
             std::make_tuple ("StateC", tempC, vecInC) };
@@ -272,7 +273,6 @@ TEST (StateMachines, ManageActionSequence)
     CHECK_EQUAL (search->first, 2);
     CHECK_EQUAL (std::get<0> (search->second[0]), pFuncA);
     CHECK_EQUAL (std::get<1> (search->second[0]), 5);
-
 }
 
 /* Test to arbitrarily execute the action sequences in StateMachine */
@@ -305,7 +305,8 @@ TEST (StateMachines, ExecuteActionSequence)
     std::vector<std::string> tempC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
+        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
         = { std::make_tuple ("StateA", tempA, vecInA),
             std::make_tuple ("StateB", tempB, vecInB),
             std::make_tuple ("StateC", tempC, vecInC) };
@@ -325,12 +326,16 @@ TEST (StateMachines, ExecuteActionSequence)
     CHECK_EQUAL (varGlobal1, 14);
 
     // Switch to StateB; action sequence adds 5 then subtracts 3
+    ret = pSM->switchState ("StateB");
+    CHECK_TRUE (E_SUCCESS == ret);
     ret = pSM->executeCurrentSequence ();
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_EQUAL (varGlobal1, 16);
 
     // Switch to StateC; action sequence multiplies by 3 then fails
+    ret = pSM->switchState ("StateC");
+    CHECK_TRUE (E_SUCCESS == ret);
     ret = pSM->executeCurrentSequence ();
-    CHECK_TRUE (false);
+    CHECK_TRUE (E_INTED == ret);
     CHECK_EQUAL (varGlobal1, 48);
 }

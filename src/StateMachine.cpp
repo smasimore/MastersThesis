@@ -173,8 +173,7 @@ Error_t StateMachine::executeCurrentSequence ()
     {
         return E_NO_STATES;
     }
-    // TODO: For future memory improvements, should probably store a pointer to
-    //  the current action sequence to avoid having to create a new map here.
+    // Obtain a local copy of the current action sequence map
     std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
         tempMap;
     Error_t ret = getCurrentActionSequence (tempMap);
