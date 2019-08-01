@@ -173,17 +173,17 @@ Error_t StateMachine::executeCurrentSequence ()
     {
         return E_NO_STATES;
     }
-    // Obtain a local copy of the current action sequence map
+    // Create a pointer to map, then point to address of action sequence
     std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
-        tempMap;
-    Error_t ret = getCurrentActionSequence (tempMap);
+        *pTempMap;
+    Error_t ret = mPStateCurrent->getSequenceP (&pTempMap);
     if (ret != E_SUCCESS)
     {
         return ret;
     }
     // Iterate through map; guaranteed ordered by timestamp
     for (std::pair<int32_t, std::vector<std::tuple<Error_t (*) (int32_t),
-        int32_t>>> vecPair : tempMap)
+        int32_t>>> vecPair : *pTempMap)
     {
         // Iterate through each vector element found in second in pair
         for (std::tuple<Error_t (*) (int32_t), int32_t> tup : vecPair.second)

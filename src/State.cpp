@@ -58,3 +58,10 @@ Error_t State::getActionSequence (std::map<int32_t, std::vector<std::tuple<
     result = this->actionSequence;
     return E_SUCCESS;
 }
+
+Error_t State::getSequenceP (std::map<int32_t, std::vector<std::tuple<
+                             Error_t (*) (int32_t), int32_t>>> **ppResult)
+{
+    *ppResult = &actionSequence;
+    return E_SUCCESS;
+}

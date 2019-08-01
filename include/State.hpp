@@ -92,6 +92,16 @@ public:
     Error_t getActionSequence (std::map<int32_t, std::vector<std::tuple<
                                Error_t (*) (int32_t), int32_t> > > &result);
 
+    /**
+     * Get the address of the State's action sequence
+     *
+     * @param   pMapRes     Pointer to pointer to a map of the action sequence
+     *
+     * @ret     E_SUCCESS   pMapRes successfully points to the State's map
+     */
+    Error_t getSequenceP (std::map<int32_t, std::vector<std::tuple<
+                                Error_t (*) (int32_t), int32_t>>> **ppResult);
+
 private:
 
     /**
