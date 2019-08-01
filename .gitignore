@@ -9,7 +9,7 @@ build/
 /Test_x86/
 /Test_minGW/
 
-/.settings/language.settings.xml
+.settings/language.settings.xml
 
 libs/cpputest/INSTALL
 libs/cpputest/Makefile.in
