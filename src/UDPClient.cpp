@@ -68,7 +68,7 @@ Error_t UDPClient::send (std::vector<uint8_t>& kBuf, size_t kLen,
 
     // Fill client information
     destAddr.sin_family = DOMAIN;
-
+    // Convert port to from host to network byte order
     destAddr.sin_port = htons (kDstPort);
     destAddr.sin_addr.s_addr = kDstIPAddr;
 
