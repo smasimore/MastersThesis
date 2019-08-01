@@ -28,6 +28,11 @@ Error_t subtractParam1 (int32_t param)
     return E_SUCCESS;
 }
 
+Error_t fail (int32_t param)
+{
+    return E_INTED;
+}
+
 /******************************** TESTS ***************************************/
 
 TEST_GROUP (StateMachines) 
@@ -237,6 +242,8 @@ TEST (StateMachines, ManageActionSequence)
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
 
     // Create local map and search iterator
     std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
@@ -275,19 +282,22 @@ TEST (StateMachines, ExecuteActionSequence)
     Error_t (*pFuncM) (int32_t) = multiplyParam1;
     Error_t (*pFuncA) (int32_t) = addParam1;
     Error_t (*pFuncS) (int32_t) = subtractParam1;
+    Error_t (*pFuncF) (int32_t) = fail;
 
     // create tuples of timestamp, function pointer, and param
     std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (0, pFuncM, 3);
     std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (0, pFuncA, 5);
     std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (0, pFuncS, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (1, pFuncF, 3);
+
 
     // create corresponding input vector of tuples
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1 };
+    { tup1, tup2 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
-    { tup2 };
+    { tup2, tup3 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
-    { tup3 };
+    { tup1, tup4 };
 
     // Create State Objects with basic, loop transitions
     std::vector<std::string> tempA = { "StateB" };
@@ -303,4 +313,24 @@ TEST (StateMachines, ExecuteActionSequence)
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
+
+    // Create global variable for testing
+    varGlobal1 = 3;
+
+    // First state is StateA; action sequence multiplies by 3 then adds 5
+    ret = pSM->executeCurrentSequence ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (varGlobal1, 14);
+
+    // Switch to StateB; action sequence adds 5 then subtracts 3
+    ret = pSM->executeCurrentSequence ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (varGlobal1, 16);
+
+    // Switch to StateC; action sequence multiplies by 3 then fails
+    ret = pSM->executeCurrentSequence ();
+    CHECK_TRUE (false);
+    CHECK_EQUAL (varGlobal1, 48);
 }

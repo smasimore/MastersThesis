@@ -181,6 +181,7 @@ public:
      *
      * @ret     E_SUCCESS   Action sequence executed successfully
      * @ret     E_NO_STATES No states have been added to StateMachine
+     * @ret     [other]     Other failure result from functions in sequence
      */
     Error_t executeCurrentSequence ();
 

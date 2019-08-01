@@ -167,6 +167,40 @@ Error_t StateMachine::getCurrentActionSequence (std::map<int32_t,
     return ret;
 }
 
+Error_t StateMachine::executeCurrentSequence ()
+{
+    if (mPStateCurrent == nullptr)
+    {
+        return E_NO_STATES;
+    }
+    // TODO: For future memory improvements, should probably store a pointer to
+    //  the current action sequence to avoid having to create a new map here.
+    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+        tempMap;
+    Error_t ret = getCurrentActionSequence (tempMap);
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+    // Iterate through map; guaranteed ordered by timestamp
+    for (std::pair<int32_t, std::vector<std::tuple<Error_t (*) (int32_t),
+        int32_t>>> vecPair : tempMap)
+    {
+        // Iterate through each vector element found in second in pair
+        for (std::tuple<Error_t (*) (int32_t), int32_t> tup : vecPair.second)
+        {
+            // call function in pointer with implicit dereference
+            ret = (std::get<0> (tup)) (std::get<1>(tup));
+            // catch failure points in action sequence
+            if (ret != E_SUCCESS)
+            {
+                return ret;
+            }
+        }
+    }
+    return E_SUCCESS;
+}
+
 Error_t StateMachine::switchState(std::string targetState)
 {
     // Get the valid transitions (using intermediate function)

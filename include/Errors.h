@@ -14,7 +14,8 @@
 # ifndef ERRORS_H
 # define ERRORS_H
 
-typedef enum Error {
+typedef enum Error
+{
 
     /* General */
     E_SUCCESS,
@@ -52,7 +53,10 @@ typedef enum Error {
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,
     E_NAME_NOTFOUND,
-    E_NO_STATES
+    E_NO_STATES,
+
+    /* Testing */
+    E_INTED
 } Error_t;
 
 #endif
