@@ -25,8 +25,8 @@ Error_t StateMachine::fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[])
 }
 
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
-                                  std::vector<std::tuple<std::string, 
-                                  std::vector<std::string>>> stateList)
+                                  const std::vector<std::tuple<std::string, 
+                                  std::vector<std::string>>> &stateList)
 {
     rSM.reset (new StateMachine (0, 0));
     for (std::tuple<std::string, std::vector<std::string>> tup : stateList)
@@ -40,11 +40,61 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
     return E_SUCCESS;    
 }
 
+Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
+                                  const std::vector<std::tuple<std::string,
+                                  std::vector<std::string>, std::vector<
+                                  std::tuple<int32_t, Error_t (*) (int32_t),
+                                  int32_t>> >> &stateList)
+{
+    rSM.reset (new StateMachine (0, 0));
+    for (std::tuple<std::string, std::vector<std::string>, std::vector<
+         std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>> tup : stateList)
+    {
+        Error_t retState = rSM->addState (std::get<0> (tup), std::get<1> (tup),
+                                          std::get<2> (tup));
+        if (retState != E_SUCCESS)
+        {
+            return E_DUPLICATE_NAME;
+        }
+    }
+    return E_SUCCESS;
+}
+
 Error_t StateMachine::addState (std::string stateName, 
-                                std::vector<std::string> stateTransitions)
+                                const std::vector<std::string> 
+                                &stateTransitions)
 {
     // Allocate the state from parameter data, and create shared pointer
     std::shared_ptr<State> pNewState (new State (stateName, stateTransitions));
+    // Check if pointer to current state is null; if so, then set as current
+    if (mPStateCurrent == nullptr)
+    {
+        // overwrite memory of current state
+        mPStateCurrent = pNewState;
+    }
+    // Insert returns pair containing bool; true if inserted, false if not.
+    // Will not insert if there exists a duplicate key, aka duplicate name
+    bool resultBool = (this->mStateMap).
+        insert (std::make_pair (stateName, pNewState)).second;
+    if (resultBool)
+    {
+        return E_SUCCESS;
+    }
+    else
+    {
+        return E_DUPLICATE_NAME;
+    }
+}
+
+Error_t StateMachine::addState (std::string stateName,
+                                const std::vector<std::string> 
+                                &stateTransitions, const std::vector<std::tuple
+                                <int32_t, Error_t (*) (int32_t), int32_t>> 
+                                &actionList)
+{
+    // Allocate the state from parameter data, and create shared pointer
+    std::shared_ptr<State> pNewState (new State (stateName, stateTransitions,
+                                                 actionList));
     // Check if pointer to current state is null; if so, then set as current
     if (mPStateCurrent == nullptr)
     {

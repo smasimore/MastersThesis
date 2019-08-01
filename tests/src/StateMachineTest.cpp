@@ -5,6 +5,31 @@
 
 #include "CppUTest/TestHarness.h"
 
+/************************** TESTER FUNCTIONS **********************************/
+
+// global variable for use with tester functions
+int32_t varGlobal1;
+
+Error_t multiplyParam1 (int32_t param)
+{
+    varGlobal1 = varGlobal1 * param;
+    return E_SUCCESS;
+}
+
+Error_t addParam1 (int32_t param)
+{
+    varGlobal1 = varGlobal1 + param;
+    return E_SUCCESS;
+}
+
+Error_t subtractParam1 (int32_t param)
+{
+    varGlobal1 = varGlobal1 - param;
+    return E_SUCCESS;
+}
+
+/******************************** TESTS ***************************************/
+
 TEST_GROUP (StateMachines) 
 {
 };
@@ -57,7 +82,6 @@ TEST (StateMachines, DefinedCase)
 /* Test to create a StateMachine as before, then run State Mapping code*/
 TEST (StateMachines, AddStates)
 {
-    //StateMachine *pSM = nullptr;
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromDefault (pSM);
 
@@ -176,4 +200,107 @@ TEST (StateMachines, DefinedStateCase)
      ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == tempB);
+}
+
+/* Test to manage States with action sequences within the StateMachine */
+TEST (StateMachines, ManageActionSequence)
+{
+    // set up function pointers
+    Error_t (*pFuncM) (int32_t) = multiplyParam1;
+    Error_t (*pFuncA) (int32_t) = addParam1;
+    Error_t (*pFuncS) (int32_t) = subtractParam1;
+
+    // create tuples of timestamp, function pointer, and param
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (1, pFuncM, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (2, pFuncA, 5);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (3, pFuncS, 3);
+
+    // create corresponding input vector of tuples
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
+    { tup1 };
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
+    { tup2 };
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
+    { tup3 };
+
+    // Create State Objects with basic, loop transitions
+    std::vector<std::string> tempA = { "StateB" };
+    std::vector<std::string> tempB = { "StateC" };
+    std::vector<std::string> tempC = { "StateA" };
+
+    // Create storage vector for constructor
+    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+        = { std::make_tuple ("StateA", tempA, vecInA),
+            std::make_tuple ("StateB", tempB, vecInB),
+            std::make_tuple ("StateC", tempC, vecInC) };
+
+    // Create State Machine from vector of States
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+
+    // Create local map and search iterator
+    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+        localMap;
+    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+        ::const_iterator search;
+
+    // First state is StateA, retrieve its action sequence
+    ret = pSM->getCurrentActionSequence (localMap);
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    // At timestamp 1, action sequence contains multiply function and param 3
+    search = localMap.find (1);
+    CHECK_EQUAL (search->first, 1);
+    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncM);
+    CHECK_EQUAL (std::get<1> (search->second[0]), 3);
+
+    // Transition to StateB, then retrieve its action sequence
+    ret = pSM->switchState ("StateB");
+    CHECK_TRUE (E_SUCCESS == ret);
+    ret = pSM->getCurrentActionSequence (localMap);
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    // At timestamp 2, action sequence contains addition function and param 5
+    search = localMap.find (2);
+    CHECK_EQUAL (search->first, 2);
+    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncA);
+    CHECK_EQUAL (std::get<1> (search->second[0]), 5);
+
+}
+
+/* Test to arbitrarily execute the action sequences in StateMachine */
+TEST (StateMachines, ExecuteActionSequence)
+{
+    // set up function pointers
+    Error_t (*pFuncM) (int32_t) = multiplyParam1;
+    Error_t (*pFuncA) (int32_t) = addParam1;
+    Error_t (*pFuncS) (int32_t) = subtractParam1;
+
+    // create tuples of timestamp, function pointer, and param
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (0, pFuncM, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (0, pFuncA, 5);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (0, pFuncS, 3);
+
+    // create corresponding input vector of tuples
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
+    { tup1 };
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
+    { tup2 };
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
+    { tup3 };
+
+    // Create State Objects with basic, loop transitions
+    std::vector<std::string> tempA = { "StateB" };
+    std::vector<std::string> tempB = { "StateC" };
+    std::vector<std::string> tempC = { "StateA" };
+
+    // Create storage vector for constructor
+    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
+        = { std::make_tuple ("StateA", tempA, vecInA),
+            std::make_tuple ("StateB", tempB, vecInB),
+            std::make_tuple ("StateC", tempC, vecInC) };
+
+    // Create State Machine from vector of States
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
 }

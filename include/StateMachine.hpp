@@ -59,8 +59,31 @@ public:
      *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
     static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
-                               std::vector<std::tuple<std::string, std::vector<
-                               std::string>>> stateList);
+                               const std::vector<std::tuple<std::string, 
+                               std::vector<std::string>>> &stateList);
+
+    /**
+     * Create a statemachine from a list of state names and transitions.
+     *
+     * @param   rSM                 reference to smart pointer of type 
+     *                              StateMachine
+     * @param   stateList           vector of tuples. First element of tuple is
+     *                              type string representing name of State.
+     *                              Second element of tuple is a vector of type
+     *                              string representing the State's respective
+     *                              valid transitions. Third element is vector
+     *                              of tuples containing action sequence (tuple
+     *                              details documented in State)
+     *
+     * @ret     E_SUCCESS           successfully passed a StateMachine object 
+     *                              into rSM using States in stateList
+     *          E_DUPLICATE_NAME    a duplicate state name found in stateList
+     */
+    static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
+                               const std::vector<std::tuple<std::string, 
+                               std::vector<std::string>, std::vector<std::tuple
+                               <int32_t, Error_t (*) (int32_t), int32_t>> >> 
+                               &stateList);
 
     /**
      * Intermediate function to add, allocate, and map State to the State Map.
@@ -74,7 +97,25 @@ public:
      *          E_DUPLICATE_NAME    State with same name already exists
      */
     Error_t addState (std::string stateName, 
-                      std::vector<std::string> stateTransitions);
+                      const std::vector<std::string> &stateTransitions);
+
+    /**
+     * Intermediate function to add, allocate, and map State to the State Map.
+     * When called the first time, will set the first state as the
+     * current state of the StateMachine.
+     *
+     * @param   stateName           String containing name of State to add
+     * @param   stateTransitions    Vector of Strings of valid transition names
+     * @param   actionList          Vector of tuples detailing the action
+     *                              sequence (see State for tuple structure)
+     *
+     * @ret     E_SUCCESS           State object successfully added and mapped
+     *          E_DUPLICATE_NAME    State with same name already exists
+     */
+    Error_t addState (std::string stateName,
+                      const std::vector<std::string> &stateTransitions,
+                      const std::vector<std::tuple<int32_t, Error_t (*) 
+                      (int32_t), int32_t>> &actionList);
 
     /**
      * Intermediate function to find and store a State in the map by State name
@@ -134,6 +175,16 @@ public:
                                       &result);
 
     /**
+     * Function to execute all actions in the current state's action sequence.
+     *  NOTE: This function does not yet consider real time timestamps. It will
+     *  only iterate entirely through the action sequence to test outputs.
+     *
+     * @ret     E_SUCCESS   Action sequence executed successfully
+     * @ret     E_NO_STATES No states have been added to StateMachine
+     */
+    Error_t executeCurrentSequence ();
+
+    /**
      * Returns the value of temporary StateMachine data A
      *
      * @param   result      Reference to int32_t to store value of A
@@ -165,15 +216,15 @@ private:
     int32_t b;
 
     /**
-     * Pointer to Unordered map to create the map of the states using
-     * key type String and value type pointer to State
+     * Unordered map to create the map of the states using key type String and 
+     * value type pointer to State
      */
     std::unordered_map<std::string, std::shared_ptr<State>> mStateMap;
 
     /**
-     * Shared pointer to a copy of the current state
+     * Shared pointer to the current state
      */
     std::shared_ptr<State> mPStateCurrent;
- 
+
 };
 #endif
