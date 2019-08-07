@@ -21,6 +21,18 @@ class State
 public:
 
     /**
+     * Type tuple of complete action as parsed line by line: contains
+     * timestamp, action, and action parameter
+     */
+    typedef std::tuple<int32_t, Error_t (*) (int32_t), int32_t>
+        ActionLine_t;
+
+    /**
+     * Type tuple containing only the action and its parameter.
+     */
+    typedef std::tuple<Error_t (*) (int32_t), int32_t> Action_t;
+
+    /**
      * Constructor for the state, public for testing purposes only
      *
      * @param   intData     vector of int32_t to serve as placeholder data
@@ -37,7 +49,8 @@ public:
      *
      * @ret     State               State class with data from params
      */
-    State (std::string stateName, std::vector<std::string> targetTransitions);
+    State (std::string stateName, const std::vector<std::string> 
+           &targetTransitions);
 
     /**
      * Constructor for a State containing name, transitions, and actions
@@ -49,9 +62,8 @@ public:
      *
      * @ret     State               State class with data from params
      */
-    State (std::string stateName, std::vector<std::string> targetTransitions,
-           std::vector<std::tuple<int32_t, Error_t (*) (int32_t), 
-           int32_t>> actionList);
+    State (std::string stateName, const std::vector<std::string> 
+           &targetTransitions, const std::vector<ActionLine_t> &actionList);
 
     /**
      * Get the State data
@@ -126,7 +138,6 @@ private:
      * containing vector of tuples, using timestamp as the key. Tuples in the
      * vector contain the pointer to function, and the parameter.
      */
-    std::map <int32_t, std::vector < std::tuple <
-        Error_t (*)(int32_t), int32_t> > > mActionSequence;
+    std::map <int32_t, std::vector <Action_t> > mActionSequence;
 };
 #endif

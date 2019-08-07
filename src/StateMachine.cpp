@@ -43,12 +43,11 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
                                   const std::vector<std::tuple<std::string,
                                   std::vector<std::string>, std::vector<
-                                  std::tuple<int32_t, Error_t (*) (int32_t),
-                                  int32_t>> >> &stateList)
+                                  State::ActionLine_t> >> &stateList)
 {
     rSM.reset (new StateMachine (0, 0));
     for (std::tuple<std::string, std::vector<std::string>, std::vector<
-         std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>> tup : stateList)
+         State::ActionLine_t>> tup : stateList)
     {
         Error_t retState = rSM->addState (std::get<0> (tup), std::get<1> (tup),
                                           std::get<2> (tup));
@@ -173,7 +172,7 @@ Error_t StateMachine::executeCurrentSequence ()
     {
         return E_NO_STATES;
     }
-    // Create a pointer to map, then point to address of action sequence
+    // Create a temp pointer to map, then point to address of action sequence
     std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
         *pTempMap;
     Error_t ret = mPStateCurrent->getSequenceP (&pTempMap);

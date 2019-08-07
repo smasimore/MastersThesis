@@ -81,9 +81,8 @@ public:
      */
     static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
                                const std::vector<std::tuple<std::string, 
-                               std::vector<std::string>, std::vector<std::tuple
-                               <int32_t, Error_t (*) (int32_t), int32_t>> >> 
-                               &stateList);
+                               std::vector<std::string>, std::vector<
+                               State::ActionLine_t> >> &stateList);
 
     /**
      * Intermediate function to add, allocate, and map State to the State Map.
