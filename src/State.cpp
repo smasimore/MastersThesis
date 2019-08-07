@@ -2,11 +2,6 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-State::State (std::vector<int32_t> intData)
-{
-    this->mStateData = intData;
-}
-
 State::State (std::string stateName,
               const std::vector<std::string> &targetTransitions)
 {
@@ -30,12 +25,6 @@ State::State (std::string stateName,
         this->mActionSequence[timestamp].push_back (std::make_tuple (
             std::get<1> (tup), std::get<2> (tup)));
     }
-}
-
-Error_t State::getData (std::vector<int32_t> &result)
-{
-    result = this->mStateData;
-    return E_SUCCESS;
 }
 
 Error_t State::getName (std::string &result)

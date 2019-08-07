@@ -33,15 +33,6 @@ public:
     typedef std::tuple<Error_t (*) (int32_t), int32_t> Action_t;
 
     /**
-     * Constructor for the state, public for testing purposes only
-     *
-     * @param   intData     vector of int32_t to serve as placeholder data
-     *
-     * @ret     State       State class with data from param
-     */
-    State (std::vector<int32_t> intData);
-
-    /**
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
@@ -64,16 +55,6 @@ public:
      */
     State (std::string stateName, const std::vector<std::string> 
            &targetTransitions, const std::vector<ActionLine_t> &actionList);
-
-    /**
-     * Get the State data
-     *
-     * @param   result      Reference to vector of type int32_t to store State
-     *                      data in
-     *
-     * @ret     E_SUCCESS   Successfully stored State data in result
-     */
-    Error_t getData (std::vector<int32_t> &result);
 
     /**
      * Get the State name
@@ -122,14 +103,8 @@ private:
     std::string mStateName;
 
     /**
-     * The first iteration skeleton State data, vector of type int32_t to be
-     * used temporarily
-     */
-    std::vector<int32_t> mStateData;
-
-    /**
-     * The second iteration of valid State transitions, vector of type String
-     * representing name of the states to use for now
+     * The valid transitions of the State, vector of type String representing 
+     * the name of the valid states for a transition
      */
     std::vector<std::string> mTargetTransitions;
 
