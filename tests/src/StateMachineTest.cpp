@@ -8,23 +8,23 @@
 /************************** TESTER FUNCTIONS **********************************/
 
 // global variable for use with tester functions
-int32_t varGlobal1;
+int32_t gVar1;
 
 Error_t multiplyParam1 (int32_t param)
 {
-    varGlobal1 = varGlobal1 * param;
+    gVar1 = gVar1 * param;
     return E_SUCCESS;
 }
 
 Error_t addParam1 (int32_t param)
 {
-    varGlobal1 = varGlobal1 + param;
+    gVar1 = gVar1 + param;
     return E_SUCCESS;
 }
 
 Error_t subtractParam1 (int32_t param)
 {
-    varGlobal1 = varGlobal1 - param;
+    gVar1 = gVar1 - param;
     return E_SUCCESS;
 }
 
@@ -95,22 +95,23 @@ TEST (StateMachines, AddStates)
     CHECK_TRUE (pSM != nullptr);
 
     // Create states using secondary iteration of temporary constructor
-    std::vector<std::string> tempA = { "A", "B", "C" };
-    std::vector<std::string> tempB = { "B", "C", "D" };
-    std::vector<std::string> tempC = { "C", "D", "E" };
+    //  note: for all future use cases, transitions will be exact State name
+    std::vector<std::string> transitionsA = { "A", "B", "C" };
+    std::vector<std::string> transitionsB = { "B", "C", "D" };
+    std::vector<std::string> transitionsC = { "C", "D", "E" };
 
     // Add states to StateMachine
-    ret = pSM->addState ("StateA", tempA);
+    ret = pSM->addState ("StateA", transitionsA);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState ("StateB", tempB);
+    ret = pSM->addState ("StateB", transitionsB);
     CHECK_TRUE (E_SUCCESS == ret);
 
-    ret = pSM->addState ("StateC", tempC);
+    ret = pSM->addState ("StateC", transitionsC);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // Attempt to add a State with duplicate name
-    ret = pSM->addState ("StateA", tempA);
+    ret = pSM->addState ("StateA", transitionsA);
     CHECK_TRUE (E_DUPLICATE_NAME == ret);
 
     // Attempt to call function to find states
@@ -123,7 +124,7 @@ TEST (StateMachines, AddStates)
     std::vector<std::string> dataResult;
     ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (tempA == dataResult);
+    CHECK_TRUE (transitionsA == dataResult);
 
     // Attempt to find an invalid state
     ret = pSM->findState(stateResult, "StateD");
@@ -136,15 +137,15 @@ TEST (StateMachines, AddStates)
 TEST (StateMachines, DefinedStateCase)
 {
     // Create State Objects with basic, loop transitions
-    std::vector<std::string> tempA = { "StateB" };
-    std::vector<std::string> tempB = { "StateC" };
-    std::vector<std::string> tempC = { "StateA" };
+    std::vector<std::string> transitionsA = { "StateB" };
+    std::vector<std::string> transitionsB = { "StateC" };
+    std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
     std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
-        = { std::make_tuple("StateA", tempA),
-            std::make_tuple("StateB", tempB),
-            std::make_tuple("StateC", tempC) };
+        = { std::make_tuple("StateA", transitionsA),
+            std::make_tuple("StateB", transitionsB),
+            std::make_tuple("StateC", transitionsC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -163,7 +164,7 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> dataResult;
     ret = stateResult->getTransitions(dataResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (tempA == dataResult);
+    CHECK_TRUE (transitionsA == dataResult);
 
     // Attempt to find an invalid state
     ret = pSM->findState(stateResult, "StateD");
@@ -178,7 +179,7 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> transitionsResult;
     ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == tempA);
+    CHECK_TRUE (transitionsResult == transitionsA);
 
     // Force a valid transition from StateA to StateB
     ret = pSM->switchState ("StateB");
@@ -191,7 +192,7 @@ TEST (StateMachines, DefinedStateCase)
 
      ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == tempB);
+    CHECK_TRUE (transitionsResult == transitionsB);
 
     // Attempt to force an invalid transition from StateB to StateA
     ret = pSM->switchState ("StateA");
@@ -204,7 +205,7 @@ TEST (StateMachines, DefinedStateCase)
 
      ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == tempB);
+    CHECK_TRUE (transitionsResult == transitionsB);
 }
 
 /* Test to manage States with action sequences within the StateMachine */
@@ -229,16 +230,16 @@ TEST (StateMachines, ManageActionSequence)
     { tup3 };
 
     // Create State Objects with basic, loop transitions
-    std::vector<std::string> tempA = { "StateB" };
-    std::vector<std::string> tempB = { "StateC" };
-    std::vector<std::string> tempC = { "StateA" };
+    std::vector<std::string> transitionsA = { "StateB" };
+    std::vector<std::string> transitionsB = { "StateC" };
+    std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
     std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
         std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", tempA, vecInA),
-            std::make_tuple ("StateB", tempB, vecInB),
-            std::make_tuple ("StateC", tempC, vecInC) };
+        = { std::make_tuple ("StateA", transitionsA, vecInA),
+            std::make_tuple ("StateB", transitionsB, vecInB),
+            std::make_tuple ("StateC", transitionsC, vecInC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -300,16 +301,16 @@ TEST (StateMachines, ExecuteActionSequence)
     { tup1, tup4 };
 
     // Create State Objects with basic, loop transitions
-    std::vector<std::string> tempA = { "StateB" };
-    std::vector<std::string> tempB = { "StateC" };
-    std::vector<std::string> tempC = { "StateA" };
+    std::vector<std::string> transitionsA = { "StateB" };
+    std::vector<std::string> transitionsB = { "StateC" };
+    std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
     std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
         std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", tempA, vecInA),
-            std::make_tuple ("StateB", tempB, vecInB),
-            std::make_tuple ("StateC", tempC, vecInC) };
+        = { std::make_tuple ("StateA", transitionsA, vecInA),
+            std::make_tuple ("StateB", transitionsB, vecInB),
+            std::make_tuple ("StateC", transitionsC, vecInC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -318,24 +319,24 @@ TEST (StateMachines, ExecuteActionSequence)
     CHECK_TRUE (pSM != nullptr);
 
     // Create global variable for testing
-    varGlobal1 = 3;
+    gVar1 = 3;
 
     // First state is StateA; action sequence multiplies by 3 then adds 5
     ret = pSM->executeCurrentSequence ();
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (varGlobal1, 14);
+    CHECK_EQUAL (gVar1, 14);
 
     // Switch to StateB; action sequence adds 5 then subtracts 3
     ret = pSM->switchState ("StateB");
     CHECK_TRUE (E_SUCCESS == ret);
     ret = pSM->executeCurrentSequence ();
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (varGlobal1, 16);
+    CHECK_EQUAL (gVar1, 16);
 
     // Switch to StateC; action sequence multiplies by 3 then fails
     ret = pSM->switchState ("StateC");
     CHECK_TRUE (E_SUCCESS == ret);
     ret = pSM->executeCurrentSequence ();
     CHECK_TRUE (E_INTED == ret);
-    CHECK_EQUAL (varGlobal1, 48);
+    CHECK_EQUAL (gVar1, 48);
 }

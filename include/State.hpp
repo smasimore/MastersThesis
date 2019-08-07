@@ -107,19 +107,19 @@ private:
     /**
      * The name of the State, for identification and mapping purposes
      */
-    std::string stateName;
+    std::string mStateName;
 
     /**
      * The first iteration skeleton State data, vector of type int32_t to be
      * used temporarily
      */
-    std::vector<int32_t> stateData;
+    std::vector<int32_t> mStateData;
 
     /**
      * The second iteration of valid State transitions, vector of type String
      * representing name of the states to use for now
      */
-    std::vector<std::string> targetTransitions;
+    std::vector<std::string> mTargetTransitions;
 
     /**
      * The first iteration of the action sequence of the State. Ordered map
@@ -127,7 +127,6 @@ private:
      * vector contain the pointer to function, and the parameter.
      */
     std::map <int32_t, std::vector < std::tuple <
-        Error_t (*)(int32_t), int32_t> > > actionSequence;
+        Error_t (*)(int32_t), int32_t> > > mActionSequence;
 };
 #endif
-

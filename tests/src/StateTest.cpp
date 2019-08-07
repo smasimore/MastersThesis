@@ -7,23 +7,23 @@
 /************************** TESTER FUNCTIONS **********************************/
 
 // global variable for use with tester functions
-int32_t varGlobal;
+int32_t gVar;
 
 Error_t multiplyParam (int32_t param)
 {
-    varGlobal = varGlobal * param;
+    gVar = gVar * param;
     return E_SUCCESS;
 }
 
 Error_t addParam (int32_t param)
 {
-    varGlobal = varGlobal + param;
+    gVar = gVar + param;
     return E_SUCCESS;
 }
 
 Error_t subtractParam (int32_t param)
 {
-    varGlobal = varGlobal - param;
+    gVar = gVar - param;
     return E_SUCCESS;
 }
 
@@ -56,7 +56,8 @@ TEST (States, MapStates)
     stateMap.insert (std::make_pair ("stateB", State (dataB)));
     stateMap.insert (std::make_pair ("stateC", State (dataC)));
 
-    auto search = stateMap.find ("stateA");
+    std::unordered_map<std::string, State>::iterator search =
+       stateMap.find ("stateA");
     CHECK_EQUAL (search->first, "stateA");
     std::vector<int> dataResult;
     Error_t ret = search->second.getData (dataResult);
