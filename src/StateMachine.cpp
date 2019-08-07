@@ -232,6 +232,8 @@ Error_t StateMachine::switchState(std::string targetState)
     }
 }
 
+Error_t StateMachine::periodic ();
+
 Error_t StateMachine::getA (int32_t &result)
 {
     result = this->a;

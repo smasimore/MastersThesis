@@ -202,6 +202,8 @@ public:
      */
     Error_t getB (int32_t &result);
 
+    Error_t periodic ();
+
 private:
 
     /**
