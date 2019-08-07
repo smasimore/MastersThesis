@@ -58,20 +58,20 @@ TEST (States, MapStates)
 
     std::unordered_map<std::string, State>::iterator search =
        stateMap.find ("stateA");
-    CHECK_EQUAL (search->first, "stateA");
+    CHECK_TRUE (search->first.compare ("stateA") == 0);
     std::vector<int> dataResult;
     Error_t ret = search->second.getData (dataResult);
     CHECK_TRUE (dataResult == dataA);
     CHECK_TRUE (ret == E_SUCCESS);
 
     search = stateMap.find ("stateB");
-    CHECK_EQUAL (search->first, "stateB");
+    CHECK_TRUE (search->first.compare ("stateB") == 0);
     ret = search->second.getData (dataResult);
     CHECK_TRUE (dataResult == dataB);
     CHECK_TRUE (ret == E_SUCCESS);
 
     search = stateMap.find ("stateC");
-    CHECK_EQUAL (search->first, "stateC");
+    CHECK_TRUE (search->first.compare ("stateC") == 0);
     ret = search->second.getData (dataResult);
     CHECK_TRUE (dataResult == dataC);
     CHECK_TRUE (ret == E_SUCCESS);
