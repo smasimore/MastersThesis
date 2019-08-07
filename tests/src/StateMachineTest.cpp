@@ -48,40 +48,7 @@ TEST (StateMachines, DefaultCase)
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 
-    // Default Case returns A = 1, B = 2
-    int32_t resultA;
-    ret = pSM->getA (resultA);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    int32_t resultB;
-    ret = pSM->getB (resultB);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    CHECK_EQUAL (1, resultA);
-    CHECK_EQUAL (2, resultB);
-}
-
-/* Test to create a StateMachine from a defined case using data from an array, 
-   then verify internal calculations from data */
-TEST (StateMachines, DefinedCase)
-{
-    int32_t data_example[] = { 1, 1, 1, 1 };
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromArr (pSM, data_example);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Defined Case for Array returns A = arr[0], B = sum of arr[0] to arr[3]
-    int32_t resultA;
-    ret = pSM->getA (resultA);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    int32_t resultB;
-    ret = pSM->getB (resultB);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    CHECK_EQUAL (1, resultA);
-    CHECK_EQUAL (4, resultB);
+    // Test default case around when StateMachine is finalized w/ parser
 }
 
 /* Test to create a StateMachine as before, then run State Mapping code*/

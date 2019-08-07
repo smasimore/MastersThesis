@@ -5,30 +5,16 @@
 Error_t StateMachine::fromDefault (std::unique_ptr<StateMachine> &rSM)
 {
     // reset the smart pointer, using corresponding default case
-    rSM.reset (new StateMachine (1, 2));
+    rSM.reset (new StateMachine ());
     return E_SUCCESS;
 
-}
-
-Error_t StateMachine::fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[])
-{
-    // Arbitrary calculations to obtain A, B data from array
-    int32_t a = c[0];
-    int32_t b = 0;
-    for (int32_t i = 0; i < 4; i++)
-    {
-        b += c[i];
-    }
-    // reset the smart pointer, using case generated from array
-    rSM.reset (new StateMachine (a, b));
-    return E_SUCCESS;
 }
 
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
                                   const std::vector<std::tuple<std::string, 
                                   std::vector<std::string>>> &stateList)
 {
-    rSM.reset (new StateMachine (0, 0));
+    rSM.reset (new StateMachine ());
     for (std::tuple<std::string, std::vector<std::string>> tup : stateList)
     {
         Error_t retState = rSM->addState (std::get<0> (tup), std::get<1>(tup));
@@ -45,7 +31,7 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
                                   std::vector<std::string>, std::vector<
                                   State::ActionLine_t> >> &stateList)
 {
-    rSM.reset (new StateMachine (0, 0));
+    rSM.reset (new StateMachine ());
     for (std::tuple<std::string, std::vector<std::string>, std::vector<
          State::ActionLine_t>> tup : stateList)
     {
@@ -232,23 +218,9 @@ Error_t StateMachine::switchState(std::string targetState)
     }
 }
 
-Error_t StateMachine::getA (int32_t &result)
-{
-    result = this->a;
-    return E_SUCCESS;
-}
-
-Error_t StateMachine::getB (int32_t &result)
-{
-    result = this->b;
-    return E_SUCCESS;
-}
-
 /******************** PRIVATE FUNCTIONS **************************/
 
-StateMachine::StateMachine (int32_t a, int32_t b)
+StateMachine::StateMachine ()
 {
-    this->a = a;
-    this->b = b;
     mPStateCurrent = nullptr;
 }

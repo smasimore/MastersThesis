@@ -22,7 +22,8 @@ public:
 
     /**
      * Create a statemachine from a default hardcoded case. This is important
-     * in case of parser, config, or other external failures.
+     * in case of parser, config, or other external failures. 
+     *  NOTE: This function will be hard-coded around the time of the parser.
      *
      * @param   rSM             reference to smart pointer of type StateMachine
      *
@@ -30,18 +31,6 @@ public:
      *                          rSM using the default case
      */
     static Error_t fromDefault (std::unique_ptr<StateMachine> &rSM);
-
-    /**
-     * Create a statemachine from data in an array. This is a placeholder
-     * function to demonstrate creation from user-defined data.
-     *
-     * @param   rSM             reference to smart pointer of type StateMachine
-     * @param   c[]             array of int32_t, an arbitrary data type
-     *
-     * @ret     E_SUCCESS       successfully passed a StateMachine object into
-     *                          rSM using data from array
-     */
-    static Error_t fromArr (std::unique_ptr<StateMachine> &rSM, int32_t c[]);
 
     /**
      * Create a statemachine from a list of state names and transitions.
@@ -63,7 +52,8 @@ public:
                                std::vector<std::string>>> &stateList);
 
     /**
-     * Create a statemachine from a list of state names and transitions.
+     * Create a statemachine from a list of state names, transitions, and a
+     * predefined list of actions.
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
@@ -184,36 +174,12 @@ public:
      */
     Error_t executeCurrentSequence ();
 
-    /**
-     * Returns the value of temporary StateMachine data A
-     *
-     * @param   result      Reference to int32_t to store value of A
-     *
-     * @ret     E_SUCCESS   value of A succesfully stored in result
-     */
-    Error_t getA (int32_t &result);
-
-    /**
-     * Returns the value of temporary StateMachine data B
-     *
-     * @param   result      Reference to int32_t to store value of B
-     *
-     * @ret     E_SUCCESS   value of B succesfully stored in result
-     */
-    Error_t getB (int32_t &result);
-
 private:
 
     /**
      * Private constructor to ensure named constructor idoims are used
      */
-    StateMachine (int32_t a, int32_t b);
-
-    /**
-     * Placeholder skeleton data for temporary testing purposes only
-     */
-    int32_t a;
-    int32_t b;
+    StateMachine ();
 
     /**
      * Unordered map to create the map of the states using key type String and 
