@@ -24,9 +24,9 @@ UDPClient::~UDPClient ()
 }
 
 Error_t UDPClient::createNew (std::shared_ptr<UDPClient>& pClientRet,
-                            bool kBlocking)
+                              bool kBlocking)
 {
-    int sockOptions = 0;
+    uint32_t sockOptions = 0;
     if (!kBlocking)
     {
         sockOptions = SOCK_NONBLOCK;
@@ -105,10 +105,6 @@ Error_t UDPClient::closeSocket ()
 
 UDPClient::UDPClient (int kSockFD)
 {
-    mInitialized = false;
+    mInitialized = true;
     mSocket = kSockFD;
-    if (mSocket > 0)
-    {
-        mInitialized = true;
-    }
 }

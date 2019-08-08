@@ -26,6 +26,7 @@ Error_t UDPServer::createNew (std::shared_ptr<UDPServer>& pServerRet,
     {
         sockOptions = SOCK_NONBLOCK;
     }
+
     // Initialize the socket and hold on to its file descriptor
     int sockFD = socket (DOMAIN, TYPE | sockOptions, PROTOCOL);
 
@@ -135,12 +136,7 @@ Error_t UDPServer::recv (std::vector<uint8_t>& kBuf, size_t& lenRet,
 
 UDPServer::UDPServer (int kSockFD, uint16_t kPort)
 {
-    mInitialized = false;
+    mInitialized = true;
     mPort = kPort;
     mSocket = kSockFD;
-
-    if (mSocket > 0)
-    {
-        mInitialized = true;
-    }
 }
