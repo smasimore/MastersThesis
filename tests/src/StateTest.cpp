@@ -36,45 +36,24 @@ TEST_GROUP (States)
 /* Test to create a State with data, then try to access the State's data */
 TEST (States, AccessData)
 {
-    std::vector<int> data = { 1, 2, 3, 4 };
-    State S = State (data);
-    std::vector<int> stateData;
-    Error_t ret = S.getData (stateData);
+    // Create the State's name data
+    std::string name = "StateA";
+    // Create the State's valid transitions data
+    std::vector<std::string> transitions = { "StateB", "StateC" };
+    // Create the State
+    State S = State (name, transitions);
 
+    // Access the State's name data
+    std::string nameResult;
+    Error_t ret = S.getName (nameResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (data == stateData);
-}
+    CHECK_TRUE (nameResult.compare (name) == 0);
 
-/* Test if states can be mapped by name; code will live under StateMachine */
-TEST (States, MapStates)
-{
-    std::unordered_map<std::string, State> stateMap;
-    std::vector<int> dataA = { 1, 2, 3, 4 };
-    std::vector<int> dataB = { 2, 3, 4, 5 };
-    std::vector<int> dataC = { 3, 4, 5, 6 };
-    stateMap.insert (std::make_pair ("stateA", State (dataA)));
-    stateMap.insert (std::make_pair ("stateB", State (dataB)));
-    stateMap.insert (std::make_pair ("stateC", State (dataC)));
-
-    std::unordered_map<std::string, State>::iterator search =
-       stateMap.find ("stateA");
-    CHECK_TRUE (search->first.compare ("stateA") == 0);
-    std::vector<int> dataResult;
-    Error_t ret = search->second.getData (dataResult);
-    CHECK_TRUE (dataResult == dataA);
-    CHECK_TRUE (ret == E_SUCCESS);
-
-    search = stateMap.find ("stateB");
-    CHECK_TRUE (search->first.compare ("stateB") == 0);
-    ret = search->second.getData (dataResult);
-    CHECK_TRUE (dataResult == dataB);
-    CHECK_TRUE (ret == E_SUCCESS);
-
-    search = stateMap.find ("stateC");
-    CHECK_TRUE (search->first.compare ("stateC") == 0);
-    ret = search->second.getData (dataResult);
-    CHECK_TRUE (dataResult == dataC);
-    CHECK_TRUE (ret == E_SUCCESS);
+    // Access the State's transition data
+    std::vector<std::string> transitionsResult;
+    ret = S.getTransitions (transitionsResult);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (transitions == transitionsResult);
 }
 
 /* Create an action sequence with unique timestamps per function */
