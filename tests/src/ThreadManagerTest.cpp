@@ -126,7 +126,7 @@ TEST (ThreadManagerInit, VerifyProcess)
 /* Test setProcessPriority function. */
 TEST (ThreadManagerInit, SetProcessPriority)
 {
-    static const uint8_t DEFAULT_PRIORITY = 1;
+    //static const uint8_t DEFAULT_PRIORITY = 1;
 
 
     // Set priority and verify.

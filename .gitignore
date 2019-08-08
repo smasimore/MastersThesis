@@ -9,6 +9,8 @@ build/
 /Test_x86/
 /Test_minGW/
 
+.settings/language.settings.xml
+
 libs/cpputest/INSTALL
 libs/cpputest/Makefile.in
 libs/cpputest/aclocal.m4
