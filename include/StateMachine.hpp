@@ -174,29 +174,31 @@ public:
      */
     Error_t executeCurrentSequence ();
 
-<<<<<<< HEAD
     /**
-     * Returns the value of temporary StateMachine data A
+     * Function to handle real time execution of the actions in the action 
+     * sequence. Based on the StateMachine's understanding of real time, this
+     * function will attempt to call each function when its timestamp is equal
+     * or less than the measurement of the current time elapsed since State
+     * transition. 
+     
+     * This function should be called from the main periodic thread. Currently
+     * this periodic function does not yet account for checking whether or not
+     * transitions between states should occur. Depending on the complexity
+     * of transition logic, it might make more sense to implement to separate
+     * periodic functions based on the priorities of executing actions versus
+     * checking for a state transition.
      *
-     * @param   result      Reference to int32_t to store value of A
-     *
-     * @ret     E_SUCCESS   value of A succesfully stored in result
+     * @ret     E_SUCCESS   Successfully checked the time and executed actions
+     * @ret     E_NO_STATES No states have been added to StateMachine
+     * @ret     [other]     Other failure result from functions in sequence
      */
-    Error_t getA (int32_t &result);
-
-    /**
-     * Returns the value of temporary StateMachine data B
-     *
-     * @param   result      Reference to int32_t to store value of B
-     *
-     * @ret     E_SUCCESS   value of B succesfully stored in result
-     */
-    Error_t getB (int32_t &result);
-
     Error_t periodic ();
 
-=======
->>>>>>> cd009b26c391b3903e45602f6b9f469375a2f844
+    /**
+     * Placeholder public variable to test time logic in periodic function
+     */
+    int32_t timeElapsed;
+
 private:
 
     /**
@@ -214,6 +216,18 @@ private:
      * Shared pointer to the current state
      */
     std::shared_ptr<State> mPStateCurrent;
+
+    /**
+     * Iterator to step through the action sequence
+     */
+    std::map<int32_t, std::vector<State::Action_t>>::iterator actionIter;
+
+    /**
+    * End iterator to catch the end of the action sequence
+    */
+    std::map<int32_t, std::vector<State::Action_t>>::iterator actionEnd;
+
+
 
 };
 #endif

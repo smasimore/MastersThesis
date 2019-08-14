@@ -56,6 +56,15 @@ Error_t StateMachine::addState (std::string stateName,
     {
         // overwrite memory of current state
         mPStateCurrent = pNewState;
+        // Reset the iterator from the State's action sequence
+        std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
+        Error_t ret = mPStateCurrent->getSequenceP (&pTempMap);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+        actionIter = pTempMap->begin ();
+        actionEnd = pTempMap->end ();
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
@@ -85,6 +94,15 @@ Error_t StateMachine::addState (std::string stateName,
     {
         // overwrite memory of current state
         mPStateCurrent = pNewState;
+        // Reset the iterator from the State's action sequence
+        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
+        Error_t ret = mPStateCurrent->getSequenceP (&pTempMap);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+        actionIter = pTempMap->begin ();
+        actionEnd = pTempMap->end ();
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
@@ -159,19 +177,17 @@ Error_t StateMachine::executeCurrentSequence ()
         return E_NO_STATES;
     }
     // Create a temp pointer to map, then point to address of action sequence
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
-        *pTempMap;
+    std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
     Error_t ret = mPStateCurrent->getSequenceP (&pTempMap);
     if (ret != E_SUCCESS)
     {
         return ret;
     }
     // Iterate through map; guaranteed ordered by timestamp
-    for (std::pair<int32_t, std::vector<std::tuple<Error_t (*) (int32_t),
-        int32_t>>> vecPair : *pTempMap)
+    for (std::pair<int32_t, std::vector<State::Action_t>> vecPair : *pTempMap)
     {
         // Iterate through each vector element found in second in pair
-        for (std::tuple<Error_t (*) (int32_t), int32_t> tup : vecPair.second)
+        for (State::Action_t tup : vecPair.second)
         {
             // call function in pointer with implicit dereference
             ret = (std::get<0> (tup)) (std::get<1>(tup));
@@ -209,6 +225,15 @@ Error_t StateMachine::switchState(std::string targetState)
         }
         // overwrite current state with the target state
         mPStateCurrent = stateResult;
+        // Reset the iterator from the new State's action sequence
+        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
+        ret = mPStateCurrent->getSequenceP (&pTempMap);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+        actionIter = pTempMap->begin ();
+        actionEnd = pTempMap->end ();
         return E_SUCCESS;
     }
     else
@@ -220,7 +245,35 @@ Error_t StateMachine::switchState(std::string targetState)
 
 Error_t StateMachine::periodic ()
 {
-
+    Error_t retFinal = E_SUCCESS;
+    if (mPStateCurrent == nullptr)
+    {
+        return E_NO_STATES;
+    }
+    // First check if action sequence has already been completed
+    if (actionIter == actionEnd)
+    {
+        return E_SUCCESS;
+    }
+    // Otherwise check current time and timestamps of first actions in sequence
+    if (actionIter->first <= timeElapsed)
+    {
+        // Timestamp met, execute all functions in the vector
+        for (State::Action_t tup : actionIter->second)
+        {
+            // call each function in pointer with implicit dereference
+            Error_t ret = (std::get<0> (tup)) (std::get<1> (tup));
+            // catch failure points in action sequence
+            if (ret != E_SUCCESS)
+            {
+                // set failure point as final return instead of breaking out
+                retFinal = ret;
+            }
+        }
+        // Increment the iterator to the next vector of actions
+        ++actionIter;
+    }
+    return retFinal;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/

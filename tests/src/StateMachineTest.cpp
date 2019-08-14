@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include "StateMachine.hpp"
 #include "Errors.h"
 #include "Log.hpp"
@@ -8,7 +10,7 @@
 /************************** TESTER FUNCTIONS **********************************/
 
 // global variable for use with tester functions
-int32_t gVar1;
+volatile int32_t gVar1;
 
 Error_t multiplyParam1 (int32_t param)
 {
@@ -31,6 +33,24 @@ Error_t subtractParam1 (int32_t param)
 Error_t fail (int32_t param)
 {
     return E_INTED;
+}
+
+// Implement periodic with thread manager
+volatile bool gThreadStopped;
+
+Error_t stateThreadFunc (std::shared_ptr<StateMachine> pSM)
+{
+    Error_t ret;
+    while (!gThreadStopped)
+    {
+        ret = pSM->periodic ();
+        if (ret != E_SUCCESS)
+        {
+            gThreadStopped = true;
+            return ret;
+        }
+    }
+    return E_SUCCESS;
 }
 
 /******************************** TESTS ***************************************/
@@ -103,7 +123,7 @@ TEST (StateMachines, AddStates)
    instead of having to add states after the object is constructed. */
 TEST (StateMachines, DefinedStateCase)
 {
-    // Create State Objects with basic, loop transitions
+    // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
     std::vector<std::string> transitionsB = { "StateC" };
     std::vector<std::string> transitionsC = { "StateA" };
@@ -196,7 +216,7 @@ TEST (StateMachines, ManageActionSequence)
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
     { tup3 };
 
-    // Create State Objects with basic, loop transitions
+    // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
     std::vector<std::string> transitionsB = { "StateC" };
     std::vector<std::string> transitionsC = { "StateA" };
@@ -261,13 +281,13 @@ TEST (StateMachines, ExecuteActionSequence)
 
     // create corresponding input vector of tuples
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1, tup2 };
+        { tup1, tup2 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
-    { tup2, tup3 };
+        { tup2, tup3 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
-    { tup1, tup4 };
+        { tup1, tup4 };
 
-    // Create State Objects with basic, loop transitions
+    // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
     std::vector<std::string> transitionsB = { "StateC" };
     std::vector<std::string> transitionsC = { "StateA" };
@@ -285,7 +305,7 @@ TEST (StateMachines, ExecuteActionSequence)
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 
-    // Create global variable for testing
+    // Set global variable for testing
     gVar1 = 3;
 
     // First state is StateA; action sequence multiplies by 3 then adds 5
@@ -306,4 +326,224 @@ TEST (StateMachines, ExecuteActionSequence)
     ret = pSM->executeCurrentSequence ();
     CHECK_TRUE (E_INTED == ret);
     CHECK_EQUAL (gVar1, 48);
+}
+
+/* Test the periodic function with a basic placeholder time variable */
+TEST (StateMachines, ExecuteActionsPeriodic)
+{
+    // set up function pointers
+    Error_t (*pFuncM) (int32_t) = multiplyParam1;
+    Error_t (*pFuncA) (int32_t) = addParam1;
+    Error_t (*pFuncS) (int32_t) = subtractParam1;
+    Error_t (*pFuncF) (int32_t) = fail;
+
+    // create tuples of ascending timestamps, function pointer, and param
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (2, pFuncM, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (4, pFuncA, 5);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (6, pFuncS, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (8, pFuncF, 3);
+
+
+    // create a corresponding input vector of tuples
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
+        { tup1, tup2, tup3, tup4 };
+
+    // Create basic loop transitions for the states
+    std::vector<std::string> transitionsA = { "StateB" };
+    std::vector<std::string> transitionsB = { "StateA" };
+
+    // Create storage vector for constructor, using the same action sequence
+    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
+        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
+        = { std::make_tuple ("StateA", transitionsA, vecInA),
+            std::make_tuple ("StateB", transitionsB, vecInA) };
+
+    // Create State Machine from vector of States
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
+
+    // Set global variable for testing
+    gVar1 = 3;
+
+    // Set time variable to 0
+    pSM->timeElapsed = 0;
+    // Call periodic function; global variable should be unchanged
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 3);
+
+    // Set time to 2
+    pSM->timeElapsed = 2;
+    // Call periodic function; global variable should multiply by 3
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 9);
+
+    // Set time to 4
+    pSM->timeElapsed = 4;
+    // Call periodic function; global variable should add by 5
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 14);
+
+    // Set time to 6
+    pSM->timeElapsed = 6;
+    // Call periodic function; global variable should subtract by 3
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Set time to 8
+    pSM->timeElapsed = 8;
+    // Call periodic function; function should fail
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_INTED == ret);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Action sequence ends after 8s; call periodic to check behavior
+    pSM->timeElapsed = 9;
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Switch to StateB; StateB action sequence is the same as StateA
+    pSM->switchState("StateB");
+
+    // Reset global variable and time
+    gVar1 = 3;
+    pSM->timeElapsed = 0;
+
+    // Call periodic function; global variable should be unchanged
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 3);
+
+    // Set time to 2
+    pSM->timeElapsed = 2;
+    // Call periodic function; global variable should multiply by 3
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 9);
+
+    // Set time to 4
+    pSM->timeElapsed = 4;
+    // Call periodic function; global variable should add by 5
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 14);
+
+    // Set time to 6
+    pSM->timeElapsed = 6;
+    // Call periodic function; global variable should subtract by 3
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Set time to 8
+    pSM->timeElapsed = 8;
+    // Call periodic function; function should fail
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_INTED == ret);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Action sequence ends after 8s; call periodic to check behavior
+    pSM->timeElapsed = 9;
+    ret = pSM->periodic ();
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_EQUAL (gVar1, 11);
+}
+
+/* Test a periodic thread with the action sequence */
+TEST (StateMachines, ExecutePeriodicThread)
+{
+    // set up function pointers
+    Error_t (*pFuncM) (int32_t) = multiplyParam1;
+    Error_t (*pFuncA) (int32_t) = addParam1;
+    Error_t (*pFuncS) (int32_t) = subtractParam1;
+    Error_t (*pFuncF) (int32_t) = fail;
+
+    // create tuples of ascending timestamps, function pointer, and param
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (2, pFuncM, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (4, pFuncA, 5);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (6, pFuncS, 3);
+    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (8, pFuncF, 3);
+
+
+    // create a corresponding input vector of tuples
+    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
+        { tup1, tup2, tup3, tup4 };
+
+    // Create basic loop transitions for the states
+    std::vector<std::string> transitionsA = { "StateB" };
+    std::vector<std::string> transitionsB = { "StateA" };
+
+    // Create storage vector for constructor, using the same action sequence
+    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
+        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
+        = { std::make_tuple ("StateA", transitionsA, vecInA),
+            std::make_tuple ("StateB", transitionsB, vecInA) };
+
+    // Create State Machine from vector of States
+    std::unique_ptr<StateMachine> pSM (nullptr);
+    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (pSM != nullptr);
+
+    // Initialize ThreadManager
+    ThreadManager *pThreadManager = nullptr;
+    ret = ThreadManager::getInstance (&pThreadManager);
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    pthread_t stateThread;
+    gThreadStopped = false;
+
+    ThreadManager::ThreadFunc_t *pStateThreadFunc =
+        (ThreadManager::ThreadFunc_t *) &stateThreadFunc;
+
+    // Create the the threads
+    ret = pThreadManager->createThread (stateThread, pStateThreadFunc,
+                                        &pSM, sizeof (pSM),
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                        ThreadManager::Affinity_t::ALL);
+    CHECK_TRUE (E_SUCCESS == ret);
+
+    // Set global variable for testing
+    gVar1 = 3;
+
+    // Set time variable to 0, global variable should be unchanged
+    pSM->timeElapsed = 0;
+    usleep (10);
+    CHECK_EQUAL (gVar1, 3);
+
+    // Set time to 2, global variable should multiply by 3
+    pSM->timeElapsed = 2;
+    usleep (10);
+    CHECK_EQUAL (gVar1, 9);
+
+    // Set time to 4, global variable should add by 5
+    pSM->timeElapsed = 4;
+    usleep (10);
+    CHECK_EQUAL (gVar1, 14);
+
+    // Set time to 6, global variable should subtract by 3
+    pSM->timeElapsed = 6;
+    usleep (10);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Set time to 8, function should fail and thread should stop
+    pSM->timeElapsed = 8;
+    usleep (10);
+    CHECK_EQUAL (gVar1, 11);
+
+    // Sleep to allow state thread to run
+    usleep (10);
+
+    // Check that the thread finished
+    CHECK_TRUE (gThreadStopped);
+    Error_t threadRet;
+    ret = pThreadManager->waitForThread (stateThread, threadRet);
+    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (E_INTED == threadRet);
 }
