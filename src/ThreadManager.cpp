@@ -222,8 +222,8 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
     verified = true;
 
     // 1) Build path to file 
-    const static std::string PROC_DIR = "/proc/";
-    const static std::string PROC_COMM_DIR = "/comm";
+    const std::string PROC_DIR = "/proc/";
+    const std::string PROC_COMM_DIR = "/comm";
     std::string procNameFilePath = PROC_DIR + std::to_string (pid) + 
                                    PROC_COMM_DIR;
     std::fstream procNameFile;

@@ -104,10 +104,9 @@ TEST_GROUP (ThreadManagerInit)
    RT Linux. */
 TEST (ThreadManagerInit, VerifyProcess)
 {
-    // Test using process watchdog/0. On RT Linux this is PID 14. 
-    // NOTE: this test does not apply to NILRT
-    /*static const uint8_t SYSTEMD_PID = 14;
-    static const std::string SYSTEMD_NAME = "watchdog/0";
+    // Test using process rcu_preempt. On RT Linux this is PID 7. 
+    const uint8_t SYSTEMD_PID = 7;
+    const std::string SYSTEMD_NAME = "rcu_preempt";
 
     // Test incorrect name.
     bool verified = false;
@@ -120,7 +119,7 @@ TEST (ThreadManagerInit, VerifyProcess)
     ret = ThreadManager::verifyProcess (SYSTEMD_PID, SYSTEMD_NAME, 
                                         verified);
     CHECK_EQUAL (E_SUCCESS, ret);
-    CHECK_EQUAL (true, verified);*/
+    CHECK_EQUAL (true, verified);
 }
 
 /* Test setProcessPriority function. */
