@@ -22,8 +22,8 @@
  * There are 4 categories of threads we need to manage the priorities of:
  * 
  * 1. Hardware IRQ Threads: These kernel threads service the top half of hw 
- *    interrupts such as a key stroke or timer expiring. In RT Linux their
- *    default priority is 50, so all fsw threads must have a priority lower than
+ *    interrupts such as a key stroke or timer expiring. In NILRT Linux their
+ *    default priority is 15, so all fsw threads must have a priority lower than
  *    this to make sure there is minimal latency in servicing these interrupts.
  *    Some of these hw IRQ threads do not do the full computation required to 
  *    service the interrupt, but instead schedule a software IRQ thread to 
@@ -31,15 +31,13 @@
  * 
  * 2. Software IRQ Threads: These kernel threads are sometimes scheduled by the 
  *    hw IRQ threads to finish servicing a hardware interrupt. The sw IRQ 
- *    threads we care about are the ktimersoftd/N threads, where N is the core
- *    ID the thread runs on. These timer threads are critical for the periodic
- *    thread implementation in the ThreadManager and must not be starved. Their
- *    default scheduling policy is SCHED_FIFO (great), but their default 
- *    priorities are only 1. This means any fsw thread running at 1 or higher
- *    can starve these threads. To make sure we do not starve these threads, 
- *    the ThreadManager sets their priority to be 49 (below the hw IRQ 
- *    priority and giving plenty of room below to set various fsw thread 
- *    priorities).
+ *    threads we are about are the ksoftirqd/N threads, where N is the core
+ *    ID the thread runs on. These threads are critical for the periodic thread
+ *    implementation in the ThreadManager, which relies on the hardware timer, 
+ *    and must not be starved. Their default scheduling policy is SCHED_FIFO 
+ *    with a priority of 8. The ThreadManager increases this priority to 14 so
+ *    that we have a larger priority range to give to FSW threads (which should
+ *    run at priorities 1 to ksoftirqd/N priority - 2. 
  * 
  * 3. FSW Init Thread: This is the thread per node that initializes the other
  *    FSW threads (e.g. initializes a RIO's main loop thread & comms thread).
@@ -49,16 +47,16 @@
  * 
  * 4. FSW App Threads: These threads are our real-time application threads used 
  *    to read sensors, process data, communicate over the network, and set 
- *    actuators. Their priorities are to be >= 1 and <= 47 so that the hw and sw
+ *    actuators. Their priorities are to be >= 1 and <= 12 so that the hw and sw
  *    timer IRQ threads have no risk of starvation.
  * 
  * After the ThreadManager is initialized, the following thread priorities are
  * set:
  * 
- *      Hardware IRQ Threads         = HW_IRQ_PRIORITY           = 50 (default)
- *      Software Timer IRQ Threads   = KTIMERSOFTD_PRIORITY      = 49
- *      FSW Init thread              = FSW_INIT_THREAD_PRIORITY  = 48
- *      Max new thread priority      = MAX_NEW_THREAD_PRIORITY   = 47
+ *      Hardware IRQ Threads         = HW_IRQ_PRIORITY           = 15 (default)
+ *      Software IRQ Threads         = KSOFTIRQD_PRIORITY        = 14
+ *      FSW Init thread              = FSW_INIT_THREAD_PRIORITY  = 13
+ *      Max new thread priority      = MAX_NEW_THREAD_PRIORITY   = 12
  *      Min new thread priority      = MIN_NEW_THREAD_PRIORITY   = 1 
  */
 
@@ -79,7 +77,7 @@ public:
     /**
      * Type of function expected by the thread creation methods.
      */
-    typedef void ThreadFunc_t (void *);
+    typedef void *ThreadFunc_t (void *);
 
     /**
      * Priority type used by thread creation methods. 
@@ -163,6 +161,48 @@ public:
                           Affinity_t cpuAffinity);
 
     /**
+     * Create a periodic thread with SCHED_FIFO scheduling policy. All created 
+     * threads must be waited on using waitForThread for proper cleanup.
+     * 
+     * Note: Affinity is set after thread is created due to pthread API 
+     *       limitations.
+     * 
+     * @param   thread                      pthread_t for new thread.
+     * @param   pFunc                       Pointer to ThreadFunc_t function new 
+     *                                      thread will execute.
+     * @param   pArgs                       Pointer to arguments passed to new 
+     *                                      thread's function. These arguments
+     *                                      will be copied to the heap, so the
+     *                                      caller does not need to keep the 
+     *                                      memory pArgs points to after this
+     *                                      function returns successfully.
+     * @param   numArgBytes                 Number of bytes pArgs points to.
+     * @param   priority                    Priority to set new thread. Must be
+     *                                      >= MIN_NEW_THREAD_PRIORITY and <= 
+     *                                      MAX_NEW_THREAD_PRIORITY.
+     * @param   cpuAffinity                 CPU affinity for new thread.
+     * @param   periodMs                    Period of thread in ms.
+     * 
+     * @ret     E_SUCCESS                   Successfully created new thread.
+     *          E_INVALID_POINTER           Invalid pFunc param.
+     *          E_INVALID_PRIORITY          Priority invalid.
+     *          E_INVALID_AFFINITY          CPU affinity invalid.
+     *          E_FAILED_TO_ALLOCATE_ARGS   Malloc failed for args.
+     *          E_FAILED_TO_ALLOCATE_THREAD Malloc failed for thread struct.
+     *          E_FAILED_TO_INIT_THREAD_ATR Failed to init thread attribute.
+     *          E_FAILED_TO_SET_SCHED_POL   Failed to set scheduling policy.
+     *          E_FAILED_TO_SET_PRIORITY    Failed to set thread priority.
+     *          E_FAILED_TO_SET_SCHED_INH   Failed to set thread attribute
+     *                                      inheritance.
+     *          E_FAILED_TO_CREATE_THREAD   Failed to create thread.
+     *          E_FAILED_TO_SET_AFFINITY    Failed to set thread affinity.
+     */
+    Error_t createPeriodicThread (pthread_t &thread, ThreadFunc_t *pFunc, 
+                                  void *pArgs,  uint32_t numArgBytes, 
+                                  Priority_t priority, Affinity_t cpuAffinity, 
+                                  uint32_t periodMs);
+
+    /**
      * Block until specified thread returns. Waiting on an invalid thread has
      * undefined behavior (most likely a seg fault).
      * 
@@ -185,8 +225,8 @@ public:
      * appear to change per system boot and getting the PID's dynamically is
      * tricky. These are verified on initialization using verifyProcess. 
      */
-    static const uint8_t KTIMERSOFTD_0_PID;
-    static const uint8_t KTIMERSOFTD_1_PID;
+    static const uint8_t KSOFTIRQD_0_PID;
+    static const uint8_t KSOFTIRQD_1_PID;
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
@@ -194,7 +234,7 @@ public:
      * Hardcoded thread priorities.
      */
     static const uint8_t HW_IRQ_PRIORITY;
-    static const uint8_t KTIMERSOFTD_PRIORITY;
+    static const uint8_t KSOFTIRQD_PRIORITY;
     static const uint8_t FSW_INIT_THREAD_PRIORITY;
 
     /**
@@ -300,6 +340,29 @@ private:
      *                                      their priorities updated.
      */
     static Error_t initKernelSchedulingEnvironment ();
+
+    /**
+     * Wrapper function for periodic thread implementation. Manages timer and
+     * calls thread function each period. Does not return except on error.
+     *
+     * @param   rawArgs                         Buffer with first 4 bytes 
+     *                                          representing the thread's 
+     *                                          period in ms, and second
+     *                                          4 bytes representing the 
+     *                                          function to call every period.
+     *
+     * @ret     E_FAILED_TO_CREATE_TIMERFD      Failed to create timer.
+     *          E_FAILED_TO_ARM_TIMERFD         Failed to set and arm timer.
+     *          E_FAILED_TO_GET_TIMER_FLAGS     Failed to get timer flags.
+     *          E_FAILED_TO_SET_TIMER_FLAGS     Failed to set timer flags.
+     *          E_FAILED_TO_READ_TIMERFD        Failed to read timer.
+     *          E_MISSED_SCHEDULER_DEADLINE     Thread ended after period
+     *                                          elapsed or started after timer
+     *                                          triggered more than once.
+     *          [other]                         Error returned from caller's 
+     *                                          periodic function.
+     */
+    static void *periodicWrapperFunc (void *rawArgs);
 };
 
 #endif

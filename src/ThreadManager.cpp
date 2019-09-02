@@ -5,18 +5,21 @@
 #include <fstream>
 #include <sched.h>
 #include <cstring>
+#include <sys/timerfd.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "ThreadManager.hpp"
 
 /******************************* CONSTANTS ************************************/
 
-const uint8_t ThreadManager::KTIMERSOFTD_0_PID = 4;
-const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 20;
-const uint8_t ThreadManager::HW_IRQ_PRIORITY = 50;
-const uint8_t ThreadManager::KTIMERSOFTD_PRIORITY = 
+const uint8_t ThreadManager::KSOFTIRQD_0_PID = 3;
+const uint8_t ThreadManager::KSOFTIRQD_1_PID = 20;
+const uint8_t ThreadManager::HW_IRQ_PRIORITY = 15;
+const uint8_t ThreadManager::KSOFTIRQD_PRIORITY = 
     ThreadManager::HW_IRQ_PRIORITY - 1;
 const uint8_t ThreadManager::FSW_INIT_THREAD_PRIORITY = 
-    ThreadManager::KTIMERSOFTD_PRIORITY - 1;
+    ThreadManager::KSOFTIRQD_PRIORITY - 1;
 const uint8_t ThreadManager::MAX_NEW_THREAD_PRIORITY = 
     ThreadManager::FSW_INIT_THREAD_PRIORITY - 1;
 const uint8_t ThreadManager::MIN_NEW_THREAD_PRIORITY = 1;
@@ -65,14 +68,22 @@ Error_t ThreadManager::createThread (pthread_t &thread,
     {
         return E_INVALID_AFFINITY;
     }
+    else if (pArgs == nullptr && numArgBytes != 0)
+    {
+        return E_INVALID_ARGS_LENGTH;
+    }
 
     // 2) Copy the passed in args to the heap.
-    void *pArgsCopy = malloc (numArgBytes);
-    if (pArgsCopy == nullptr)
+    void *pArgsCopy = nullptr;
+    if (numArgBytes > 0)
     {
-        return E_FAILED_TO_ALLOCATE_ARGS;
+        pArgsCopy = malloc (numArgBytes);
+        if (pArgsCopy == nullptr)
+        {
+            return E_FAILED_TO_ALLOCATE_ARGS;
+        }
+        std::memcpy (pArgsCopy, pArgs, numArgBytes);
     }
-    std::memcpy (pArgsCopy, pArgs, numArgBytes);
 
     // 3) Initialize the thread attribute struct.
     pthread_attr_t attr;
@@ -155,6 +166,59 @@ Error_t ThreadManager::createThread (pthread_t &thread,
 
     return E_SUCCESS;
 }
+
+Error_t ThreadManager::createPeriodicThread (pthread_t &thread, 
+                                             ThreadFunc_t *pFunc,
+                                             void *pArgs,  uint32_t numArgBytes, 
+                                             Priority_t priority, 
+                                             Affinity_t cpuAffinity, 
+                                             uint32_t periodMs)
+{
+    // 1) Validate pFunc and pArgs. The rest of the params will be validated 
+    //    in the createThread call.
+    if (pFunc == nullptr)
+    {
+        return E_INVALID_POINTER;
+    } 
+    else if (pArgs == nullptr && numArgBytes != 0)
+    {
+        return E_INVALID_ARGS_LENGTH;
+    }
+
+    // 2) Copy args to a buffer with an extra 8 bytes at the beginning to store
+    //    periodMs and pFunc. These last 2 elements will be used by the periodic
+    //    wrapper thread, while the original arguments will be passed down the
+    //    pFunc.
+    uint32_t argsBufferSize = numArgBytes + sizeof(periodMs) + sizeof(pFunc);
+    uint8_t argsBuffer[argsBufferSize];
+
+    // 3) Store periodMs in the buffer.
+    argsBuffer[3] = (periodMs >> 24) & 0xFF;
+    argsBuffer[2] = (periodMs >> 16) & 0xFF;
+    argsBuffer[1] = (periodMs >> 8) & 0xFF;
+    argsBuffer[0] = periodMs & 0xFF;
+
+    // 4) Store pFunc in the buffer.
+    argsBuffer[7] = ((uint32_t) pFunc >> 24) & 0xFF;
+    argsBuffer[6] = ((uint32_t) pFunc >> 16) & 0xFF;
+    argsBuffer[5] = ((uint32_t) pFunc >> 8) & 0xFF;
+    argsBuffer[4] = (uint32_t) pFunc & 0xFF;
+
+    // 5) Copy the pFunc args to the rest of the buffer.
+    if (numArgBytes > 0)
+    {
+        std::memcpy (argsBuffer + 8, pArgs, numArgBytes);
+    }
+   
+    // 6) Create wrapper thread, which will call pFunc.
+    ThreadManager::ThreadFunc_t *pPeriodicWrapperFunc = 
+        (ThreadManager::ThreadFunc_t *) &ThreadManager::periodicWrapperFunc;
+    Error_t ret = this->createThread (thread, pPeriodicWrapperFunc, argsBuffer,
+                                      argsBufferSize, priority, cpuAffinity);
+
+    return ret;
+}
+
 
 Error_t ThreadManager::waitForThread (pthread_t &thread, Error_t &threadReturn)
 {
@@ -323,15 +387,13 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
         return E_FAILED_TO_SET_AFFINITY;
     }
 
-    // 3) Verify that the hardcoded ktimersoftd/n PID's map to the correct 
+    // 3) Verify that the hardcoded ksoftirqd/n PID's map to the correct 
     //     processes.
-
-    // Note the below process names are not valid for NILRT and will need to be updated
-   /* const static std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
-    const static std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
+    const std::string EXPECTED_KSOFTIRQD_0_NAME = "ksoftirqd/0";
+    const std::string EXPECTED_KSOFTIRQD_1_NAME = "ksoftirqd/1";
     bool verified = false;
-    Error_t ret = ThreadManager::verifyProcess (KTIMERSOFTD_0_PID, 
-                                                EXPECTED_KTIMERSOFTD_0_NAME, 
+    Error_t ret = ThreadManager::verifyProcess (KSOFTIRQD_0_PID, 
+                                                EXPECTED_KSOFTIRQD_0_NAME, 
                                                 verified);
     if (ret != E_SUCCESS || verified == false)
     {
@@ -339,27 +401,114 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
     }
 
     verified = false;
-    ret = ThreadManager::verifyProcess (KTIMERSOFTD_1_PID, 
-                                        EXPECTED_KTIMERSOFTD_1_NAME, 
+    ret = ThreadManager::verifyProcess (KSOFTIRQD_1_PID, 
+                                        EXPECTED_KSOFTIRQD_1_NAME, 
                                         verified);
     if (ret != E_SUCCESS || verified == false)
     {
         return E_FAILED_TO_VERIFY_PROCESS;
     }
 
-    // 4) Set the priorities of the ktimersoftd/n threads.
-    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
-                                        ThreadManager::KTIMERSOFTD_PRIORITY);
+    // 4) Set the priorities of the ksoftirqd/n threads.
+    ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID, 
+                                        ThreadManager::KSOFTIRQD_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
-    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID, 
-                                        ThreadManager::KTIMERSOFTD_PRIORITY);
+    ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_1_PID, 
+                                        ThreadManager::KSOFTIRQD_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
-    }*/
+    }
 
     return E_SUCCESS;
 }
+
+void *ThreadManager::periodicWrapperFunc (void *rawArgs)
+{
+    // 1) Get period and function to call every period from first 8 bytes in 
+    //    argsBuffer.
+    uint32_t *argsBuffer = (uint32_t *) rawArgs;
+    uint32_t periodMs = argsBuffer[0];
+    ThreadManager::ThreadFunc_t *pFunc = (ThreadManager::ThreadFunc_t *) argsBuffer[1];
+
+    // 2) Set up periodic timer.
+    static const uint32_t NUM_MS_IN_S = 1000;
+    static const uint32_t NUM_NS_IN_MS = 1000000;
+
+    // 2a) Create the timer. Make nonblocking so can check if missed deadline.
+    int32_t timerFd = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
+    if (timerFd < 0)
+    {
+        return (void *) E_FAILED_TO_CREATE_TIMERFD;
+    }
+
+    // 2b) Make the timer periodic.
+    struct itimerspec itval;
+    uint32_t sec = periodMs / NUM_MS_IN_S;
+    uint32_t ns = (periodMs - (sec * NUM_MS_IN_S)) * NUM_NS_IN_MS;
+    itval.it_interval.tv_sec = sec;
+    itval.it_interval.tv_nsec = ns;
+    itval.it_value.tv_sec = sec;
+    itval.it_value.tv_nsec = ns;
+    if (timerfd_settime (timerFd, 0, &itval, NULL) < 0)
+    {
+        return (void *) E_FAILED_TO_ARM_TIMERFD;
+    }
+
+    // 3) Enter periodic loop.
+    while (1)
+    {
+        // 3a) Call pFunc with the args buffer starting after the period and
+        //     pFunc elements.
+        Error_t ret = static_cast<Error_t> (reinterpret_cast<uint64_t> (
+                                                        pFunc(&argsBuffer[2])));
+        if (ret != E_SUCCESS)
+        {
+            return (void *) ret;
+        }
+
+        // 3b) Set fd as non-blocking to be able to check for deadline miss.
+        int32_t flags = fcntl (timerFd, F_GETFL, 0);
+        if (flags == -1)
+        {
+            return (void *) E_FAILED_TO_GET_TIMER_FLAGS;
+        }
+
+        flags |= O_NONBLOCK;
+        if (fcntl (timerFd, F_SETFL, flags) == -1)
+        {
+            return (void *) E_FAILED_TO_SET_TIMER_FLAGS;
+        }
+
+        // 3c) Check for deadline miss.
+        int32_t readRet = 0;
+        uint64_t ticksSinceLastRead = 0;
+        readRet = read (timerFd, &ticksSinceLastRead, sizeof (ticksSinceLastRead));
+        if (readRet < 0 && errno != EAGAIN)
+        {
+            return (void *) E_FAILED_TO_READ_TIMERFD;
+        }
+        else if (ticksSinceLastRead > 0)
+        {
+            return (void *) E_MISSED_SCHEDULER_DEADLINE;
+        }
+
+        // 3d) Set fd as blocking so can block until timer elapses.
+        flags &= ~O_NONBLOCK;
+        if (fcntl (timerFd, F_SETFL, flags) == -1)
+        {
+            return (void *) E_FAILED_TO_SET_TIMER_FLAGS;
+        }
+
+        // 3e) Block until timer elapses and make sure timer only expired once.
+        readRet = read (timerFd, &ticksSinceLastRead, sizeof (ticksSinceLastRead));
+        if (ticksSinceLastRead > 1)
+        {
+            return (void *) E_MISSED_SCHEDULER_DEADLINE;
+        }
+    }
+}
+
