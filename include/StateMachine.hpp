@@ -130,7 +130,7 @@ public:
     Error_t switchState (std::string targetState);
 
     /**
-     * Intermediate function to return the name of current State
+     * Function to return a copy of the name of current State
      * 
      * @param   result          Reference to string to store name of State
      *
@@ -140,7 +140,7 @@ public:
     Error_t getCurrentStateName (std::string &result);
 
     /**
-     * Intermediate function to return the valid transitions of current State
+     * Function to return a copy of the valid transitions of current State
      *
      * @param   result      Reference to vector of strings to store valid
      *                      transitions of the state
@@ -151,7 +151,7 @@ public:
     Error_t getCurrentStateTransitions (std::vector<std::string> &result);
 
     /**
-     * Intermediate function to return the action sequence of current State
+     * Function to return a copy of the action sequence of current State
      *
      * @param   result      Reference to map of timestamps and corresponding
      *                      functions and params to store action sequence
@@ -220,12 +220,12 @@ private:
     /**
      * Iterator to step through the action sequence
      */
-    std::map<int32_t, std::vector<State::Action_t>>::iterator actionIter;
+    std::map<int32_t, std::vector<State::ActionOld_t>>::iterator actionIter;
 
     /**
     * End iterator to catch the end of the action sequence
     */
-    std::map<int32_t, std::vector<State::Action_t>>::iterator actionEnd;
+    std::map<int32_t, std::vector<State::ActionOld_t>>::iterator actionEnd;
 
 
 

@@ -55,13 +55,13 @@ Error_t stateThreadFunc (std::shared_ptr<StateMachine> pSM)
 
 /******************************** TESTS ***************************************/
 
-TEST_GROUP (StateMachines) 
+TEST_GROUP (StateMachines)
 {
 };
 
-/* Test to create a StateMachine from default hardcoded case, 
+/* Test to create a StateMachine from default hardcoded case,
    then verify StateMachine data */
-TEST (StateMachines, DefaultCase) 
+TEST (StateMachines, DefaultCase)
 {
     std::unique_ptr<StateMachine> pSM (nullptr);
     Error_t ret = StateMachine::fromDefault (pSM);
@@ -102,23 +102,23 @@ TEST (StateMachines, AddStates)
     CHECK_TRUE (E_DUPLICATE_NAME == ret);
 
     // Attempt to call function to find states
-    std::shared_ptr<State> stateResult(nullptr);
-    ret = pSM->findState(stateResult, "StateA");
+    std::shared_ptr<State> stateResult (nullptr);
+    ret = pSM->findState (stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
-    std::vector<std::string> dataResult;
-    ret = stateResult->getTransitions(dataResult);
+    std::vector<std::string> *pDataResult;
+    ret = stateResult->getTransitions (&pDataResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsA == dataResult);
+    CHECK_TRUE (transitionsA == *pDataResult);
 
     // Attempt to find an invalid state
-    ret = pSM->findState(stateResult, "StateD");
+    ret = pSM->findState (stateResult, "StateD");
     CHECK_TRUE (E_NAME_NOTFOUND == ret);
 }
 
-/* Test to create a State Machine from existing vector of states. 
+/* Test to create a State Machine from existing vector of states.
    This creates the StateMachine immediately with the necessary states
    instead of having to add states after the object is constructed. */
 TEST (StateMachines, DefinedStateCase)
@@ -130,9 +130,9 @@ TEST (StateMachines, DefinedStateCase)
 
     // Create storage vector for constructor
     std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
-        = { std::make_tuple("StateA", transitionsA),
-            std::make_tuple("StateB", transitionsB),
-            std::make_tuple("StateC", transitionsC) };
+        = { std::make_tuple ("StateA", transitionsA),
+            std::make_tuple ("StateB", transitionsB),
+            std::make_tuple ("StateC", transitionsC) };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -143,18 +143,18 @@ TEST (StateMachines, DefinedStateCase)
 
     // Attempt to call function to find states
     std::shared_ptr<State> stateResult (nullptr);
-    ret = pSM->findState(stateResult, "StateA");
+    ret = pSM->findState (stateResult, "StateA");
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (stateResult != nullptr);
 
     // Access data of found state
-    std::vector<std::string> dataResult;
-    ret = stateResult->getTransitions(dataResult);
+    std::vector<std::string> *pDataResult;
+    ret = stateResult->getTransitions (&pDataResult);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsA == dataResult);
+    CHECK_TRUE (transitionsA == *pDataResult);
 
     // Attempt to find an invalid state
-    ret = pSM->findState(stateResult, "StateD");
+    ret = pSM->findState (stateResult, "StateD");
     CHECK_TRUE (E_NAME_NOTFOUND == ret);
 
     // Get the current State info (StateA, since first in vector)
@@ -177,7 +177,7 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateB");
 
-     ret = pSM->getCurrentStateTransitions (transitionsResult);
+    ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == transitionsB);
 
@@ -190,7 +190,7 @@ TEST (StateMachines, DefinedStateCase)
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (nameResult == "StateB");
 
-     ret = pSM->getCurrentStateTransitions (transitionsResult);
+    ret = pSM->getCurrentStateTransitions (transitionsResult);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (transitionsResult == transitionsB);
 }
@@ -281,11 +281,11 @@ TEST (StateMachines, ExecuteActionSequence)
 
     // create corresponding input vector of tuples
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-        { tup1, tup2 };
+    { tup1, tup2 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
-        { tup2, tup3 };
+    { tup2, tup3 };
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
-        { tup1, tup4 };
+    { tup1, tup4 };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
@@ -343,10 +343,9 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (6, pFuncS, 3);
     std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (8, pFuncF, 3);
 
-
     // create a corresponding input vector of tuples
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-        { tup1, tup2, tup3, tup4 };
+    { tup1, tup2, tup3, tup4 };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
@@ -409,7 +408,7 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     CHECK_EQUAL (gVar1, 11);
 
     // Switch to StateB; StateB action sequence is the same as StateA
-    pSM->switchState("StateB");
+    pSM->switchState ("StateB");
 
     // Reset global variable and time
     gVar1 = 3;
@@ -473,7 +472,7 @@ TEST (StateMachines, ExecutePeriodicThread)
 
     // create a corresponding input vector of tuples
     std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-        { tup1, tup2, tup3, tup4 };
+    { tup1, tup2, tup3, tup4 };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };

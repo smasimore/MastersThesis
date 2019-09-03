@@ -22,33 +22,28 @@ State::State (std::string stateName,
     {
         // access the vector corresponding to the timestamp, then insert tuple
         int32_t timestamp = std::get<0> (tup);
-        this->mActionSequence[timestamp].push_back (std::make_tuple (
-            std::get<1> (tup), std::get<2> (tup)));
+        Action_t action = { timestamp, std::get<1> (tup), std::get<2> (tup) };
+        this->mActionSequenceOld[timestamp].push_back (std::make_tuple (
+            action.func, action.param));
+        this->mActionSequence[timestamp].push_back (action);
     }
 }
 
-Error_t State::getName (std::string &result)
+Error_t State::getName (std::string **ppResult)
 {
-    result = this->mStateName;
+    *ppResult = &mStateName;
     return E_SUCCESS;
 }
 
-Error_t State::getTransitions (std::vector<std::string> &result)
+Error_t State::getTransitions (std::vector<std::string> **ppResult)
 {
-    result = this->mTargetTransitions;
+    *ppResult = &mTargetTransitions;
     return E_SUCCESS;
 }
 
-Error_t State::getActionSequence (std::map<int32_t, std::vector<Action_t>> 
-                                  &result)
+Error_t State::getActionSequence (std::map<int32_t, std::vector<ActionOld_t>>
+                                  **ppResult)
 {
-    result = this->mActionSequence;
-    return E_SUCCESS;
-}
-
-Error_t State::getSequenceP (std::map<int32_t, std::vector<Action_t>> 
-                             **ppResult)
-{
-    *ppResult = &mActionSequence;
+    *ppResult = &mActionSequenceOld;
     return E_SUCCESS;
 }

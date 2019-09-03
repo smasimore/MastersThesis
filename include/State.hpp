@@ -28,9 +28,19 @@ public:
         ActionLine_t;
 
     /**
+     * Struct containing the necessary elements of an action 
+     */
+    typedef struct Action
+    {
+        int32_t timestamp;
+        Error_t (*func) (int32_t);
+        int32_t param;
+    } Action_t;
+
+    /**
      * Type tuple containing only the action and its parameter.
      */
-    typedef std::tuple<Error_t (*) (int32_t), int32_t> Action_t;
+    typedef std::tuple<Error_t (*) (int32_t), int32_t> ActionOld_t;
 
     /**
      * Constructor for a state with more complex State data, tentative
@@ -63,7 +73,7 @@ public:
      *
      * @ret     E_SUCCESS   Successfully stored State name in result
      */
-    Error_t getName (std::string &result);
+    Error_t getName (std::string **ppResult);
 
     /**
      * Get the State's valid transitions
@@ -72,7 +82,7 @@ public:
      *
      * @ret     E_SUCCESS   Successfully stored State transitions in result
      */
-    Error_t getTransitions (std::vector<std::string> &result);
+    Error_t getTransitions (std::vector<std::string> **ppResult);
 
     /**
      * Get the State's action sequence
@@ -82,18 +92,8 @@ public:
      *
      * @ret     E_SUCCESS   Successfully stored State action sequence in result
      */
-    Error_t getActionSequence (std::map<int32_t, std::vector<std::tuple<
-                               Error_t (*) (int32_t), int32_t> > > &result);
-
-    /**
-     * Get the address of the State's action sequence
-     *
-     * @param   pMapRes     Pointer to pointer to a map of the action sequence
-     *
-     * @ret     E_SUCCESS   pMapRes successfully points to the State's map
-     */
-    Error_t getSequenceP (std::map<int32_t, std::vector<std::tuple<
-                                Error_t (*) (int32_t), int32_t>>> **ppResult);
+    Error_t getActionSequence (std::map<int32_t, std::vector<ActionOld_t>> 
+                               **ppResult);
 
 private:
 
@@ -109,10 +109,17 @@ private:
     std::vector<std::string> mTargetTransitions;
 
     /**
-     * The first iteration of the action sequence of the State. Ordered map
+     * The old iteration of the action sequence of the State. Ordered map
      * containing vector of tuples, using timestamp as the key. Tuples in the
      * vector contain the pointer to function, and the parameter.
      */
-    std::map <int32_t, std::vector <Action_t> > mActionSequence;
+    std::map <int32_t, std::vector <ActionOld_t>> mActionSequenceOld;
+
+    /**
+     * The old iteration of the action sequence of the State. Ordered map
+     * containing vector of tuples, using timestamp as the key. Tuples in the
+     * vector contain the pointer to function, and the parameter.
+     */
+    std::map <int32_t, std::vector <Action_t>> mActionSequence;
 };
 #endif
