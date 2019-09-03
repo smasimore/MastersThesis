@@ -92,7 +92,7 @@ public:
      *
      * @ret     E_SUCCESS   Successfully stored State action sequence in result
      */
-    Error_t getActionSequence (std::map<int32_t, std::vector<ActionOld_t>> 
+    Error_t getActionSequence (std::map<int32_t, std::vector<Action_t>> 
                                **ppResult);
 
 private:

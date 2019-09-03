@@ -235,9 +235,9 @@ TEST (StateMachines, ManageActionSequence)
     CHECK_TRUE (pSM != nullptr);
 
     // Create local map and search iterator
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         localMap;
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         ::const_iterator search;
 
     // First state is StateA, retrieve its action sequence
@@ -247,8 +247,8 @@ TEST (StateMachines, ManageActionSequence)
     // At timestamp 1, action sequence contains multiply function and param 3
     search = localMap.find (1);
     CHECK_EQUAL (search->first, 1);
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncM);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 3);
+    CHECK_EQUAL (search->second[0].func, pFuncM);
+    CHECK_EQUAL (search->second[0].param, 3);
 
     // Transition to StateB, then retrieve its action sequence
     ret = pSM->switchState ("StateB");
@@ -259,8 +259,8 @@ TEST (StateMachines, ManageActionSequence)
     // At timestamp 2, action sequence contains addition function and param 5
     search = localMap.find (2);
     CHECK_EQUAL (search->first, 2);
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncA);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 5);
+    CHECK_EQUAL (search->second[0].func, pFuncA);
+    CHECK_EQUAL (search->second[0].param, 5);
 }
 
 /* Test to arbitrarily execute the action sequences in StateMachine */

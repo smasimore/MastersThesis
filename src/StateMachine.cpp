@@ -57,7 +57,7 @@ Error_t StateMachine::addState (std::string stateName,
         // overwrite memory of current state
         mPStateCurrent = pNewState;
         // Reset the iterator from the State's action sequence
-        std::map<int32_t, std::vector<State::ActionOld_t>> *pTempMap;
+        std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
         Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
         if (ret != E_SUCCESS)
         {
@@ -95,7 +95,7 @@ Error_t StateMachine::addState (std::string stateName,
         // overwrite memory of current state
         mPStateCurrent = pNewState;
         // Reset the iterator from the State's action sequence
-        std::map<int32_t, std::vector<State::ActionOld_t> > *pTempMap;
+        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
         Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
         if (ret != E_SUCCESS)
         {
@@ -162,15 +162,14 @@ Error_t StateMachine::getCurrentStateTransitions (std::vector<std::string>
 }
 
 Error_t StateMachine::getCurrentActionSequence (std::map<int32_t,
-                                                std::vector<std::tuple<
-                                                Error_t (*) (int32_t), int32_t>
-                                                > > &result)
+                                                std::vector<State::Action_t>> 
+                                                &result)
 {
     if (mPStateCurrent == nullptr)
     {
         return E_NO_STATES;
     }
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         *pSequence;
     Error_t ret = mPStateCurrent->getActionSequence (&pSequence);
     result = *pSequence;
@@ -185,7 +184,7 @@ Error_t StateMachine::executeCurrentSequence ()
     }
 
     // Create a temp pointer to map, then point to address of action sequence
-    std::map<int32_t, std::vector<State::ActionOld_t>> *pTempMap;
+    std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
     Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
     if (ret != E_SUCCESS)
     {
@@ -193,14 +192,13 @@ Error_t StateMachine::executeCurrentSequence ()
     }
 
     // Iterate through map; guaranteed ordered by timestamp
-    for (std::pair<int32_t, std::vector<State::ActionOld_t>> vecPair : 
+    for (std::pair<int32_t, std::vector<State::Action_t>> actionPair : 
          *pTempMap)
     {
-        // Iterate through each vector element found in second in pair
-        for (State::ActionOld_t tup : vecPair.second)
+        for (State::Action_t action : actionPair.second)
         {
             // call function in pointer with implicit dereference
-            ret = (std::get<0> (tup)) (std::get<1>(tup));
+            ret = (action.func) (action.param);
             // catch failure points in action sequence
             if (ret != E_SUCCESS)
             {
@@ -229,7 +227,8 @@ Error_t StateMachine::switchState(std::string targetState)
     // Check if valid transitions contains the target state
     if (std::find (pValidTrans->begin (), pValidTrans->end (), targetState) !=
         pValidTrans->end())
-    {   // if not equal to end, transition is valid; switch the current state
+    {   
+        // if not equal to end, transition is valid; switch the current state
         // create a temporary empty state
         std::shared_ptr<State> stateResult;
         // get the target state from the state map and check if found
@@ -241,7 +240,7 @@ Error_t StateMachine::switchState(std::string targetState)
         // overwrite current state with the target state
         mPStateCurrent = stateResult;
         // Reset the iterator from the new State's action sequence
-        std::map<int32_t, std::vector<State::ActionOld_t>> *pTempMap;
+        std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
         ret = mPStateCurrent->getActionSequence (&pTempMap);
         if (ret != E_SUCCESS)
         {
@@ -274,10 +273,10 @@ Error_t StateMachine::periodic ()
     if (actionIter->first <= timeElapsed)
     {
         // Timestamp met, execute all functions in the vector
-        for (State::ActionOld_t tup : actionIter->second)
+        for (State::Action_t action : actionIter->second)
         {
             // call each function in pointer with implicit dereference
-            Error_t ret = (std::get<0> (tup)) (std::get<1> (tup));
+            Error_t ret = (action.func) (action.param);
             // catch failure points in action sequence
             if (ret != E_SUCCESS)
             {

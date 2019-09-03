@@ -77,32 +77,32 @@ TEST (States, UniqueActions)
     State S = State ("", {} , vecIn);
 
     // retrieve the Action Sequence
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         *pLocalMap;
     Error_t ret = S.getActionSequence (&pLocalMap);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // search the map
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         ::const_iterator search;
 
     // at key 0, vector of tuple of pointer to function multiply and param 3
     search = pLocalMap->find (0);
     CHECK_EQUAL (search->first, 0);
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncM);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 3);
+    CHECK_EQUAL (search->second[0].func, pFuncM);
+    CHECK_EQUAL (search->second[0].param, 3);
 
     // at key 1, vector of tuple of pointer to function add and param 5
     search = pLocalMap->find (1);
     CHECK_EQUAL (search->first, 1);
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncA);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 5);
+    CHECK_EQUAL (search->second[0].func, pFuncA);
+    CHECK_EQUAL (search->second[0].param, 5);
 
     // at key 2, tuple of pointer to function subtract and param 3
     search = pLocalMap->find (2);
     CHECK_EQUAL (search->first, 2);
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncS);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 3);
+    CHECK_EQUAL (search->second[0].func, pFuncS);
+    CHECK_EQUAL (search->second[0].param, 3);
 }
 
 /* Create an action sequence with a shared timestamp between functions */
@@ -126,13 +126,13 @@ TEST (States, SharedActions)
     State S = State ("", {}, vecIn);
 
     // retrieve the Action Sequence
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map < int32_t, std::vector < State::Action_t >>
         *pLocalMap;
     Error_t ret = S.getActionSequence (&pLocalMap);
     CHECK_TRUE (E_SUCCESS == ret);
 
     // search the map
-    std::map<int32_t, std::vector<std::tuple<Error_t (*) (int32_t), int32_t>>>
+    std::map<int32_t, std::vector<State::Action_t>>
         ::const_iterator search;
 
     // at timestamp 0, a vector of three tuples: multiply/3, add/5, subtract/3
@@ -140,14 +140,14 @@ TEST (States, SharedActions)
     CHECK_EQUAL (search->first, 0);
 
     // verify first element of vector
-    CHECK_EQUAL (std::get<0> (search->second[0]), pFuncM);
-    CHECK_EQUAL (std::get<1> (search->second[0]), 3);
+    CHECK_EQUAL (search->second[0].func, pFuncM);
+    CHECK_EQUAL (search->second[0].param, 3);
 
     // verify second element of vector
-    CHECK_EQUAL (std::get<0> (search->second[1]), pFuncA);
-    CHECK_EQUAL (std::get<1> (search->second[1]), 5);
+    CHECK_EQUAL (search->second[1].func, pFuncA);
+    CHECK_EQUAL (search->second[1].param, 5);
 
     // verify third element of vector
-    CHECK_EQUAL (std::get<0> (search->second[2]), pFuncS);
-    CHECK_EQUAL (std::get<1> (search->second[2]), 3);
+    CHECK_EQUAL (search->second[2].func, pFuncS);
+    CHECK_EQUAL (search->second[2].param, 3);
 }

@@ -159,9 +159,8 @@ public:
      * @ret     E_SUCCESS   Action sequence of current state stored in result
      * @ret     E_NO_STATES No states have been added to StateMachine
      */
-    Error_t getCurrentActionSequence (std::map<int32_t, std::vector<std::tuple<
-                                      Error_t (*)(int32_t), int32_t> > > 
-                                      &result);
+    Error_t getCurrentActionSequence (std::map<int32_t, std::vector<
+                                      State::Action_t>> &result);
 
     /**
      * Function to execute all actions in the current state's action sequence.
@@ -220,12 +219,12 @@ private:
     /**
      * Iterator to step through the action sequence
      */
-    std::map<int32_t, std::vector<State::ActionOld_t>>::iterator actionIter;
+    std::map<int32_t, std::vector<State::Action_t>>::iterator actionIter;
 
     /**
     * End iterator to catch the end of the action sequence
     */
-    std::map<int32_t, std::vector<State::ActionOld_t>>::iterator actionEnd;
+    std::map<int32_t, std::vector<State::Action_t>>::iterator actionEnd;
 
 
 
