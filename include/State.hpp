@@ -38,11 +38,6 @@ public:
     } Action_t;
 
     /**
-     * Type tuple containing only the action and its parameter.
-     */
-    typedef std::tuple<Error_t (*) (int32_t), int32_t> ActionOld_t;
-
-    /**
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
@@ -107,13 +102,6 @@ private:
      * the name of the valid states for a transition
      */
     std::vector<std::string> mTargetTransitions;
-
-    /**
-     * The old iteration of the action sequence of the State. Ordered map
-     * containing vector of tuples, using timestamp as the key. Tuples in the
-     * vector contain the pointer to function, and the parameter.
-     */
-    std::map <int32_t, std::vector <ActionOld_t>> mActionSequenceOld;
 
     /**
      * The old iteration of the action sequence of the State. Ordered map
