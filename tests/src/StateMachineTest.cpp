@@ -333,9 +333,10 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     CHECK_EQUAL (gVar1, 11);
 
     // Action sequence ends after 8s; call periodic to check behavior
+    // Action iterator should still be pointing to the failing function
     pSM->timeElapsed = 9;
     ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (E_INTED == ret);
     CHECK_EQUAL (gVar1, 11);
 
     // Switch to StateB; StateB action sequence is the same as StateA
@@ -379,9 +380,10 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     CHECK_EQUAL (gVar1, 11);
 
     // Action sequence ends after 8s; call periodic to check behavior
+    // Action iterator should still be pointing to failing function
     pSM->timeElapsed = 9;
     ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
+    CHECK_TRUE (E_INTED == ret);
     CHECK_EQUAL (gVar1, 11);
 }
 

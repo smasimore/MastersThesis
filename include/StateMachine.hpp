@@ -166,8 +166,5 @@ private:
     * End iterator to catch the end of the action sequence
     */
     std::map<int32_t, std::vector<State::Action_t>>::iterator mActionEnd;
-
-
-
 };
 #endif

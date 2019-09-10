@@ -201,7 +201,6 @@ Error_t StateMachine::switchState(std::string targetState)
 
 Error_t StateMachine::periodic ()
 {
-    Error_t retFinal = E_SUCCESS;
     if (mPStateCurrent == nullptr)
     {
         return E_NO_STATES;
@@ -213,26 +212,35 @@ Error_t StateMachine::periodic ()
         return E_SUCCESS;
     }
 
-    // Otherwise check current time and timestamps of first actions in sequence
-    if (mActionIter->first <= timeElapsed)
+    // Begin a loop, to ensure all actions are being completed. There might be
+    // more than one timestamp that must be executed given a current time.
+    bool actionsFinished = false;
+    while (!actionsFinished)
     {
-        // Timestamp met, execute all functions in the vector
-        for (State::Action_t action : mActionIter->second)
+        // Check current time and timestamps of first actions in sequence
+        if (mActionIter->first <= timeElapsed)
         {
-            // call each function in pointer with implicit dereference
-            Error_t ret = (action.func) (action.param);
-            // catch failure points in action sequence
-            if (ret != E_SUCCESS)
+            // Timestamp met, execute all functions in the vector
+            for (State::Action_t action : mActionIter->second)
             {
-                // set failure point as final return instead of breaking out
-                retFinal = ret;
+                // call each function in pointer with implicit dereference
+                Error_t ret = (action.func) (action.param);
+                // catch failure points in action sequence, and break out upon fail
+                if (ret != E_SUCCESS)
+                {
+                    return ret;
+                }
             }
-        }
 
-        // Increment the iterator to the next vector of actions
-        ++mActionIter;
+            // Increment the iterator to the next vector of actions
+            ++mActionIter;
+        }
+        else
+        {
+            actionsFinished = true;
+        }
     }
-    return retFinal;
+    return E_SUCCESS;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/
