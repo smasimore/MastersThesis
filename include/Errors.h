@@ -75,6 +75,9 @@ typedef enum Error {
     E_NAME_NOTFOUND,
     E_NO_STATES,
 
+    /* Controller */
+    E_INVALID_CONFIG,
+
     LAST
 } Error_t;
 

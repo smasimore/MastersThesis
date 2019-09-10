@@ -24,10 +24,16 @@ class Log final
 public:
 
     /* Event to be logged. */
-    enum class LogEvent_t : uint32_t 
+    enum LogEvent_t : uint32_t 
     {
+        /* Thread Manager */
         THREAD_START,
         THREAD_WAITED,
+
+        /* Controller */
+        CONTROLLER_RAN_ENABLED,
+        CONTROLLER_RAN_SAFED,
+
         LAST
     };
 

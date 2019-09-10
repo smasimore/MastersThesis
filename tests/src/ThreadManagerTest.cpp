@@ -1,14 +1,14 @@
-/** All #include statements should come before the CppUTest include */
+/* All #include statements should come before the CppUTest include */
 #include <sched.h>
 #include <signal.h>
 #include <time.h>
 #include <iostream>
 
-
-#include "CppUTest/TestHarness.h"
 #include "Errors.h"
 #include "Log.hpp"
 #include "ThreadManager.hpp"
+
+#include "CppUTest/TestHarness.h"
 
 /******************************** MACROS **************************************/
 

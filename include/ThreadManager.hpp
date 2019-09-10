@@ -87,7 +87,7 @@ public:
     /**
      * CPU affinity possibilities for new threads.
      */
-    enum class Affinity_t : uint8_t
+    enum Affinity_t : uint8_t
     {
         CORE_0,
         CORE_1,
@@ -107,10 +107,10 @@ public:
 
     /**
      * Construct the ThreadManager if it does not already exist and return it
-     * in the pThreadManager param. Initializes kernel scheduling environment
+     * in the ppThreadManager param. Initializes kernel scheduling environment
      * the first time it is called.
      * 
-     * @param   pThreadManager              Pointer to pointer to ThreadManager 
+     * @param   ppThreadManager             Pointer to pointer to ThreadManager 
      *                                      object.     
      * 
      * @ret     E_SUCCESS                   Successfully pointed pThreadManager 
