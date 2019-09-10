@@ -12,6 +12,8 @@ Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
         Error_t retState = rSM->addState (state);
         if (retState != E_SUCCESS)
         {
+            // on failure, free the StateMachine
+            rSM.reset ();
             return E_DUPLICATE_NAME;
         }
     }
@@ -155,11 +157,13 @@ Error_t StateMachine::switchState(std::string targetState)
     // Get the valid transitions (using intermediate function)
     std::vector<std::string> *pValidTrans;
     Error_t ret = mPStateCurrent->getTransitions (&pValidTrans);
+
     // getter function only returns E_SUCCESS for now, if block for future use
     if (ret != E_SUCCESS)
     {
         return ret;
     }
+
     // Check if valid transitions contains the target state
     if (std::find (pValidTrans->begin (), pValidTrans->end (), targetState) !=
         pValidTrans->end())

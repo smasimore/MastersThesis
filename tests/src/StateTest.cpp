@@ -64,17 +64,16 @@ TEST (States, UniqueActions)
     Error_t (*pFuncA) (int32_t) = addParam;
     Error_t (*pFuncS) (int32_t) = subtractParam;
 
-    // create tuples of timestamp, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (0, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (1, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (2, pFuncS, 3);
+    // create actions with timestamp, function pointer, and param
+    State::Action_t actionM {0, pFuncM, 3};
+    State::Action_t actionA {1, pFuncA, 5};
+    State::Action_t actionS {2, pFuncS, 3};
 
-    // create corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecIn =
-        { tup1, tup2, tup3 };
+    // create corresponding input vector of actions
+    std::vector<State::Action_t> actionsIn = { actionM, actionA, actionS };
 
     // construct a state with input vector
-    State S = State ("", {} , vecIn);
+    State S = State ("", {} , actionsIn);
 
     // retrieve the Action Sequence
     std::map<int32_t, std::vector<State::Action_t>>
@@ -114,16 +113,15 @@ TEST (States, SharedActions)
     Error_t (*pFuncS) (int32_t) = subtractParam;
 
     // create tuples of timestamp, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (0, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (0, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (0, pFuncS, 3);
+    State::Action_t actionM {0, pFuncM, 3};
+    State::Action_t actionA {0, pFuncA, 5};
+    State::Action_t actionS {0, pFuncS, 3};
 
     // create corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecIn =
-    { tup1, tup2, tup3 };
+    std::vector<State::Action_t> actionsIn = { actionM, actionA, actionS };
 
     // construct a state with input vector
-    State S = State ("", {}, vecIn);
+    State S = State ("", {}, actionsIn);
 
     // retrieve the Action Sequence
     std::map < int32_t, std::vector < State::Action_t >>

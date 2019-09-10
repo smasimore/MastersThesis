@@ -21,13 +21,6 @@ class State
 public:
 
     /**
-     * Type tuple of complete action as parsed line by line: contains
-     * timestamp, action, and action parameter
-     */
-    typedef std::tuple<int32_t, Error_t (*) (int32_t), int32_t>
-        ActionLine_t;
-
-    /**
      * Struct containing the necessary elements of an action 
      */
     typedef struct Action
@@ -63,16 +56,13 @@ public:
      *
      * @param   stateName           string containing the state name
      * @param   validTransitions    vector of strings representing valid states
-     * @param   actionSequence      vector of tuples containing function time,
+     * @param   actionList          vector of Action_t containing timestamp,
      *                              pointer to function, and function param.
      *
      * @ret     State               State class with data from params
      */
-    State (std::string stateName, const std::vector<std::string> 
-           &targetTransitions, const std::vector<ActionLine_t> &actionList);
-
     State (std::string stateName, const std::vector<std::string>
-       &targetTransitions, const std::vector<Action_t> &actionList);
+           &targetTransitions, const std::vector<Action_t> &actionList);
 
     /**
      * Get the State name
