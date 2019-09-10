@@ -21,18 +21,6 @@ class StateMachine
 public:
 
     /**
-     * Create a statemachine from a default hardcoded case. This is important
-     * in case of parser, config, or other external failures. 
-     *  NOTE: This function will be hard-coded around the time of the parser.
-     *
-     * @param   rSM             reference to smart pointer of type StateMachine
-     *
-     * @ret     E_SUCCESS       successfully passed a StateMachine object into
-     *                          rSM using the default case
-     */
-    static Error_t fromDefault (std::unique_ptr<StateMachine> &rSM);
-
-    /**
      * Create a statemachine from a list of state names and transitions.
      *
      * @param   rSM                 reference to smart pointer of type 
@@ -50,6 +38,9 @@ public:
     static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
                                const std::vector<std::tuple<std::string, 
                                std::vector<std::string>>> &stateList);
+
+    static Error_t createNew (std::unique_ptr<StateMachine> &rSM,
+                              const std::vector<State::State_t> &stateList);
 
     /**
      * Create a statemachine from a list of state names, transitions, and a
@@ -73,6 +64,18 @@ public:
                                const std::vector<std::tuple<std::string, 
                                std::vector<std::string>, std::vector<
                                State::ActionLine_t> >> &stateList);
+
+    /**
+     * Intermediate function to add, allocate, and map State to the State Map.
+     * When called the first time, will set the first state as the
+     * current state of the StateMachine.
+     *
+     * @param   stateIn             State struct containing the State's data
+     *
+     * @ret     E_SUCCESS           State object successfully added and mapped
+     *          E_DUPLICATE_NAME    State with same name already exists
+     */
+    Error_t addState (State::State_t stateIn);
 
     /**
      * Intermediate function to add, allocate, and map State to the State Map.
@@ -219,12 +222,12 @@ private:
     /**
      * Iterator to step through the action sequence
      */
-    std::map<int32_t, std::vector<State::Action_t>>::iterator actionIter;
+    std::map<int32_t, std::vector<State::Action_t>>::iterator mActionIter;
 
     /**
     * End iterator to catch the end of the action sequence
     */
-    std::map<int32_t, std::vector<State::Action_t>>::iterator actionEnd;
+    std::map<int32_t, std::vector<State::Action_t>>::iterator mActionEnd;
 
 
 

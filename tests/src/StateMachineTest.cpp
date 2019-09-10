@@ -59,65 +59,6 @@ TEST_GROUP (StateMachines)
 {
 };
 
-/* Test to create a StateMachine from default hardcoded case,
-   then verify StateMachine data */
-TEST (StateMachines, DefaultCase)
-{
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromDefault (pSM);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Test default case around when StateMachine is finalized w/ parser
-}
-
-/* Test to create a StateMachine as before, then run State Mapping code*/
-TEST (StateMachines, AddStates)
-{
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromDefault (pSM);
-
-    // Check state machine initialization
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Create states using secondary iteration of temporary constructor
-    //  note: for all future use cases, transitions will be exact State name
-    std::vector<std::string> transitionsA = { "A", "B", "C" };
-    std::vector<std::string> transitionsB = { "B", "C", "D" };
-    std::vector<std::string> transitionsC = { "C", "D", "E" };
-
-    // Add states to StateMachine
-    ret = pSM->addState ("StateA", transitionsA);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    ret = pSM->addState ("StateB", transitionsB);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    ret = pSM->addState ("StateC", transitionsC);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // Attempt to add a State with duplicate name
-    ret = pSM->addState ("StateA", transitionsA);
-    CHECK_TRUE (E_DUPLICATE_NAME == ret);
-
-    // Attempt to call function to find states
-    std::shared_ptr<State> stateResult (nullptr);
-    ret = pSM->findState (stateResult, "StateA");
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (stateResult != nullptr);
-
-    // Access data of found state
-    std::vector<std::string> *pDataResult;
-    ret = stateResult->getTransitions (&pDataResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsA == *pDataResult);
-
-    // Attempt to find an invalid state
-    ret = pSM->findState (stateResult, "StateD");
-    CHECK_TRUE (E_NAME_NOTFOUND == ret);
-}
-
 /* Test to create a State Machine from existing vector of states.
    This creates the StateMachine immediately with the necessary states
    instead of having to add states after the object is constructed. */
@@ -128,15 +69,14 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> transitionsB = { "StateC" };
     std::vector<std::string> transitionsC = { "StateA" };
 
-    // Create storage vector for constructor
-    std::vector<std::tuple<std::string, std::vector<std::string>>> storageVec
-        = { std::make_tuple ("StateA", transitionsA),
-            std::make_tuple ("StateB", transitionsB),
-            std::make_tuple ("StateC", transitionsC) };
+    // Create vector of states for createNew function
+    std::vector<State::State_t> stateVec = { {"StateA", transitionsA, {}},
+                                             {"StateB", transitionsB, {}},
+                                             {"StateC", transitionsC, {}} };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    Error_t ret = StateMachine::createNew (pSM, stateVec);
 
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
@@ -203,18 +143,15 @@ TEST (StateMachines, ManageActionSequence)
     Error_t (*pFuncA) (int32_t) = addParam1;
     Error_t (*pFuncS) (int32_t) = subtractParam1;
 
-    // create tuples of timestamp, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (1, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (2, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (3, pFuncS, 3);
+    // create actions from timestamp, function, and params
+    State::Action_t actionM { 1, pFuncM, 3 };
+    State::Action_t actionA { 2, pFuncA, 5 };
+    State::Action_t actionS { 3, pFuncS, 3 };
 
-    // create corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1 };
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
-    { tup2 };
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
-    { tup3 };
+    // create corresponding vectors of actions
+    std::vector<State::Action_t> actionsA = { actionM };
+    std::vector<State::Action_t> actionsB = { actionA };
+    std::vector<State::Action_t> actionsC = { actionS };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
@@ -222,15 +159,14 @@ TEST (StateMachines, ManageActionSequence)
     std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
-        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", transitionsA, vecInA),
-            std::make_tuple ("StateB", transitionsB, vecInB),
-            std::make_tuple ("StateC", transitionsC, vecInC) };
+    std::vector<State::State_t> stateVec
+        = { {"StateA", transitionsA, actionsA},
+            {"StateB", transitionsB, actionsB},
+            {"StateC", transitionsC, actionsC} };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    Error_t ret = StateMachine::createNew (pSM, stateVec);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 
@@ -273,19 +209,16 @@ TEST (StateMachines, ExecuteActionSequence)
     Error_t (*pFuncF) (int32_t) = fail;
 
     // create tuples of timestamp, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (0, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (0, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (0, pFuncS, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (1, pFuncF, 3);
+    State::Action_t actionM { 0, pFuncM, 3 };
+    State::Action_t actionA { 0, pFuncA, 5 };
+    State::Action_t actionS { 0, pFuncS, 3 };
+    State::Action_t actionF { 1, pFuncF, 3 };
 
 
     // create corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1, tup2 };
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInB =
-    { tup2, tup3 };
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInC =
-    { tup1, tup4 };
+    std::vector<State::Action_t> vecInA = { actionM, actionA };
+    std::vector<State::Action_t> vecInB = { actionA, actionS };
+    std::vector<State::Action_t> vecInC = { actionM, actionF };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
@@ -293,15 +226,14 @@ TEST (StateMachines, ExecuteActionSequence)
     std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
-        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", transitionsA, vecInA),
-            std::make_tuple ("StateB", transitionsB, vecInB),
-            std::make_tuple ("StateC", transitionsC, vecInC) };
+    std::vector<State::State_t> stateVec
+        = { { "StateA", transitionsA, vecInA },
+            { "StateB", transitionsB, vecInB },
+            { "StateC", transitionsC, vecInC } };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    Error_t ret = StateMachine::createNew (pSM, stateVec);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 
@@ -338,28 +270,27 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     Error_t (*pFuncF) (int32_t) = fail;
 
     // create tuples of ascending timestamps, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (2, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (4, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (6, pFuncS, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (8, pFuncF, 3);
+    State::Action_t actionM { 2, pFuncM, 3 };
+    State::Action_t actionA { 4, pFuncA, 5 };
+    State::Action_t actionS { 6, pFuncS, 3 };
+    State::Action_t actionF { 8, pFuncF, 3 };
 
     // create a corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1, tup2, tup3, tup4 };
+    std::vector<State::Action_t> actionsA = 
+        { actionM, actionA, actionS, actionF };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
     std::vector<std::string> transitionsB = { "StateA" };
 
     // Create storage vector for constructor, using the same action sequence
-    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
-        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", transitionsA, vecInA),
-            std::make_tuple ("StateB", transitionsB, vecInA) };
+    std::vector<State::State_t> stateVec
+        = { {"StateA", transitionsA, actionsA},
+            {"StateB", transitionsB, actionsA} };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    Error_t ret = StateMachine::createNew (pSM, stateVec);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 
@@ -464,29 +395,28 @@ TEST (StateMachines, ExecutePeriodicThread)
     Error_t (*pFuncF) (int32_t) = fail;
 
     // create tuples of ascending timestamps, function pointer, and param
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup1 (2, pFuncM, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup2 (4, pFuncA, 5);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup3 (6, pFuncS, 3);
-    std::tuple<int32_t, Error_t (*) (int32_t), int32_t> tup4 (8, pFuncF, 3);
+    State::Action_t actionM {2, pFuncM, 3};
+    State::Action_t actionA {4, pFuncA, 5};
+    State::Action_t actionS {6, pFuncS, 3};
+    State::Action_t actionF {8, pFuncF, 3};
 
 
     // create a corresponding input vector of tuples
-    std::vector<std::tuple<int32_t, Error_t (*) (int32_t), int32_t>> vecInA =
-    { tup1, tup2, tup3, tup4 };
+    std::vector<State::Action_t> vecInA =
+    { actionM, actionA, actionS, actionF };
 
     // Create basic loop transitions for the states
     std::vector<std::string> transitionsA = { "StateB" };
     std::vector<std::string> transitionsB = { "StateA" };
 
     // Create storage vector for constructor, using the same action sequence
-    std::vector<std::tuple<std::string, std::vector<std::string>, std::vector<
-        std::tuple<int32_t, Error_t (*) (int32_t), int32_t>>>> storageVec
-        = { std::make_tuple ("StateA", transitionsA, vecInA),
-            std::make_tuple ("StateB", transitionsB, vecInA) };
+    std::vector<State::State_t> stateVec
+        = { {"StateA", transitionsA, vecInA},
+            {"StateB", transitionsB, vecInA} };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::fromStates (pSM, storageVec);
+    Error_t ret = StateMachine::createNew (pSM, stateVec);
     CHECK_TRUE (E_SUCCESS == ret);
     CHECK_TRUE (pSM != nullptr);
 

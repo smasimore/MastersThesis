@@ -2,14 +2,6 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-Error_t StateMachine::fromDefault (std::unique_ptr<StateMachine> &rSM)
-{
-    // reset the smart pointer, using corresponding default case
-    rSM.reset (new StateMachine ());
-    return E_SUCCESS;
-
-}
-
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
                                   const std::vector<std::tuple<std::string, 
                                   std::vector<std::string>>> &stateList)
@@ -24,6 +16,22 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
         }
     }
     return E_SUCCESS;    
+}
+
+
+Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
+                                 const std::vector<State::State_t> &stateList)
+{
+    rSM.reset (new StateMachine ());
+    for (State::State_t state : stateList)
+    {
+        Error_t retState = rSM->addState (state);
+        if (retState != E_SUCCESS)
+        {
+            return E_DUPLICATE_NAME;
+        }
+    }
+    return E_SUCCESS;
 }
 
 Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
@@ -45,6 +53,42 @@ Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
     return E_SUCCESS;
 }
 
+Error_t StateMachine::addState (State::State_t stateIn)
+{
+    // Allocate the state from parameter data, and create shared pointer
+    std::shared_ptr<State> pNewState (new State (stateIn.name, 
+                                                 stateIn.transitions,
+                                                 stateIn.actions));
+
+    // Check if pointer to current state is null; if so, then set as current
+    if (mPStateCurrent == nullptr)
+    {
+        // overwrite memory of current state
+        mPStateCurrent = pNewState;
+        // Reset the iterator from the State's action sequence
+        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
+        Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+        mActionIter = pTempMap->begin ();
+        mActionEnd = pTempMap->end ();
+    }
+    // Insert returns pair containing bool; true if inserted, false if not.
+    // Will not insert if there exists a duplicate key, aka duplicate name
+    bool resultBool = (this->mStateMap).
+        insert (std::make_pair (stateIn.name, pNewState)).second;
+    if (resultBool)
+    {
+        return E_SUCCESS;
+    }
+    else
+    {
+        return E_DUPLICATE_NAME;
+    }
+}
+
 Error_t StateMachine::addState (std::string stateName, 
                                 const std::vector<std::string> 
                                 &stateTransitions)
@@ -63,9 +107,10 @@ Error_t StateMachine::addState (std::string stateName,
         {
             return ret;
         }
-        actionIter = pTempMap->begin ();
-        actionEnd = pTempMap->end ();
+        mActionIter = pTempMap->begin ();
+        mActionEnd = pTempMap->end ();
     }
+
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
     bool resultBool = (this->mStateMap).
@@ -89,6 +134,7 @@ Error_t StateMachine::addState (std::string stateName,
     // Allocate the state from parameter data, and create shared pointer
     std::shared_ptr<State> pNewState (new State (stateName, stateTransitions,
                                                  actionList));
+
     // Check if pointer to current state is null; if so, then set as current
     if (mPStateCurrent == nullptr)
     {
@@ -101,8 +147,8 @@ Error_t StateMachine::addState (std::string stateName,
         {
             return ret;
         }
-        actionIter = pTempMap->begin ();
-        actionEnd = pTempMap->end ();
+        mActionIter = pTempMap->begin ();
+        mActionEnd = pTempMap->end ();
     }
     // Insert returns pair containing bool; true if inserted, false if not.
     // Will not insert if there exists a duplicate key, aka duplicate name
@@ -237,6 +283,7 @@ Error_t StateMachine::switchState(std::string targetState)
         {
             return E_NAME_NOTFOUND;
         }
+
         // overwrite current state with the target state
         mPStateCurrent = stateResult;
         // Reset the iterator from the new State's action sequence
@@ -246,8 +293,9 @@ Error_t StateMachine::switchState(std::string targetState)
         {
             return ret;
         }
-        actionIter = pTempMap->begin ();
-        actionEnd = pTempMap->end ();
+
+        mActionIter = pTempMap->begin ();
+        mActionEnd = pTempMap->end ();
         return E_SUCCESS;
     }
     else
@@ -264,16 +312,18 @@ Error_t StateMachine::periodic ()
     {
         return E_NO_STATES;
     }
+
     // First check if action sequence has already been completed
-    if (actionIter == actionEnd)
+    if (mActionIter == mActionEnd)
     {
         return E_SUCCESS;
     }
+
     // Otherwise check current time and timestamps of first actions in sequence
-    if (actionIter->first <= timeElapsed)
+    if (mActionIter->first <= timeElapsed)
     {
         // Timestamp met, execute all functions in the vector
-        for (State::Action_t action : actionIter->second)
+        for (State::Action_t action : mActionIter->second)
         {
             // call each function in pointer with implicit dereference
             Error_t ret = (action.func) (action.param);
@@ -284,8 +334,9 @@ Error_t StateMachine::periodic ()
                 retFinal = ret;
             }
         }
+
         // Increment the iterator to the next vector of actions
-        ++actionIter;
+        ++mActionIter;
     }
     return retFinal;
 }

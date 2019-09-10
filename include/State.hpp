@@ -38,6 +38,16 @@ public:
     } Action_t;
 
     /**
+     * Struct containing the necessary elements of a State
+     */
+    typedef struct StateInput
+    {
+        std::string name;
+        std::vector <std::string> transitions;
+        std::vector<Action_t> actions;
+    } State_t;
+
+    /**
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
@@ -60,6 +70,9 @@ public:
      */
     State (std::string stateName, const std::vector<std::string> 
            &targetTransitions, const std::vector<ActionLine_t> &actionList);
+
+    State (std::string stateName, const std::vector<std::string>
+       &targetTransitions, const std::vector<Action_t> &actionList);
 
     /**
      * Get the State name

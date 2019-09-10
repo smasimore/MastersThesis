@@ -27,6 +27,22 @@ State::State (std::string stateName,
     }
 }
 
+State::State (std::string stateName,
+              const std::vector<std::string> &targetTransitions,
+              const std::vector<State::Action_t> &actionList)
+{
+    this->mStateName = stateName;
+    this->mTargetTransitions = targetTransitions;
+    // Parser would likely process each of the action sequence line by line.
+    // Hence, there should be some intermediate logic to group the timestamps
+    // such as how the action sequence is stored in a state.
+    for (State::Action action : actionList)
+    {
+        // access the vector corresponding to the timestamp, then insert tuple
+        this->mActionSequence[action.timestamp].push_back (action);
+    }
+}
+
 Error_t State::getName (std::string **ppResult)
 {
     *ppResult = &mStateName;
