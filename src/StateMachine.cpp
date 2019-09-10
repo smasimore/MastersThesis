@@ -2,22 +2,6 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
-                                  const std::vector<std::tuple<std::string, 
-                                  std::vector<std::string>>> &stateList)
-{
-    rSM.reset (new StateMachine ());
-    for (std::tuple<std::string, std::vector<std::string>> tup : stateList)
-    {
-        Error_t retState = rSM->addState (std::get<0> (tup), std::get<1>(tup));
-        if (retState != E_SUCCESS)
-        {
-            return E_DUPLICATE_NAME;
-        }
-    }
-    return E_SUCCESS;    
-}
-
 
 Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
                                  const std::vector<State::State_t> &stateList)
@@ -26,25 +10,6 @@ Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
     for (State::State_t state : stateList)
     {
         Error_t retState = rSM->addState (state);
-        if (retState != E_SUCCESS)
-        {
-            return E_DUPLICATE_NAME;
-        }
-    }
-    return E_SUCCESS;
-}
-
-Error_t StateMachine::fromStates (std::unique_ptr<StateMachine> &rSM,
-                                  const std::vector<std::tuple<std::string,
-                                  std::vector<std::string>, std::vector<
-                                  State::ActionLine_t> >> &stateList)
-{
-    rSM.reset (new StateMachine ());
-    for (std::tuple<std::string, std::vector<std::string>, std::vector<
-         State::ActionLine_t>> tup : stateList)
-    {
-        Error_t retState = rSM->addState (std::get<0> (tup), std::get<1> (tup),
-                                          std::get<2> (tup));
         if (retState != E_SUCCESS)
         {
             return E_DUPLICATE_NAME;
@@ -79,81 +44,6 @@ Error_t StateMachine::addState (State::State_t stateIn)
     // Will not insert if there exists a duplicate key, aka duplicate name
     bool resultBool = (this->mStateMap).
         insert (std::make_pair (stateIn.name, pNewState)).second;
-    if (resultBool)
-    {
-        return E_SUCCESS;
-    }
-    else
-    {
-        return E_DUPLICATE_NAME;
-    }
-}
-
-Error_t StateMachine::addState (std::string stateName, 
-                                const std::vector<std::string> 
-                                &stateTransitions)
-{
-    // Allocate the state from parameter data, and create shared pointer
-    std::shared_ptr<State> pNewState (new State (stateName, stateTransitions));
-    // Check if pointer to current state is null; if so, then set as current
-    if (mPStateCurrent == nullptr)
-    {
-        // overwrite memory of current state
-        mPStateCurrent = pNewState;
-        // Reset the iterator from the State's action sequence
-        std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
-        Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
-        if (ret != E_SUCCESS)
-        {
-            return ret;
-        }
-        mActionIter = pTempMap->begin ();
-        mActionEnd = pTempMap->end ();
-    }
-
-    // Insert returns pair containing bool; true if inserted, false if not.
-    // Will not insert if there exists a duplicate key, aka duplicate name
-    bool resultBool = (this->mStateMap).
-        insert (std::make_pair (stateName, pNewState)).second;
-    if (resultBool)
-    {
-        return E_SUCCESS;
-    }
-    else
-    {
-        return E_DUPLICATE_NAME;
-    }
-}
-
-Error_t StateMachine::addState (std::string stateName,
-                                const std::vector<std::string> 
-                                &stateTransitions, const std::vector<std::tuple
-                                <int32_t, Error_t (*) (int32_t), int32_t>> 
-                                &actionList)
-{
-    // Allocate the state from parameter data, and create shared pointer
-    std::shared_ptr<State> pNewState (new State (stateName, stateTransitions,
-                                                 actionList));
-
-    // Check if pointer to current state is null; if so, then set as current
-    if (mPStateCurrent == nullptr)
-    {
-        // overwrite memory of current state
-        mPStateCurrent = pNewState;
-        // Reset the iterator from the State's action sequence
-        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
-        Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
-        if (ret != E_SUCCESS)
-        {
-            return ret;
-        }
-        mActionIter = pTempMap->begin ();
-        mActionEnd = pTempMap->end ();
-    }
-    // Insert returns pair containing bool; true if inserted, false if not.
-    // Will not insert if there exists a duplicate key, aka duplicate name
-    bool resultBool = (this->mStateMap).
-        insert (std::make_pair (stateName, pNewState)).second;
     if (resultBool)
     {
         return E_SUCCESS;

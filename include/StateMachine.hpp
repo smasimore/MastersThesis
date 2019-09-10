@@ -25,45 +25,15 @@ public:
      *
      * @param   rSM                 reference to smart pointer of type 
      *                              StateMachine
-     * @param   stateList           vector of tuples. First element of tuple is
-     *                              type string representing name of State.
-     *                              Second element of tuple is a vector of type
-     *                              string representing the State's respective
-     *                              valid transitions
+     * @param   stateList           vector of State_t structs containing the
+     *                              input data for the States to be created
      *
      * @ret     E_SUCCESS           successfully passed a StateMachine object 
      *                              into rSM using States in stateList
      *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
-    static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
-                               const std::vector<std::tuple<std::string, 
-                               std::vector<std::string>>> &stateList);
-
     static Error_t createNew (std::unique_ptr<StateMachine> &rSM,
                               const std::vector<State::State_t> &stateList);
-
-    /**
-     * Create a statemachine from a list of state names, transitions, and a
-     * predefined list of actions.
-     *
-     * @param   rSM                 reference to smart pointer of type 
-     *                              StateMachine
-     * @param   stateList           vector of tuples. First element of tuple is
-     *                              type string representing name of State.
-     *                              Second element of tuple is a vector of type
-     *                              string representing the State's respective
-     *                              valid transitions. Third element is vector
-     *                              of tuples containing action sequence (tuple
-     *                              details documented in State)
-     *
-     * @ret     E_SUCCESS           successfully passed a StateMachine object 
-     *                              into rSM using States in stateList
-     *          E_DUPLICATE_NAME    a duplicate state name found in stateList
-     */
-    static Error_t fromStates (std::unique_ptr<StateMachine> &rSM,
-                               const std::vector<std::tuple<std::string, 
-                               std::vector<std::string>, std::vector<
-                               State::ActionLine_t> >> &stateList);
 
     /**
      * Intermediate function to add, allocate, and map State to the State Map.
@@ -76,38 +46,6 @@ public:
      *          E_DUPLICATE_NAME    State with same name already exists
      */
     Error_t addState (State::State_t stateIn);
-
-    /**
-     * Intermediate function to add, allocate, and map State to the State Map.
-     * When called the first time, will set the first state as the
-     * current state of the StateMachine.
-     *
-     * @param   stateName           String containing name of State to add
-     * @param   stateTransitions    Vector of Strings of valid transition names
-     *
-     * @ret     E_SUCCESS           State object successfully added and mapped
-     *          E_DUPLICATE_NAME    State with same name already exists
-     */
-    Error_t addState (std::string stateName, 
-                      const std::vector<std::string> &stateTransitions);
-
-    /**
-     * Intermediate function to add, allocate, and map State to the State Map.
-     * When called the first time, will set the first state as the
-     * current state of the StateMachine.
-     *
-     * @param   stateName           String containing name of State to add
-     * @param   stateTransitions    Vector of Strings of valid transition names
-     * @param   actionList          Vector of tuples detailing the action
-     *                              sequence (see State for tuple structure)
-     *
-     * @ret     E_SUCCESS           State object successfully added and mapped
-     *          E_DUPLICATE_NAME    State with same name already exists
-     */
-    Error_t addState (std::string stateName,
-                      const std::vector<std::string> &stateTransitions,
-                      const std::vector<std::tuple<int32_t, Error_t (*) 
-                      (int32_t), int32_t>> &actionList);
 
     /**
      * Intermediate function to find and store a State in the map by State name
