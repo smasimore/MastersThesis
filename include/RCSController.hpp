@@ -28,11 +28,11 @@ public:
     */
     typedef enum Response : int8_t
     {
-    FIRST = -2,
-    FIRE_NEGATIVE,
-    NO_FIRE,
-    FIRE_POSITIVE,
-    LAST
+        FIRST = -2,
+        FIRE_NEGATIVE,
+        NO_FIRE,
+        FIRE_POSITIVE,
+        LAST
     } Response_t;
 
     /**
@@ -67,11 +67,11 @@ public:
     };
 
     /**
-      * Controllers begin with response NO_FIRE.
-      *
-      * @param   kConfig Configuration for phase channel geometry.
-      */
-     RCSController (const RCSController::Config& kConfig);
+     * Controllers begin with response NO_FIRE.
+     *
+     * @param   kConfig Configuration for phase channel geometry.
+     */
+    RCSController (const RCSController::Config& kConfig);
 
     /**
      * Validates the phase channel configuration provided at construction.
@@ -88,14 +88,14 @@ public:
      *
      * @ret     E_SUCCESS Computation succeeded.
      */
-     Error_t runEnabled ();
+    Error_t runEnabled ();
 
-     /**
-      * No controller activity. Response is perpetually NO_FIRE.
-      *
-      * @ret     E_SUCCESS Run succeeded.
-      */
-     Error_t runSafed ();
+    /**
+     * No controller activity. Response is perpetually NO_FIRE.
+     *
+     * @ret     E_SUCCESS Run succeeded.
+     */
+    Error_t runSafed ();
 
     /**
      * Sets the angle to be used in the next response calculation.
@@ -160,8 +160,8 @@ private:
      */
 
     /**
-    * Magnitude of the upper drift channel bound on the rate axis.
-    */
+     * Magnitude of the upper drift channel bound on the rate axis.
+     */
     const float mUPPER_RATE_LIMIT;
     /**
      * Magnitude of the lower drift channel bound on the rate axis.
