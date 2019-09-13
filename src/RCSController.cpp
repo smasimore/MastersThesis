@@ -45,7 +45,7 @@ RCSController::RCSController (const RCSController::Config& kConfig) :
 
 Error_t RCSController::verifyConfig (bool& kValid)
 {
-	         // Constraints on rate limit
+             // Constraints on rate limit
     kValid = isfinite(mCONFIG.rateLimit) &&
              mCONFIG.rateLimit > 0 &&
              // Constraints on deadband
