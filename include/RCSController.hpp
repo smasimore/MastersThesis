@@ -153,20 +153,20 @@ private:
      */
     float mRate;
 
-	/**
-	 * All of the following const floats are critical values defining the phase
-	 * channel geometry. These are computed from mCONFIG in the initializer
-	 * list.
-	 */
+    /**
+     * All of the following const floats are critical values defining the phase
+     * channel geometry. These are computed from mCONFIG in the initializer
+     * list.
+     */
 
     /**
-	 * Magnitude of the upper drift channel bound on the rate axis.
-	 */
-	const float mUPPER_RATE_LIMIT;
-	/**
-	 * Magnitude of the lower drift channel bound on the rate axis.
-	 */
-	const float mLOWER_RATE_LIMIT;
+    * Magnitude of the upper drift channel bound on the rate axis.
+    */
+    const float mUPPER_RATE_LIMIT;
+    /**
+     * Magnitude of the lower drift channel bound on the rate axis.
+     */
+    const float mLOWER_RATE_LIMIT;
 	/**
 	 * Magnitude of points on either end of the channel gradient where the
 	 * angled boundary meet the horizontal boundary.
@@ -207,7 +207,7 @@ private:
      *
      * @ret     E_SUCCESS Computation was successful.
      */
-	Error_t computePhasePlaneMoment ();
+    Error_t computePhasePlaneMoment ();
 };
 
 # endif

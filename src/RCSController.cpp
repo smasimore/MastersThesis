@@ -134,33 +134,33 @@ Error_t RCSController::getResponse (RCSController::Response_t& moment) {
 
 Error_t RCSController::computePhasePlaneMoment ()
 {
-	// Compute distance to gradient limits in the event we're in the gradient
-	const float RATE_LIMIT_OFFSET =
+    // Compute distance to gradient limits in the event we're in the gradient
+    const float RATE_LIMIT_OFFSET =
         mAngle * (mLOWER_RATE_LIMIT + mUPPER_RATE_LIMIT)
         / -mGRADIENT_ANGLE_LIMIT;
-	// Compute upper and lower rate limits of current angle
-	const float GRADIENT_LIMIT_LOW = -mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
-	const float GRADIENT_LIMIT_HIGH = mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
-	// Compute upper and lower hysteresis limits of current angle
-	const float HYSTERESIS_LIMIT_LOW =
+    // Compute upper and lower rate limits of current angle
+    const float GRADIENT_LIMIT_LOW = -mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
+    const float GRADIENT_LIMIT_HIGH = mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
+    // Compute upper and lower hysteresis limits of current angle
+    const float HYSTERESIS_LIMIT_LOW =
         mCHANNEL_GRADIENT * mAngle + mHYSTERESIS_INTERCEPT_LOW;
-	const float HYSTERESIS_LIMIT_HIGH =
+    const float HYSTERESIS_LIMIT_HIGH =
         mCHANNEL_GRADIENT * mAngle + mHYSTERESIS_INTERCEPT_HIGH;
 
     // RCS was not firing last iteration but may need to now if the rocket left
     // the phase channel
-	if (mCurrentResponse == RCSController::Response_t::NO_FIRE)
+    if (mCurrentResponse == RCSController::Response_t::NO_FIRE)
     {
         // Conditions for firing in the negative direction:
-		if (
+    	if (
             // Moving too fast in positive direction
             (mAngle <= 0 &&
              mRate >= mUPPER_RATE_LIMIT) ||
             // Recovering too slowly from positive error
-		    (mAngle >= mGRADIENT_ANGLE_LIMIT &&
+    	    (mAngle >= mGRADIENT_ANGLE_LIMIT &&
              mRate >= -mLOWER_RATE_LIMIT) ||
             // Another indication of slow recovery from positive error
-			(mAngle >= 0 &&
+    		(mAngle >= 0 &&
              mAngle <= mGRADIENT_ANGLE_LIMIT &&
              mRate >= GRADIENT_LIMIT_HIGH))
         {
@@ -186,7 +186,7 @@ Error_t RCSController::computePhasePlaneMoment ()
         {
             mCurrentResponse = RCSController::Response_t::NO_FIRE;
         }
-	}
+    }
     // RCS was firing last iteration and will either continue firing or stop
     // firing if the rocket reentered the phase channel and crossed the
     // hysteresis lines
