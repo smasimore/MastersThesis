@@ -24,15 +24,15 @@ class RCSController final : public Controller
 {
 public:
     /**
-     * RCS controller responds with signs.
-     */
+    * RCS controller responds with signs.
+    */
     typedef enum Response : int8_t
     {
-        FIRST = -2,
-        FIRE_NEGATIVE,
-        NO_FIRE,
-        FIRE_POSITIVE,
-        LAST
+    FIRST = -2,
+    FIRE_NEGATIVE,
+    NO_FIRE,
+    FIRE_POSITIVE,
+    LAST
     } Response_t;
 
     /**
@@ -140,10 +140,10 @@ private:
      * Phase channel geometry configuration.
      */
     const Config mCONFIG;
-	/**
-	 * The last computed RCS response.
-	 */
-	RCSController::Response_t mCurrentResponse;
+    /**
+     * The last computed RCS response.
+     */
+    RCSController::Response_t mCurrentResponse;
     /**
      * Current angle in the axis being controlled.
      */
@@ -167,37 +167,37 @@ private:
      * Magnitude of the lower drift channel bound on the rate axis.
      */
     const float mLOWER_RATE_LIMIT;
-	/**
-	 * Magnitude of points on either end of the channel gradient where the
-	 * angled boundary meet the horizontal boundary.
-	 */
-	const float mGRADIENT_ANGLE_LIMIT;
-	/**
-	 * Magnitude of the horizontal hysteresis lines along the rate axis.
-	 */
-	const float mHYSTERESIS_RATE_LIMIT;
-	/**
-	 * Magnitude of points on the angle axis where the angled hysteresis lines
-	 * meet the horizontal hysteresis lines.
-	 */
-	const float mHYSTERESIS_UPPER_ANGLE_LIMIT;
-	/**
-	 * Magnitude of points on the angle axis where the angled hysteresis lines
-	 * meet the upper rate limits.
-	 */
-	const float mHYSTERESIS_LOWER_ANGLE_LIMIT;
-	/**
-	 * Slope of the channel gradient.
-	 */
-	const float mCHANNEL_GRADIENT;
-	/**
-	 * Point where lower hysteresis line intercepts the rate axis.
-	 */
-	const float mHYSTERESIS_INTERCEPT_LOW;
-	/**
-	 * Point where upper hysteresis line intercepts the rate axis.
-	 */
-	const float mHYSTERESIS_INTERCEPT_HIGH;
+    /**
+     * Magnitude of points on either end of the channel gradient where the
+     * angled boundary meet the horizontal boundary.
+     */
+    const float mGRADIENT_ANGLE_LIMIT;
+    /**
+     * Magnitude of the horizontal hysteresis lines along the rate axis.
+     */
+    const float mHYSTERESIS_RATE_LIMIT;
+    /**
+     * Magnitude of points on the angle axis where the angled hysteresis lines
+     * meet the horizontal hysteresis lines.
+     */
+    const float mHYSTERESIS_UPPER_ANGLE_LIMIT;
+    /**
+     * Magnitude of points on the angle axis where the angled hysteresis lines
+     * meet the upper rate limits.
+     */
+    const float mHYSTERESIS_LOWER_ANGLE_LIMIT;
+    /**
+     * Slope of the channel gradient.
+     */
+    const float mCHANNEL_GRADIENT;
+    /**
+     * Point where lower hysteresis line intercepts the rate axis.
+     */
+    const float mHYSTERESIS_INTERCEPT_LOW;
+    /**
+     * Point where upper hysteresis line intercepts the rate axis.
+     */
+    const float mHYSTERESIS_INTERCEPT_HIGH;
 
     /**
      * Updates the RCS response according to the currently set rate and angle.
