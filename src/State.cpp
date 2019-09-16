@@ -3,18 +3,18 @@
 /******************** PUBLIC FUNCTIONS **************************/
 
 State::State (std::string stateName,
-              const std::vector<std::string> &targetTransitions)
+              const std::vector<std::string> &validTransitions)
 {
     this->mStateName = stateName;
-    this->mTargetTransitions = targetTransitions;
+    this->mValidTransitions = validTransitions;
 }
 
 State::State (std::string stateName,
-              const std::vector<std::string> &targetTransitions,
+              const std::vector<std::string> &validTransitions,
               const std::vector<State::Action_t> &actionList)
 {
     this->mStateName = stateName;
-    this->mTargetTransitions = targetTransitions;
+    this->mValidTransitions = validTransitions;
     // Parser would likely process each of the action sequence line by line.
     // Hence, there should be some intermediate logic to group the timestamps
     // such as how the action sequence is stored in a state.
@@ -33,7 +33,7 @@ Error_t State::getName (std::string **ppResult)
 
 Error_t State::getTransitions (std::vector<std::string> **ppResult)
 {
-    *ppResult = &mTargetTransitions;
+    *ppResult = &mValidTransitions;
     return E_SUCCESS;
 }
 

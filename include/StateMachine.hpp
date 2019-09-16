@@ -21,6 +21,16 @@ class StateMachine
 public:
 
     /**
+     * Struct containing the necessary elements of a State
+     */
+    typedef struct StateInput
+    {
+        std::string name;
+        std::vector<std::string> transitions;
+        std::vector<State::Action_t> actions;
+    } State_t;
+
+    /**
      * Create a statemachine from a list of state names and transitions.
      *
      * @param   rSM                 reference to smart pointer of type 
@@ -33,7 +43,7 @@ public:
      *          E_DUPLICATE_NAME    a duplicate state name found in stateList
      */
     static Error_t createNew (std::unique_ptr<StateMachine> &rSM,
-                              const std::vector<State::State_t> &stateList);
+                              const std::vector<State_t> &stateList);
 
     /**
      * Intermediate function to add, allocate, and map State to the State Map.
@@ -45,7 +55,7 @@ public:
      * @ret     E_SUCCESS           State object successfully added and mapped
      *          E_DUPLICATE_NAME    State with same name already exists
      */
-    Error_t addState (State::State_t stateIn);
+    Error_t addState (State_t stateIn);
 
     /**
      * Intermediate function to find and store a State in the map by State name
@@ -68,7 +78,7 @@ public:
      *          E_INVALID_NAME          Target state name does not exist
      *          E_INVALID_TRANSITION    Target state not a valid transition
      */
-    Error_t switchState (std::string targetState);
+    Error_t switchState (std::string transitionState);
 
     /**
      * Function to return a copy of the name of current State
@@ -109,8 +119,8 @@ public:
      *  only iterate entirely through the action sequence to test outputs.
      *
      * @ret     E_SUCCESS   Action sequence executed successfully
-     * @ret     E_NO_STATES No states have been added to StateMachine
-     * @ret     [other]     Other failure result from functions in sequence
+     *          E_NO_STATES No states have been added to StateMachine
+     *          [other]     Other failure result from functions in sequence
      */
     Error_t executeCurrentSequence ();
 
@@ -142,7 +152,7 @@ public:
 private:
 
     /**
-     * Private constructor to ensure named constructor idoims are used
+     * Private constructor to ensure named constructor idioms are used
      */
     StateMachine ();
 

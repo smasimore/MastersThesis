@@ -4,10 +4,10 @@
 
 
 Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
-                                 const std::vector<State::State_t> &stateList)
+                                 const std::vector<State_t> &stateList)
 {
     rSM.reset (new StateMachine ());
-    for (State::State_t state : stateList)
+    for (State_t state : stateList)
     {
         Error_t retState = rSM->addState (state);
         if (retState != E_SUCCESS)
@@ -20,7 +20,7 @@ Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
     return E_SUCCESS;
 }
 
-Error_t StateMachine::addState (State::State_t stateIn)
+Error_t StateMachine::addState (State_t stateIn)
 {
     // Allocate the state from parameter data, and create shared pointer
     std::shared_ptr<State> pNewState (new State (stateIn.name, 
@@ -147,7 +147,7 @@ Error_t StateMachine::executeCurrentSequence ()
     return E_SUCCESS;
 }
 
-Error_t StateMachine::switchState(std::string targetState)
+Error_t StateMachine::switchState(std::string transitionState)
 {
     if (mPStateCurrent == nullptr)
     {
@@ -165,14 +165,14 @@ Error_t StateMachine::switchState(std::string targetState)
     }
 
     // Check if valid transitions contains the target state
-    if (std::find (pValidTrans->begin (), pValidTrans->end (), targetState) !=
-        pValidTrans->end())
+    if (std::find (pValidTrans->begin (), pValidTrans->end (), transitionState) 
+        != pValidTrans->end())
     {   
         // if not equal to end, transition is valid; switch the current state
         // create a temporary empty state
         std::shared_ptr<State> stateResult;
         // get the target state from the state map and check if found
-        Error_t ret = findState (stateResult, targetState);
+        Error_t ret = findState (stateResult, transitionState);
         if (ret != E_SUCCESS)
         {
             return E_NAME_NOTFOUND;
@@ -192,6 +192,7 @@ Error_t StateMachine::switchState(std::string targetState)
         mActionEnd = pTempMap->end ();
         return E_SUCCESS;
     }
+
     else
     {
         // otherwise, transition is invalid; cannot switch to the new state
@@ -206,39 +207,27 @@ Error_t StateMachine::periodic ()
         return E_NO_STATES;
     }
 
-    // First check if action sequence has already been completed
-    if (mActionIter == mActionEnd)
-    {
-        return E_SUCCESS;
-    }
-
     // Begin a loop, to ensure all actions are being completed. There might be
-    // more than one timestamp that must be executed given a current time.
-    bool actionsFinished = false;
-    while (!actionsFinished)
+    // more than one timestamp that must be executed given a current time. As
+    // long as there are still actions to complete and timestamps are met, keep
+    // executing the actions necessary.
+    while (mActionIter != mActionEnd && mActionIter->first <= timeElapsed)
     {
-        // Check current time and timestamps of first actions in sequence
-        if (mActionIter->first <= timeElapsed)
+        // Timestamp met, execute all functions in the vector
+        for (State::Action_t action : mActionIter->second)
         {
-            // Timestamp met, execute all functions in the vector
-            for (State::Action_t action : mActionIter->second)
+            // call each function in pointer with implicit dereference
+            Error_t ret = (action.func) (action.param);
+            // catch failure points in action sequence, and break out
+            if (ret != E_SUCCESS)
             {
-                // call each function in pointer with implicit dereference
-                Error_t ret = (action.func) (action.param);
-                // catch failure points in action sequence, and break out upon fail
-                if (ret != E_SUCCESS)
-                {
-                    return ret;
-                }
+                return ret;
             }
+        }
 
-            // Increment the iterator to the next vector of actions
-            ++mActionIter;
-        }
-        else
-        {
-            actionsFinished = true;
-        }
+        // Increment the iterator to the next vector of actions
+        ++mActionIter;
+     
     }
     return E_SUCCESS;
 }

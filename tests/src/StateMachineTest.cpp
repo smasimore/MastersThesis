@@ -32,7 +32,7 @@ Error_t subtractParam1 (int32_t param)
 
 Error_t fail (int32_t param)
 {
-    return E_INTED;
+    return E_TEST_ERROR;
 }
 
 // Implement periodic with thread manager
@@ -70,9 +70,10 @@ TEST (StateMachines, DefinedStateCase)
     std::vector<std::string> transitionsC = { "StateA" };
 
     // Create vector of states for createNew function
-    std::vector<State::State_t> stateVec = { {"StateA", transitionsA, {}},
-                                             {"StateB", transitionsB, {}},
-                                             {"StateC", transitionsC, {}} };
+    std::vector<StateMachine::State_t> stateVec 
+        = { {"StateA", transitionsA, {}},
+            {"StateB", transitionsB, {}},
+            {"StateC", transitionsC, {}} };
 
     // Create State Machine from vector of States
     std::unique_ptr<StateMachine> pSM (nullptr);
@@ -159,7 +160,7 @@ TEST (StateMachines, ManageActionSequence)
     std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<State::State_t> stateVec
+    std::vector<StateMachine::State_t> stateVec
         = { {"StateA", transitionsA, actionsA},
             {"StateB", transitionsB, actionsB},
             {"StateC", transitionsC, actionsC} };
@@ -226,7 +227,7 @@ TEST (StateMachines, ExecuteActionSequence)
     std::vector<std::string> transitionsC = { "StateA" };
 
     // Create storage vector for constructor
-    std::vector<State::State_t> stateVec
+    std::vector<StateMachine::State_t> stateVec
         = { { "StateA", transitionsA, vecInA },
             { "StateB", transitionsB, vecInB },
             { "StateC", transitionsC, vecInC } };
@@ -256,7 +257,7 @@ TEST (StateMachines, ExecuteActionSequence)
     ret = pSM->switchState ("StateC");
     CHECK_TRUE (E_SUCCESS == ret);
     ret = pSM->executeCurrentSequence ();
-    CHECK_TRUE (E_INTED == ret);
+    CHECK_TRUE (E_TEST_ERROR == ret);
     CHECK_EQUAL (gVar1, 48);
 }
 
@@ -284,7 +285,7 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     std::vector<std::string> transitionsB = { "StateA" };
 
     // Create storage vector for constructor, using the same action sequence
-    std::vector<State::State_t> stateVec
+    std::vector<StateMachine::State_t> stateVec
         = { {"StateA", transitionsA, actionsA},
             {"StateB", transitionsB, actionsA} };
 
@@ -329,14 +330,14 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     pSM->timeElapsed = 8;
     // Call periodic function; function should fail
     ret = pSM->periodic ();
-    CHECK_TRUE (E_INTED == ret);
+    CHECK_TRUE (E_TEST_ERROR == ret);
     CHECK_EQUAL (gVar1, 11);
 
     // Action sequence ends after 8s; call periodic to check behavior
     // Action iterator should still be pointing to the failing function
     pSM->timeElapsed = 9;
     ret = pSM->periodic ();
-    CHECK_TRUE (E_INTED == ret);
+    CHECK_TRUE (E_TEST_ERROR == ret);
     CHECK_EQUAL (gVar1, 11);
 
     // Switch to StateB; StateB action sequence is the same as StateA
@@ -376,14 +377,14 @@ TEST (StateMachines, ExecuteActionsPeriodic)
     pSM->timeElapsed = 8;
     // Call periodic function; function should fail
     ret = pSM->periodic ();
-    CHECK_TRUE (E_INTED == ret);
+    CHECK_TRUE (E_TEST_ERROR == ret);
     CHECK_EQUAL (gVar1, 11);
 
     // Action sequence ends after 8s; call periodic to check behavior
     // Action iterator should still be pointing to failing function
     pSM->timeElapsed = 9;
     ret = pSM->periodic ();
-    CHECK_TRUE (E_INTED == ret);
+    CHECK_TRUE (E_TEST_ERROR == ret);
     CHECK_EQUAL (gVar1, 11);
 }
 
@@ -412,7 +413,7 @@ TEST (StateMachines, ExecutePeriodicThread)
     std::vector<std::string> transitionsB = { "StateA" };
 
     // Create storage vector for constructor, using the same action sequence
-    std::vector<State::State_t> stateVec
+    std::vector<StateMachine::State_t> stateVec
         = { {"StateA", transitionsA, vecInA},
             {"StateB", transitionsB, vecInA} };
 
@@ -476,5 +477,5 @@ TEST (StateMachines, ExecutePeriodicThread)
     Error_t threadRet;
     ret = pThreadManager->waitForThread (stateThread, threadRet);
     CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (E_INTED == threadRet);
+    CHECK_TRUE (E_TEST_ERROR == threadRet);
 }

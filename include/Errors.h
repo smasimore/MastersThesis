@@ -56,7 +56,7 @@ typedef enum Error
     E_NO_STATES,
 
     /* Testing */
-    E_INTED
+    E_TEST_ERROR
 } Error_t;
 
 #endif
