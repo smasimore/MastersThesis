@@ -2,32 +2,44 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-State::State (std::vector<int32_t> intData)
+State::State (std::string stateName,
+              const std::vector<std::string> &validTransitions)
 {
-    this->stateData = intData;
+    this->mStateName = stateName;
+    this->mValidTransitions = validTransitions;
 }
 
 State::State (std::string stateName,
-              std::vector<std::string> targetTransitions)
+              const std::vector<std::string> &validTransitions,
+              const std::vector<State::Action_t> &actionList)
 {
-    this->stateName = stateName;
-    this->targetTransitions = targetTransitions;
+    this->mStateName = stateName;
+    this->mValidTransitions = validTransitions;
+    // Parser would likely process each of the action sequence line by line.
+    // Hence, there should be some intermediate logic to group the timestamps
+    // such as how the action sequence is stored in a state.
+    for (State::Action action : actionList)
+    {
+        // access the vector corresponding to the timestamp, then insert tuple
+        this->mActionSequence[action.timestamp].push_back (action);
+    }
 }
 
-Error_t State::getData (std::vector<int32_t> &result)
+Error_t State::getName (std::string **ppResult)
 {
-    result = this->stateData;
+    *ppResult = &mStateName;
     return E_SUCCESS;
 }
 
-Error_t State::getName (std::string &result)
+Error_t State::getTransitions (std::vector<std::string> **ppResult)
 {
-    result = this->stateName;
+    *ppResult = &mValidTransitions;
     return E_SUCCESS;
 }
 
-Error_t State::getTransitions (std::vector<std::string> &result)
+Error_t State::getActionSequence (std::map<int32_t, std::vector<Action_t>>
+                                  **ppResult)
 {
-    result = this->targetTransitions;
+    *ppResult = &mActionSequence;
     return E_SUCCESS;
 }

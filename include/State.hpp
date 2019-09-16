@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
+#include <map>
 
 #include "Errors.h"
 
@@ -20,64 +21,87 @@ class State
 public:
 
     /**
-     * Constructor for the state, public for testing purposes only
-     *
-     * @param   intData     vector of int32_t to serve as placeholder data
-     *
-     * @ret     State       State class with data from param
+     * Struct containing the necessary elements of an action 
      */
-    State (std::vector<int32_t> intData);
+    typedef struct Action
+    {
+        uint32_t timestamp;
+        Error_t (*func) (int32_t);
+        int32_t param;
+    } Action_t;
 
     /**
      * Constructor for a state with more complex State data, tentative
      *
      * @param   stateName           string containing the state name
-     * @param   validTransitions    vector of States that the State can
-     *                              transition to
+     * @param   validTransitions    vector of strings representing valid states
      *
      * @ret     State               State class with data from params
      */
-    State (std::string stateName, std::vector<std::string> targetTransitions);
+    State (std::string stateName, 
+           const std::vector<std::string> &validTransitions);
 
     /**
-     * Get the State data
+     * Constructor for a State containing name, transitions, and actions
      *
-     * @param   result      Reference to vector of type int32_t to store State
-     *                      data in
+     * @param   stateName           string containing the state name
+     * @param   validTransitions    vector of strings representing valid states
+     * @param   actionList          vector of Action_t containing timestamp,
+     *                              pointer to function, and function param.
      *
-     * @ret     E_SUCCESS   Successfully stored State data in result
+     * @ret     State               State class with data from params
      */
-    Error_t getData (std::vector<int32_t> &result);
+    State (std::string stateName, 
+           const std::vector<std::string> &validTransitions, 
+           const std::vector<Action_t> &actionList);
 
     /**
      * Get the State name
      *
      * @param   result      Reference to String type to store State name in
      *
-     * @ret     #_SUCCESS   Successfully stored State name in result
+     * @ret     E_SUCCESS   Successfully stored State name in result
      */
-    Error_t getName (std::string &result);
+    Error_t getName (std::string **ppResult);
 
-    Error_t getTransitions (std::vector<std::string> &result);
+    /**
+     * Get the State's valid transitions
+     *
+     * @param   result      Reference to vector of type string to store data in
+     *
+     * @ret     E_SUCCESS   Successfully stored State transitions in result
+     */
+    Error_t getTransitions (std::vector<std::string> **ppResult);
+
+    /**
+     * Get the State's action sequence
+     *
+     * @param   result      Reference to map of timestamps and corresponding
+     *                      pointers to functions and params, to store sequence
+     *
+     * @ret     E_SUCCESS   Successfully stored State action sequence in result
+     */
+    Error_t getActionSequence (
+        std::map<int32_t, std::vector<Action_t>> **ppResult);
 
 private:
 
     /**
      * The name of the State, for identification and mapping purposes
      */
-    std::string stateName;
+    std::string mStateName;
 
     /**
-     * The first iteration skeleton State data, vector of type int32_t to be
-     * used temporarily
+     * The valid transitions of the State, vector of type String representing 
+     * the name of the valid states for a transition
      */
-    std::vector<int32_t> stateData;
+    std::vector<std::string> mValidTransitions;
 
     /**
-     * The second iteration of valid State transitions, vector of type String
-     * representing name of the states to use for now
+     * The old iteration of the action sequence of the State. Ordered map
+     * containing vector of tuples, using timestamp as the key. Tuples in the
+     * vector contain the pointer to function, and the parameter.
      */
-    std::vector<std::string> targetTransitions;
+    std::map<int32_t, std::vector<Action_t>> mActionSequence;
 };
 #endif
-

@@ -189,6 +189,7 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.945308066" name="ThreadManager.hpp" rcbsApplicability="disable" resourcePath="include/ThreadManager.hpp" toolsToInvoke=""/>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.348080487" name="Log.hpp" rcbsApplicability="disable" resourcePath="tests/include/Log.hpp" toolsToInvoke=""/>
 					<sourceEntries>
 						<entry excluding="excludes|src/main.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
@@ -388,7 +389,7 @@
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.802866292.152461684.include/ThreadManager.hpp" name="ThreadManager.hpp" rcbsApplicability="disable" resourcePath="include/ThreadManager.hpp" toolsToInvoke=""/>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.802866292.152461684.273299477" name="Log.hpp" rcbsApplicability="disable" resourcePath="tests/include/Log.hpp" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="src/ThreadManager.cpp|tests/src/ThreadManagerTest.cpp|excludes|src/main.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="include/ThreadManager.hpp|src/ThreadManager.cpp|tests/src/ThreadManagerTest.cpp|excludes|src/main.cpp" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
