@@ -226,8 +226,7 @@ Error_t StateMachine::periodic ()
         }
 
         // Increment the iterator to the next vector of actions
-        ++mActionIter;
-     
+        ++mActionIter;     
     }
     return E_SUCCESS;
 }

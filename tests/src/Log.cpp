@@ -72,6 +72,7 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     if (pLogOneVec->size () != pLogTwoVec->size ())
     {
         areEqual = false;
+        std::cout << "\nLog sizes not equal: " << pLogOneVec->size () << std::endl;
     }
 
     // If they are the same size, check if any of their rows are different.
