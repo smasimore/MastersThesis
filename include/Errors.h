@@ -77,7 +77,7 @@ typedef enum Error
     E_NO_STATES,
 
     /* Testing */
-    E_TEST_ERROR
+    E_TEST_ERROR,
 
     /* Controller */
     E_INVALID_CONFIG,
