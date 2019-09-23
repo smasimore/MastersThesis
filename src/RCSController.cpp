@@ -1,5 +1,8 @@
+#define _USE_MATH_DEFINES
+
 #include <math.h>
 
+#include "Math.hpp"
 #include "RCSController.hpp"
 
 /*************************** PUBLIC FUNCTIONS *********************************/
@@ -9,66 +12,87 @@ RCSController::RCSController (const RCSController::Config& kConfig) :
     mCONFIG(kConfig),
 
     // One-time computation of all values defining the phase channel shape
-    mUPPER_RATE_LIMIT (
-        mCONFIG.rateLimit
+    mUPPER_RL_RADS_PSEC (
+        mCONFIG.rateLimitRadsPerSec
     ),
-    mLOWER_RATE_LIMIT (
-        mCONFIG.rateLimitsRatio * mUPPER_RATE_LIMIT
+    mLOWER_RL_RADS_PSEC (
+        mCONFIG.rateLimitsRatio * mUPPER_RL_RADS_PSEC
     ),
     mGRADIENT_ANGLE_LIMIT (
         (1 + mCONFIG.rateLimitsRatio) * mCONFIG.deadband
     ),
-    mHYSTERESIS_RATE_LIMIT (
-        mCONFIG.hysteresisRateLimitRatio * mLOWER_RATE_LIMIT
+    mHYST_RL_RADS_PSEC (
+        mCONFIG.hysteresisRateLimitRatio * mLOWER_RL_RADS_PSEC
     ),
-    mHYSTERESIS_UPPER_ANGLE_LIMIT (
+    mHYST_UPPER_AL_RADS (
         mCONFIG.hysteresisGradientRatio * mGRADIENT_ANGLE_LIMIT
     ),
-    mHYSTERESIS_LOWER_ANGLE_LIMIT (
-        mGRADIENT_ANGLE_LIMIT - mHYSTERESIS_UPPER_ANGLE_LIMIT
+    mHYST_LOWER_AL_RADS (
+        mGRADIENT_ANGLE_LIMIT - mHYST_UPPER_AL_RADS
     ),
     mCHANNEL_GRADIENT (
-        (-mLOWER_RATE_LIMIT - mUPPER_RATE_LIMIT) / mGRADIENT_ANGLE_LIMIT
+        (-mLOWER_RL_RADS_PSEC - mUPPER_RL_RADS_PSEC) / mGRADIENT_ANGLE_LIMIT
     ),
-    mHYSTERESIS_INTERCEPT_LOW (
-        mHYSTERESIS_RATE_LIMIT
-        - mCHANNEL_GRADIENT * -mHYSTERESIS_UPPER_ANGLE_LIMIT
+    mHYST_INTERCEPT_LOW (
+        mHYST_RL_RADS_PSEC
+        - mCHANNEL_GRADIENT * -mHYST_UPPER_AL_RADS
     ),
-    mHYSTERESIS_INTERCEPT_HIGH (
-        -mHYSTERESIS_INTERCEPT_LOW
+    mHYST_INTERCEPT_HIGH (
+        -mHYST_INTERCEPT_LOW
     )
 {
     mCurrentResponse = RCSController::Response_t::NO_FIRE;
-    mAngle = 0;
-    mRate = 0;
+    mAngleRads = 0;
+    mRateRadsPerSec = 0;
 }
 
 Error_t RCSController::verifyConfig (bool& kValid)
 {
-             // Constraints on rate limit
-    kValid = isfinite(mCONFIG.rateLimit) &&
-             mCONFIG.rateLimit > 0 &&
-             // Constraints on deadband
-             isfinite(mCONFIG.deadband) &&
-             mCONFIG.deadband > 0 &&
-             // Constraints on rate limit ratio
-             isfinite(mCONFIG.rateLimitsRatio) &&
-             mCONFIG.rateLimitsRatio > 0 &&
-             mCONFIG.rateLimitsRatio < 1 &&
-             // Constraints on hysteresis gradient ratio
-             isfinite(mCONFIG.hysteresisGradientRatio) &&
-             mCONFIG.hysteresisGradientRatio > 0 &&
-             mCONFIG.hysteresisGradientRatio < 1 &&
-             // Constrains on hysteresis rate limit ratio
-             isfinite(mCONFIG.hysteresisRateLimitRatio) &&
-             mCONFIG.hysteresisRateLimitRatio > 1;
+    kValid = false;
 
+    // Check finiteness
+    if (!isfinite(mCONFIG.rateLimitRadsPerSec) ||
+        !isfinite(mCONFIG.deadband) ||
+        !isfinite(mCONFIG.rateLimitsRatio) ||
+        !isfinite(mCONFIG.hysteresisGradientRatio) ||
+        !isfinite(mCONFIG.hysteresisRateLimitRatio))
+    {
+        return E_NONFINITE_VALUE;
+    }
+
+    // Check bounds
+    if (mCONFIG.rateLimitRadsPerSec <= 0 ||
+        mCONFIG.deadband <= 0 ||
+        mCONFIG.rateLimitsRatio <= 0 ||
+        mCONFIG.rateLimitsRatio >= 1 ||
+        mCONFIG.hysteresisGradientRatio <= 0 ||
+        mCONFIG.hysteresisGradientRatio >= 1 ||
+        mCONFIG.hysteresisRateLimitRatio <= 1)
+    {
+        return E_OUT_OF_BOUNDS;
+    }
+
+    // Check overflow
+    if (!isfinite(mUPPER_RL_RADS_PSEC) ||
+        !isfinite(mLOWER_RL_RADS_PSEC) ||
+        !isfinite(mGRADIENT_ANGLE_LIMIT) ||
+        !isfinite(mHYST_RL_RADS_PSEC) ||
+        !isfinite(mHYST_UPPER_AL_RADS) ||
+        !isfinite(mHYST_LOWER_AL_RADS) ||
+        !isfinite(mCHANNEL_GRADIENT) ||
+        !isfinite(mHYST_INTERCEPT_LOW) ||
+        !isfinite(mHYST_INTERCEPT_HIGH))
+    {
+        return E_OVERFLOW;
+    }
+
+    kValid = true;
     return E_SUCCESS;
 }
 
 Error_t RCSController::runEnabled ()
 {
-    Error_t err = this->computePhasePlaneMoment ();
+    Error_t err = this->computeResponse ();
     return err;
 }
 
@@ -79,14 +103,23 @@ Error_t RCSController::runSafed ()
 
 Error_t RCSController::setAngle (float kAngle)
 {
+    // Validate finiteness
     if (!isfinite (kAngle))
     {
         // Bad angle; assume NO_FIRE
         mCurrentResponse = RCSController::Response_t::NO_FIRE;
         return E_NONFINITE_VALUE;
     }
+    // Validate within bounds
+    else if (kAngle < ATT_BOUND_LOW_RADS ||
+             kAngle >= ATT_BOUND_HIGH_RADS)
+    {
+        // Bad angle; assume NO_FIRE
+        mCurrentResponse = RCSController::Response_t::NO_FIRE;
+        return E_OUT_OF_BOUNDS;
+    }
 
-    mAngle = kAngle;
+    mAngleRads = kAngle;
     return E_SUCCESS;
 }
 
@@ -99,7 +132,7 @@ Error_t RCSController::setRate (float kRate)
         return E_NONFINITE_VALUE;
     }
 
-    mRate = kRate;
+    mRateRadsPerSec = kRate;
     return E_SUCCESS;
 }
 
@@ -117,14 +150,6 @@ Error_t RCSController::getResponse (RCSController::Response_t& moment) {
     {
         mCurrentResponse = RCSController::Response_t::NO_FIRE;
     }
-    // If the response has somehow taken on a value not enumerated in
-    // Response_t, forcibly override it to NO_FIRE
-    else if (mCurrentResponse <= RCSController::Response_t::FIRST ||
-             mCurrentResponse >= RCSController::Response_t::LAST)
-    {
-        mCurrentResponse = RCSController::Response_t::NO_FIRE;
-        result = E_INVALID_ENUM;
-    }
 
     moment = mCurrentResponse;
     return result;
@@ -132,20 +157,17 @@ Error_t RCSController::getResponse (RCSController::Response_t& moment) {
 
 /*************************** PRIVATE FUNCTIONS ********************************/
 
-Error_t RCSController::computePhasePlaneMoment ()
+Error_t RCSController::computeResponse ()
 {
-    // Compute distance to gradient limits in the event we're in the gradient
-    const float RATE_LIMIT_OFFSET =
-        mAngle * (mLOWER_RATE_LIMIT + mUPPER_RATE_LIMIT)
-        / -mGRADIENT_ANGLE_LIMIT;
-    // Compute upper and lower rate limits of current angle
-    const float GRADIENT_LIMIT_LOW = -mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
-    const float GRADIENT_LIMIT_HIGH = mUPPER_RATE_LIMIT + RATE_LIMIT_OFFSET;
-    // Compute upper and lower hysteresis limits of current angle
-    const float HYSTERESIS_LIMIT_LOW =
-        mCHANNEL_GRADIENT * mAngle + mHYSTERESIS_INTERCEPT_LOW;
-    const float HYSTERESIS_LIMIT_HIGH =
-        mCHANNEL_GRADIENT * mAngle + mHYSTERESIS_INTERCEPT_HIGH;
+    // Compute critical points used to identify position within the plane
+    Error_t err = this->computeCriticalResponsePoints (mAngleRads);
+
+    if (err != E_SUCCESS)
+    {
+        // Critical points could not be calculated; assume NO_FIRE
+        mCurrentResponse = RCSController::Response_t::NO_FIRE;
+        return err;
+    }
 
     // RCS was not firing last iteration but may need to now if the rocket left
     // the phase channel
@@ -154,30 +176,30 @@ Error_t RCSController::computePhasePlaneMoment ()
         // Conditions for firing in the negative direction:
     	if (
             // Moving too fast in positive direction
-            (mAngle <= 0 &&
-             mRate >= mUPPER_RATE_LIMIT) ||
+            (mAngleRads <= 0 &&
+             mRateRadsPerSec >= mUPPER_RL_RADS_PSEC) ||
             // Recovering too slowly from positive error
-    	    (mAngle >= mGRADIENT_ANGLE_LIMIT &&
-             mRate >= -mLOWER_RATE_LIMIT) ||
+    	    (mAngleRads >= mGRADIENT_ANGLE_LIMIT &&
+             mRateRadsPerSec >= -mLOWER_RL_RADS_PSEC) ||
             // Another indication of slow recovery from positive error
-    		(mAngle >= 0 &&
-             mAngle <= mGRADIENT_ANGLE_LIMIT &&
-             mRate >= GRADIENT_LIMIT_HIGH))
+    		(mAngleRads >= 0 &&
+             mAngleRads <= mGRADIENT_ANGLE_LIMIT &&
+             mRateRadsPerSec >= mGradientLimitHigh))
         {
             mCurrentResponse = RCSController::Response_t::FIRE_NEGATIVE;
         }
         // Conditions for firing in the positive direction:
         else if (
             // Moving too fast in negative direction
-            (mAngle >= 0 &&
-             mRate <= -mUPPER_RATE_LIMIT) ||
+            (mAngleRads >= 0 &&
+             mRateRadsPerSec <= -mUPPER_RL_RADS_PSEC) ||
             // Recovering too slowly from negative error
-            (mAngle <= 0 &&
-             mAngle >= -mGRADIENT_ANGLE_LIMIT &&
-             mRate <= GRADIENT_LIMIT_LOW) ||
+            (mAngleRads <= 0 &&
+             mAngleRads >= -mGRADIENT_ANGLE_LIMIT &&
+             mRateRadsPerSec <= mGradientLimitLow) ||
             // Another indication of slow recovery from negative error
-            (mAngle <= -mGRADIENT_ANGLE_LIMIT &&
-             mRate <= mLOWER_RATE_LIMIT))
+            (mAngleRads <= -mGRADIENT_ANGLE_LIMIT &&
+             mRateRadsPerSec <= mLOWER_RL_RADS_PSEC))
         {
             mCurrentResponse = RCSController::Response_t::FIRE_POSITIVE;
         }
@@ -195,30 +217,30 @@ Error_t RCSController::computePhasePlaneMoment ()
         // Conditions for continuing to fire in the positive direction:
         if (
             // Recovering too slowly from negative error or diverging
-            (mAngle <= -mHYSTERESIS_UPPER_ANGLE_LIMIT &&
-             mRate <= mHYSTERESIS_RATE_LIMIT) ||
+            (mAngleRads <= -mHYST_UPPER_AL_RADS &&
+             mRateRadsPerSec <= mHYST_RL_RADS_PSEC) ||
             // Another indication of slow recovery from negative error
-            (mAngle <= mHYSTERESIS_LOWER_ANGLE_LIMIT &&
-             mAngle >= -mHYSTERESIS_UPPER_ANGLE_LIMIT &&
-             mRate <= HYSTERESIS_LIMIT_LOW) ||
+            (mAngleRads <= mHYST_LOWER_AL_RADS &&
+             mAngleRads >= -mHYST_UPPER_AL_RADS &&
+             mRateRadsPerSec <= mHystLimitLow) ||
             // Moving too fast in negative direction
-            (mAngle >= mHYSTERESIS_LOWER_ANGLE_LIMIT &&
-             mRate <= -mUPPER_RATE_LIMIT))
+            (mAngleRads >= mHYST_LOWER_AL_RADS &&
+             mRateRadsPerSec <= -mUPPER_RL_RADS_PSEC))
         {
             mCurrentResponse = RCSController::Response_t::FIRE_POSITIVE;
         }
         // Conditions for continuing to fire in negative direction:
         else if (
             // Moving too fast in positive direction
-            (mAngle <= -mHYSTERESIS_LOWER_ANGLE_LIMIT &&
-             mRate >= mUPPER_RATE_LIMIT) ||
+            (mAngleRads <= -mHYST_LOWER_AL_RADS &&
+             mRateRadsPerSec >= mUPPER_RL_RADS_PSEC) ||
             // Recovering too slowly from positive error or diverging
-            (mAngle >= -mHYSTERESIS_LOWER_ANGLE_LIMIT &&
-             mAngle <= mHYSTERESIS_UPPER_ANGLE_LIMIT &&
-             mRate >= HYSTERESIS_LIMIT_HIGH) ||
+            (mAngleRads >= -mHYST_LOWER_AL_RADS &&
+             mAngleRads <= mHYST_UPPER_AL_RADS &&
+             mRateRadsPerSec >= mHystLimitHigh) ||
             // Another indication of slow recovery from positive error
-            (mAngle >= mHYSTERESIS_UPPER_ANGLE_LIMIT &&
-             mRate >= -mHYSTERESIS_RATE_LIMIT))
+            (mAngleRads >= mHYST_UPPER_AL_RADS &&
+             mRateRadsPerSec >= -mHYST_RL_RADS_PSEC))
         {
             mCurrentResponse = RCSController::Response_t::FIRE_NEGATIVE;
         }
@@ -227,6 +249,28 @@ Error_t RCSController::computePhasePlaneMoment ()
         {
             mCurrentResponse = RCSController::Response_t::NO_FIRE;
         }
+    }
+
+    return E_SUCCESS;
+}
+
+Error_t RCSController::computeCriticalResponsePoints (float kAngleRads)
+{
+    mRateLimitOffset = kAngleRads * (mLOWER_RL_RADS_PSEC + mUPPER_RL_RADS_PSEC)
+                       / -mGRADIENT_ANGLE_LIMIT;
+    mGradientLimitLow  = -mUPPER_RL_RADS_PSEC + mRateLimitOffset;
+    mGradientLimitHigh = mUPPER_RL_RADS_PSEC + mRateLimitOffset;
+    mHystLimitLow = mCHANNEL_GRADIENT * kAngleRads + mHYST_INTERCEPT_LOW;
+    mHystLimitHigh = mCHANNEL_GRADIENT * kAngleRads + mHYST_INTERCEPT_HIGH;
+
+    // Check critical points for overflow
+    if (!isfinite(mRateLimitOffset) ||
+        !isfinite(mGradientLimitLow) ||
+        !isfinite(mGradientLimitHigh) ||
+        !isfinite(mHystLimitLow) ||
+        !isfinite(mHystLimitHigh))
+    {
+        return E_OVERFLOW;
     }
 
     return E_SUCCESS;

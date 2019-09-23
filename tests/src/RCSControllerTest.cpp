@@ -1,23 +1,32 @@
-#include <limits.h>
+#include <limits>
 #include <map>
 #include <math.h>
 #include <iostream>
 #include <utility>
 
 #include "AvSWTestMacros.hpp"
-#include "CppUTest/TestHarness.h"
+#include "Math.hpp"
 #include "RCSController.hpp"
+
+#include "CppUTest/TestHarness.h"
+
+#define RCS_FIRE_NEG RCSController::Response_t::FIRE_NEGATIVE
+#define RCS_NO_FIRE  RCSController::Response_t::NO_FIRE
+#define RCS_FIRE_POS RCSController::Response_t::FIRE_POSITIVE
 
 /**
  * Phase channel configuration used in tests. It is a known valid configuration,
  * being identical to that of NASA's Ares I. A visualization of the phase plane
  * it creates can be seen on page 5 of "Design and Stability of...
  * Thrusters.pdf" in 02_GNC, hereafter referred to as the RCS techdoc.
+ *
+ * Note that many tests are tuned around this configuration; changing it will
+ * likely cause failures.
  */
 static const RCSController::Config PHASE_CHANNEL_TEST_CONFIG =
 {
-    1.5,
-    3.0,
+    0.0261799,
+    0.0523599,
     0.6,
     0.86,
     1.33
@@ -50,14 +59,15 @@ static const std::string PHASE_CHANNEL_TEST_NO_HYSTERESIS =
 "+ + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - - - \n"
 "+ + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - - \n"
 "+ + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - - \n"
-"+ + + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - \n"
+"+ + + + + + + + + + + + 0 0 0 0 0 0 0 - - - - - - - - - - - \n"
 "+ + + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - \n"
 "+ + + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - - \n"
 "+ + + + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - \n"
 "+ + + + + + + + + + + + + + 0 0 0 0 0 0 - - - - - - - - - - \n"
+"+ + + + + + + + + + + + + + 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n"
 "+ + + + + + + + + + + + + + + 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n"
 "+ + + + + + + + + + + + + + + 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n"
-"+ + + + + + + + + + + + + + + 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 \n"
+"+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
@@ -100,6 +110,7 @@ static const std::string PHASE_CHANNEL_TEST_HYSTERESIS =
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
+"+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n"
 "+ + + + + + + + + + + + + + + + + + + + + + + + + + + + + + \n";
 
 /**
@@ -113,9 +124,9 @@ typedef std::pair<float, float> RCSInputs_t;
 static const std::map<RCSController::Response_t, std::string>
 	gRESPONSE_SYMBOLS
 {
-    { RCSController::Response_t::FIRE_NEGATIVE, "- " },
-    { RCSController::Response_t::NO_FIRE,       "0 " },
-    { RCSController::Response_t::FIRE_POSITIVE, "+ " }
+    { RCS_FIRE_NEG, "- " },
+    { RCS_NO_FIRE,  "0 " },
+    { RCS_FIRE_POS, "+ " }
 };
 
 /**
@@ -149,7 +160,7 @@ Error_t makeZeroResponse(std::unique_ptr<RCSController>& pController)
     // Verify that the response is now zero
     RCSController::Response_t resp;
     CHECK_SUCCESS (pController->getResponse (resp));
-    CHECK_TRUE (resp == RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (resp == RCS_NO_FIRE);
 
     return E_SUCCESS;
 }
@@ -166,7 +177,7 @@ Error_t makeNonzeroResponse (std::unique_ptr<RCSController>& pController)
 {
     // Pass in a state well beyond the boundaries of any rational channel
     // config
-    Error_t err = pController->setAngle (1e9);
+    Error_t err = pController->setAngle (-3.14);
 
     if (err != E_SUCCESS)
     {
@@ -186,7 +197,7 @@ Error_t makeNonzeroResponse (std::unique_ptr<RCSController>& pController)
     // Verify that the response is now nonzero
     RCSController::Response_t resp;
     CHECK_SUCCESS (pController->getResponse (resp));
-    CHECK_TRUE (resp != RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (resp != RCS_NO_FIRE);
 
     return E_SUCCESS;
 }
@@ -194,6 +205,55 @@ Error_t makeNonzeroResponse (std::unique_ptr<RCSController>& pController)
 TEST_GROUP (RCSController)
 {
 };
+
+/**
+ * Controller detects and reports floating point overflow. Overflow events cause
+ * a zero controller response.
+ */
+TEST (RCSController, OverflowDetection)
+{
+    std::unique_ptr<RCSController> rcs;
+    RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
+
+    // A config value is finite and within bounds but causes a channel boundary
+    // calculation to overflow
+    badConfig.deadband = std::numeric_limits<float>::max ();
+    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
+        badConfig, rcs);
+    CHECK_EQUAL (E_OVERFLOW, err);
+
+    // Create a new controller with a technically correct config that will
+    // cause critical point calculations to overflow given a sufficiently large
+    // angle
+    badConfig =
+    {
+        std::numeric_limits<float>::max () / 3,
+        0.5,
+        0.5,
+        0.5,
+        2.0
+    };
+    err = Controller::createNew<RCSController, RCSController::Config> (
+        badConfig, rcs);
+    CHECK_EQUAL (E_SUCCESS, err);
+    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+
+    // Elicit a nonzero response
+    CHECK_SUCCESS (rcs->setAngle (0));
+    CHECK_SUCCESS (rcs->setRate (std::numeric_limits<float>::max ()));
+    CHECK_SUCCESS (rcs->run ());
+    RCSController::Response_t response;
+    CHECK_SUCCESS (rcs->getResponse (response));
+    CHECK_TRUE (response != RCS_NO_FIRE);
+
+    // Provide inputs sufficient to cause an overflow event
+    CHECK_SUCCESS (rcs->setAngle (ATT_BOUND_LOW_RADS));
+    CHECK_EQUAL (E_OVERFLOW, rcs->run ());
+
+    // Overflow event should trigger NO_FIRE
+    CHECK_SUCCESS (rcs->getResponse (response));
+    CHECK_EQUAL (RCS_NO_FIRE, response);
+}
 
 /**
  * Creating a controller with a valid channel configuration, eliciting a nonzero
@@ -212,12 +272,12 @@ TEST (RCSController, NoFireOnDisableOrSafe)
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
     RCSController::Response_t response;
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_TRUE (response != RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (response != RCS_NO_FIRE);
 
     // Place controller in SAFED mode
     CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::SAFED));
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_EQUAL (RCSController::Response_t::NO_FIRE, response);
+    CHECK_EQUAL (RCS_NO_FIRE, response);
 
     // Reenable
     CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
@@ -225,7 +285,7 @@ TEST (RCSController, NoFireOnDisableOrSafe)
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_TRUE (response != RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (response != RCS_NO_FIRE);
 }
 
 /**
@@ -237,16 +297,16 @@ TEST (RCSController, ConfigBadRateLimit)
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
-    badConfig.rateLimit = NAN;
+    badConfig.rateLimitRadsPerSec = NAN;
     Error_t err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_NONFINITE_VALUE, err);
 
     // Finite, but outside allowed range
-    badConfig.rateLimit = -1.5;
+    badConfig.rateLimitRadsPerSec = -1.5;
     err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
 }
 
 /**
@@ -261,13 +321,13 @@ TEST (RCSController, ConfigBadDeadband)
     badConfig.deadband = NAN;
     Error_t err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_NONFINITE_VALUE, err);
 
     // Finite, but outside allowed range
     badConfig.deadband = -1.5;
     err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
 }
 
 /**
@@ -282,13 +342,13 @@ TEST (RCSController, ConfigBadRateLimitRatio)
     badConfig.rateLimitsRatio = NAN;
     Error_t err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_NONFINITE_VALUE, err);
 
     // Finite, but outside allowed range
     badConfig.rateLimitsRatio = 1.5;
     err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
 }
 
 /**
@@ -303,13 +363,13 @@ TEST (RCSController, ConfigBadHysteresisGradientRatio)
     badConfig.hysteresisGradientRatio = NAN;
     Error_t err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_NONFINITE_VALUE, err);
 
     // Finite, but outside allowed range
     badConfig.hysteresisGradientRatio = 1.5;
     err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
 }
 
 /**
@@ -324,13 +384,13 @@ TEST (RCSController, ConfigBadHysteresisRateLimitRatio)
     badConfig.hysteresisRateLimitRatio = NAN;
     Error_t err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_NONFINITE_VALUE, err);
 
     // Finite, but outside allowed range
     badConfig.hysteresisRateLimitRatio = 0.5;
     err = Controller::createNew<RCSController, RCSController::Config> (
         badConfig, rcs);
-    CHECK_EQUAL(E_INVALID_CONFIG, err);
+    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
 }
 
 /**
@@ -345,7 +405,10 @@ TEST (RCSController, SetAngle)
     CHECK_EQUAL(E_SUCCESS, err);
 
     // Finite
-    CHECK_SUCCESS (rcs->setAngle (10.0));
+    CHECK_SUCCESS (rcs->setAngle (0.5));
+    // Finite, but out of bounds
+    CHECK_EQUAL (E_OUT_OF_BOUNDS, rcs->setAngle (ATT_BOUND_LOW_RADS - 1e-3));
+    CHECK_EQUAL (E_OUT_OF_BOUNDS, rcs->setAngle (ATT_BOUND_HIGH_RADS));
     // Infinite
     CHECK_EQUAL (E_NONFINITE_VALUE, rcs->setAngle (INFINITY));
     // NaN
@@ -388,24 +451,25 @@ TEST (RCSController, NoFireFailsafes)
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
     RCSController::Response_t response;
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_TRUE (response != RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (response != RCS_NO_FIRE);
 
     // Bad angle
-    CHECK_SUCCESS (rcs->setRate (PHASE_CHANNEL_TEST_CONFIG.rateLimit * 2));
+    CHECK_SUCCESS (rcs->setRate (PHASE_CHANNEL_TEST_CONFIG.rateLimitRadsPerSec
+                                 * 2));
     CHECK_EQUAL (E_NONFINITE_VALUE, rcs->setAngle (NAN));
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_EQUAL (response, RCSController::Response_t::NO_FIRE);
+    CHECK_EQUAL (response, RCS_NO_FIRE);
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_TRUE (response != RCSController::Response_t::NO_FIRE);
+    CHECK_TRUE (response != RCS_NO_FIRE);
 
     // Bad rate
-    CHECK_SUCCESS (rcs->setAngle (10));
+    CHECK_SUCCESS (rcs->setAngle (-0.5));
     CHECK_EQUAL (E_NONFINITE_VALUE, rcs->setRate (NAN));
     CHECK_SUCCESS (rcs->getResponse (response));
-    CHECK_EQUAL (response, RCSController::Response_t::NO_FIRE);
+    CHECK_EQUAL (response, RCS_NO_FIRE);
 }
 
 /**
@@ -427,22 +491,22 @@ TEST (RCSController, PlaneResponses)
     std::map<RCSInputs_t, RCSController::Response_t> noHysteresisTests =
     {
         // Positions within the channel and hysteresis lines
-        { RCSInputs_t (0, 0),     RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (-6, 1.33), RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (6, -1.33), RCSController::Response_t::NO_FIRE       },
+        { RCSInputs_t ( 0.0000,  0.0000), RCS_NO_FIRE  },
+        { RCSInputs_t (-0.1047,  0.0232), RCS_NO_FIRE  },
+        { RCSInputs_t ( 0.1047, -0.0232), RCS_NO_FIRE  },
         // Positions in the channel but outside the hysteresis lines
-        { RCSInputs_t (0, 1),     RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (0, -1),    RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (-6, 1),    RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (6, -1),    RCSController::Response_t::NO_FIRE       },
+        { RCSInputs_t ( 0.0000,  0.0174), RCS_NO_FIRE  },
+        { RCSInputs_t ( 0.0000, -0.0174), RCS_NO_FIRE  },
+        { RCSInputs_t (-0.1047,  0.0174), RCS_NO_FIRE  },
+        { RCSInputs_t ( 0.1047, -0.0174), RCS_NO_FIRE  },
         // Positions above the channel
-        { RCSInputs_t (-4, 2),    RCSController::Response_t::FIRE_NEGATIVE },
-        { RCSInputs_t (8, -0.5),  RCSController::Response_t::FIRE_NEGATIVE },
-        { RCSInputs_t (0, 2),     RCSController::Response_t::FIRE_NEGATIVE },
+        { RCSInputs_t (-0.0698,  0.0349), RCS_FIRE_NEG },
+        { RCSInputs_t ( 0.1396, -0.0087), RCS_FIRE_NEG },
+        { RCSInputs_t ( 0.0000,  0.0349), RCS_FIRE_NEG },
         // Positions below the channel
-        { RCSInputs_t (4, -2),    RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (-8, 0.5),  RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (0, -2),    RCSController::Response_t::FIRE_POSITIVE }
+        { RCSInputs_t ( 0.0698, -0.0349), RCS_FIRE_POS },
+        { RCSInputs_t (-0.1396,  0.0087), RCS_FIRE_POS },
+        { RCSInputs_t ( 0.0000, -0.0349), RCS_FIRE_POS }
     };
 
     // Run all I/O pairs
@@ -468,22 +532,22 @@ TEST (RCSController, PlaneResponses)
     std::map<RCSInputs_t, RCSController::Response_t> hysteresisTests =
     {
         // Positions within the channel and hysteresis lines
-        { RCSInputs_t (0, 0),     RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (-6, 1.33), RCSController::Response_t::NO_FIRE       },
-        { RCSInputs_t (6, -1.33), RCSController::Response_t::NO_FIRE       },
+        { RCSInputs_t ( 0.0000,  0.0000), RCS_NO_FIRE  },
+        { RCSInputs_t (-0.1047,  0.0232), RCS_NO_FIRE  },
+        { RCSInputs_t ( 0.1047, -0.0232), RCS_NO_FIRE  },
         // Positions in the channel but outside the hysteresis lines
-        { RCSInputs_t (0, 1),     RCSController::Response_t::FIRE_NEGATIVE },
-        { RCSInputs_t (0, -1),    RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (-6, 1),    RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (6, -1),    RCSController::Response_t::FIRE_NEGATIVE },
+        { RCSInputs_t ( 0.0000,  0.0174), RCS_FIRE_NEG },
+        { RCSInputs_t ( 0.0000, -0.0174), RCS_FIRE_POS },
+        { RCSInputs_t (-0.1047,  0.0174), RCS_FIRE_POS },
+        { RCSInputs_t ( 0.1047, -0.0174), RCS_FIRE_NEG },
         // Positions above the channel
-        { RCSInputs_t (-4, 2),    RCSController::Response_t::FIRE_NEGATIVE },
-        { RCSInputs_t (8, -0.5),  RCSController::Response_t::FIRE_NEGATIVE },
-        { RCSInputs_t (0, 2),     RCSController::Response_t::FIRE_NEGATIVE },
+        { RCSInputs_t (-0.0698,  0.0349), RCS_FIRE_NEG },
+        { RCSInputs_t ( 0.1396, -0.0087), RCS_FIRE_NEG },
+        { RCSInputs_t ( 0.0000,  0.0349), RCS_FIRE_NEG },
         // Positions below the channel
-        { RCSInputs_t (4, -2),    RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (-8, 0.5),  RCSController::Response_t::FIRE_POSITIVE },
-        { RCSInputs_t (0, -2),    RCSController::Response_t::FIRE_POSITIVE }
+        { RCSInputs_t ( 0.0698, -0.0349), RCS_FIRE_POS },
+        { RCSInputs_t (-0.1396,  0.0087), RCS_FIRE_POS },
+        { RCSInputs_t ( 0.0000, -0.0349), RCS_FIRE_POS }
     };
 
     // Run all I/O pairs
@@ -517,15 +581,17 @@ TEST (RCSController, PhaseChannelShape)
     const int PLANE_DIMENSIONS = 30;
     // Angle and rate bounds of the plane being visualized. These bounds were
     // chosen so that the channel is centered well within the visualized plane.
-    const float PLANE_RATE_LOW =   -PHASE_CHANNEL_TEST_CONFIG.rateLimit * 2;
-    const float PLANE_RATE_HIGH =  -PLANE_RATE_LOW;
-    const float PLANE_ANGLE_LOW =  -PLANE_DIMENSIONS / 2;
+    const float PLANE_RATE_LOW = -PHASE_CHANNEL_TEST_CONFIG.rateLimitRadsPerSec
+                                 * 2;
+    const float PLANE_RATE_HIGH = -PLANE_RATE_LOW;
+    const float PLANE_ANGLE_LOW = -0.261799;
     const float PLANE_ANGLE_HIGH = -PLANE_ANGLE_LOW;
     // Axis intervals. Chosen so that the plane is high enough resolution to
     // provide a good visual of the channel shape.
     const float PLANE_RATE_STEP = (PLANE_RATE_HIGH - PLANE_RATE_LOW)
                                   / PLANE_DIMENSIONS;
-    const float PLANE_ANGLE_STEP =  1;
+    const float PLANE_ANGLE_STEP = (PLANE_ANGLE_HIGH - PLANE_ANGLE_LOW)
+                                   / PLANE_DIMENSIONS;
 
     // Configure and enable a new controller
     std::unique_ptr<RCSController> rcs;
@@ -539,7 +605,7 @@ TEST (RCSController, PhaseChannelShape)
     std::string planeHysteresis;
 
     // Generate responses for every interval on both axes
-    for (float rate = PLANE_RATE_HIGH; rate >= PLANE_RATE_LOW;
+    for (float rate = PLANE_RATE_HIGH; rate > PLANE_RATE_LOW;
          rate -= PLANE_RATE_STEP)
     {
         for (float angle = PLANE_ANGLE_LOW; angle < PLANE_ANGLE_HIGH;
@@ -555,7 +621,7 @@ TEST (RCSController, PhaseChannelShape)
             CHECK_SUCCESS (rcs->run ());
             CHECK_SUCCESS (rcs->getResponse (response));
 
-            planeNoHysteresis.append (gRESPONSE_SYMBOLS.at(response));
+            planeNoHysteresis.append (gRESPONSE_SYMBOLS.at (response));
 
             // Cause a nonzero response so hysteresis is enforced
             CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -565,7 +631,7 @@ TEST (RCSController, PhaseChannelShape)
             CHECK_SUCCESS (rcs->run ());
             CHECK_SUCCESS (rcs->getResponse (response));
 
-            planeHysteresis.append (gRESPONSE_SYMBOLS.at(response));
+            planeHysteresis.append (gRESPONSE_SYMBOLS.at (response));
         }
 
         // Each inner loop populates a row of the phase plane, so we append

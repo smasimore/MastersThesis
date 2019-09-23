@@ -19,6 +19,8 @@ typedef enum Error {
     /* General */
     E_SUCCESS,
     E_NONFINITE_VALUE,
+    E_OUT_OF_BOUNDS,
+    E_OVERFLOW,
 
     /* Test Log */
     E_INVALID_ENUM,
@@ -78,9 +80,6 @@ typedef enum Error {
 
     /* Controller */
     E_INVALID_CONFIG,
-
-    /* RCS Controller */
-    E_RCS_ALLOCATE_FAILED,
 
     LAST
 } Error_t;

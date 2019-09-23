@@ -14,7 +14,6 @@
 # ifndef RCS_CONTROLLER_HPP
 # define RCS_CONTROLLER_HPP
 
-#include <memory>
 #include <stdint.h>
 
 #include "Controller.hpp"
@@ -28,22 +27,26 @@ public:
     */
     typedef enum Response : int8_t
     {
-        FIRST = -2,
-        FIRE_NEGATIVE,
+        FIRE_NEGATIVE = -1,
         NO_FIRE,
         FIRE_POSITIVE,
-        LAST
     } Response_t;
 
     /**
      * Parameters defining phase channel geometry.
+     * Constraints:
+     *     0 < rateLimitRadsPerSec
+     *     0 < deadband
+     *     0 < rateLimitsRatio < 1
+     *     0 < hysteresisGradientRatio < 1
+     *     1 < hysteresisRateLimitRatio
      */
     struct Config
     {
         /**
     	 * The maximum allowed magnitude of angular velocity.
     	 */
-        float rateLimit;
+        float rateLimitRadsPerSec;
         /**
     	 * Half the width of the angled (gradient) portion of the phase channel.
     	 */
@@ -107,6 +110,7 @@ public:
      *          E_NONFINITE_VALUE Provided angle was NaN or infinite. The
      *                            current angle remains unchanged, and the
      *                            current response becomes NO_FIRE.
+     *          E_OUT_OF_BOUNDS   Angle is outside the valid range.
      */
     Error_t setAngle (float kAngle);
 
@@ -147,11 +151,21 @@ private:
     /**
      * Current angle in the axis being controlled.
      */
-    float mAngle;
+    float mAngleRads;
     /**
      * Current angular velocity in the axis being controlled.
      */
-    float mRate;
+    float mRateRadsPerSec;
+    /**
+     * Critical points used in the response calculation that depend on the input
+     * angle. Overflow checking for these points is part of every response
+     * calculation.
+     */
+    float mRateLimitOffset;
+    float mGradientLimitLow;
+    float mGradientLimitHigh;
+    float mHystLimitLow;
+    float mHystLimitHigh;
 
     /**
      * All of the following const floats are critical values defining the phase
@@ -160,13 +174,14 @@ private:
      */
 
     /**
-     * Magnitude of the upper drift channel bound on the rate axis.
+     * Magnitude of the upper drift channel bound on the rate axis. Herein RL
+     * is "rate limit."
      */
-    const float mUPPER_RATE_LIMIT;
+    const float mUPPER_RL_RADS_PSEC;
     /**
      * Magnitude of the lower drift channel bound on the rate axis.
      */
-    const float mLOWER_RATE_LIMIT;
+    const float mLOWER_RL_RADS_PSEC;
     /**
      * Magnitude of points on either end of the channel gradient where the
      * angled boundary meet the horizontal boundary.
@@ -175,17 +190,17 @@ private:
     /**
      * Magnitude of the horizontal hysteresis lines along the rate axis.
      */
-    const float mHYSTERESIS_RATE_LIMIT;
+    const float mHYST_RL_RADS_PSEC;
     /**
      * Magnitude of points on the angle axis where the angled hysteresis lines
-     * meet the horizontal hysteresis lines.
+     * meet the horizontal hysteresis lines. Herein AL is "angle limit."
      */
-    const float mHYSTERESIS_UPPER_ANGLE_LIMIT;
+    const float mHYST_UPPER_AL_RADS;
     /**
      * Magnitude of points on the angle axis where the angled hysteresis lines
      * meet the upper rate limits.
      */
-    const float mHYSTERESIS_LOWER_ANGLE_LIMIT;
+    const float mHYST_LOWER_AL_RADS;
     /**
      * Slope of the channel gradient.
      */
@@ -193,11 +208,11 @@ private:
     /**
      * Point where lower hysteresis line intercepts the rate axis.
      */
-    const float mHYSTERESIS_INTERCEPT_LOW;
+    const float mHYST_INTERCEPT_LOW;
     /**
      * Point where upper hysteresis line intercepts the rate axis.
      */
-    const float mHYSTERESIS_INTERCEPT_HIGH;
+    const float mHYST_INTERCEPT_HIGH;
 
     /**
      * Updates the RCS response according to the currently set rate and angle.
@@ -205,9 +220,21 @@ private:
      * This method is only called when the controller is running in enabled
      * mode.
      *
-     * @ret     E_SUCCESS Computation was successful.
+     * @ret     E_SUCCESS Computation successful.
+     *          [other]   Inherits errors of computeCriticalResponsePoints.
      */
-    Error_t computePhasePlaneMoment ();
+    Error_t computeResponse ();
+
+    /**
+     * Computes certain points critical to response calculation and checks them
+     * for overflow.
+     *
+     * @param   kAngleRads Current rocket angle.
+     *
+     * @ret     E_SUCCESS  Computation successful.
+     *          E_OVERFLOW One or more point calculations overflowed.
+     */
+    Error_t computeCriticalResponsePoints (float kAngleRads);
 };
 
 # endif
