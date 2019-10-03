@@ -81,10 +81,12 @@ public:
      *
      * @param   kValid    Result.
      *
-     * @ret     E_SUCCESS Config successfully validated, though not necessarily
-     *                    correct.
+     * @ret     E_SUCCESS         Config was correct.
+     *          E_NONFINITE_VALUE A config value was NaN or infinite.
+     *          E_OUT_OF_BOUNDS   A config value was outside legal bounds.
+     *          E_OVERFLOW        Config caused a calculation to overflow.
      */
-    Error_t verifyConfig (bool& kValid);
+    Error_t verifyConfig ();
 
     /**
      * Computes a new response based on current angle and rate.

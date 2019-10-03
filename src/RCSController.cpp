@@ -46,10 +46,8 @@ RCSController::RCSController (const RCSController::Config& kConfig) :
     mRateRadsPerSec = 0;
 }
 
-Error_t RCSController::verifyConfig (bool& kValid)
+Error_t RCSController::verifyConfig ()
 {
-    kValid = false;
-
     // Check finiteness
     if (!isfinite(mCONFIG.rateLimitRadsPerSec) ||
         !isfinite(mCONFIG.deadband) ||
@@ -86,7 +84,6 @@ Error_t RCSController::verifyConfig (bool& kValid)
         return E_OVERFLOW;
     }
 
-    kValid = true;
     return E_SUCCESS;
 }
 

@@ -68,7 +68,7 @@ class Controller
          * @param   pControllerRet      Pointer to return controller.
          *
          * @ret    E_SUCCESS            Controller successfully created.
-         *         E_INVALID_CONFIG     Config invalid.
+         *         [other]              Validation error returned by controller.
         */
         template <class T_Controller, class T_Config>
         static Error_t createNew (T_Config config,
@@ -80,9 +80,8 @@ class Controller
             pControllerRet.reset (new T_Controller (config));
 
             // Verify config.
-            bool configValid = false;
-            ret = pControllerRet->verifyConfig (configValid);
-            if (ret != E_SUCCESS || configValid == false)
+            ret = pControllerRet->verifyConfig ();
+            if (ret != E_SUCCESS)
             {
                 // Free controller.
                 pControllerRet.reset (nullptr);
@@ -127,10 +126,10 @@ class Controller
          * @param     configValidRet  Set to true if config valid, false if
          *                            invalid.
          *
-         * @ret       E_SUCCESS       Successfully verified config. Note, this
-         *                            does not indicate config is valid.
+         * @ret       E_SUCCESS       Config was correct.
+         *            [other]         Error indicating why config was incorrect.
          */
-        virtual Error_t verifyConfig (bool &configValidRet) = 0;
+        virtual Error_t verifyConfig () = 0;
 
     protected:
 
