@@ -2,12 +2,12 @@
 /**
  ************************ Error Handling Framework *****************************
  *
- * In order to surface and handle errors in a standard way, all flight software 
+ * In order to surface and handle errors in a standard way, all flight software
  * must follow the protocol established by the Error Handling Framework:
- * 
+ *
  * 1. All functions must return a type Error_t.
  * 2. All callsite must check the return value of the function called.
- * 
+ *
  *******************************************************************************
  */
 
@@ -19,6 +19,9 @@ typedef enum Error
 
     /* General */
     E_SUCCESS,
+    E_NONFINITE_VALUE,
+    E_OUT_OF_BOUNDS,
+    E_OVERFLOW,
 
     /* Test Log */
     E_INVALID_ENUM,
@@ -69,7 +72,7 @@ typedef enum Error
     E_INVALID_SRC_ADDR,
     E_INVALID_BUF_LEN,
     E_WOULD_BLOCK,
-    
+
     /* State Machine */
     E_INVALID_TRANSITION,
     E_DUPLICATE_NAME,

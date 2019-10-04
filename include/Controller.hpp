@@ -13,10 +13,10 @@
  * IMPLEMENTING A CONTROLLER
  *
  * 1. Extend the Controller base class to create YourController.
- * 2. Define struct YourConfig, which will contain any controller-specific 
- *    configuration (e.g. calibration values) and will be passed to 
+ * 2. Define struct YourConfig, which will contain any controller-specific
+ *    configuration (e.g. calibration values) and will be passed to
  *    YourController on initialization.
- * 3. Implement the constructor (YourController(struct YourConfig)), runEnabled, 
+ * 3. Implement the constructor (YourController(struct YourConfig)), runEnabled,
  *    runSafed, and verifyConfig methods.
  *
  * See TestController in the tests directory for an example.
@@ -24,16 +24,16 @@
  *
  * USING A CONTROLLER
  *
- * 1. Call Controller::createNew<YourController, 
+ * 1. Call Controller::createNew<YourController,
  *                               struct YourController::YourConfig> with the
- *    relevant controller config data and a unique_ptr to store the 
+ *    relevant controller config data and a unique_ptr to store the
  *    initialized controller pointer in.
  *
- *       Note: Controllers should not be initialized directly, but instead 
- *       through the createNew function below. This ensures a controller's 
+ *       Note: Controllers should not be initialized directly, but instead
+ *       through the createNew function below. This ensures a controller's
  *       config is validated before the controller is used.
  *
- * 2. Set the controller's mode (ENABLED or SAFED) using setMode. 
+ * 2. Set the controller's mode (ENABLED or SAFED) using setMode.
  * 3. Call YourController->run () for each loop of your main periodic thread.
  *
  */
@@ -41,8 +41,8 @@
 class Controller
 {
 
-    public: 
-        
+    public:
+
         /**
          * Controller's mode. This determines which run function (runEnabled
          * vs. runSafed) is called.
@@ -61,37 +61,36 @@ class Controller
 
         /**
          * Entry point for creating a new controller object. Validates the
-         * passed in controller config. Defined in the header so that the 
+         * passed in controller config. Defined in the header so that the
          * templatized functions do not need to each be instantiated explicitly.
          *
          * @param   config              Controller's config data.
          * @param   pControllerRet      Pointer to return controller.
          *
          * @ret    E_SUCCESS            Controller successfully created.
-         *         E_INVALID_CONFIG     Config invalid.
+         *         [other]              Validation error returned by controller.
         */
         template <class T_Controller, class T_Config>
-        static Error_t createNew (T_Config config, 
+        static Error_t createNew (T_Config config,
                                   std::unique_ptr<T_Controller>& pControllerRet)
         {
             Error_t ret = E_SUCCESS;
 
             // Create controller.
             pControllerRet.reset (new T_Controller (config));
-            
+
             // Verify config.
-            bool configValid = false;
-            ret = pControllerRet->verifyConfig (configValid); 
-            if (ret != E_SUCCESS || configValid == false)
+            ret = pControllerRet->verifyConfig ();
+            if (ret != E_SUCCESS)
             {
                 // Free controller.
                 pControllerRet.reset (nullptr);
-                return E_INVALID_CONFIG;
+                return ret;
             }
 
-            return E_SUCCESS;    
+            return E_SUCCESS;
         }
-    
+
 
         /**
          * Run controller logic once.
@@ -104,7 +103,7 @@ class Controller
         /**
          * Get a copy of the controller's mode.
          *
-         * @param    modeRet    Copy of controller's mode returned in this 
+         * @param    modeRet    Copy of controller's mode returned in this
          *                      param.
          *
          * @return   E_SUCCESS  Mode returned successfully.
@@ -114,7 +113,7 @@ class Controller
         /**
          * Set the controller's mode.
          *
-         * @param    newMode        New mode to set.    
+         * @param    newMode        New mode to set.
          *
          * @return   E_SUCCESS      Mode set successfully.
          *           E_INVALID_ENUM Invalid mode.
@@ -122,21 +121,21 @@ class Controller
         Error_t setMode (Mode_t newMode);
 
         /**
-         * Verify config. 
-         * 
-         * @param     configValidRet  Set to true if config valid, false if 
+         * Verify config.
+         *
+         * @param     configValidRet  Set to true if config valid, false if
          *                            invalid.
          *
-         * @ret       E_SUCCESS       Successfully verified config. Note, this
-         *                            does not indicate config is valid.
+         * @ret       E_SUCCESS       Config was correct.
+         *            [other]         Error indicating why config was incorrect.
          */
-        virtual Error_t verifyConfig (bool &configValidRet) = 0;
-    
+        virtual Error_t verifyConfig () = 0;
+
     protected:
 
         /**
-         * Constructor. Should only be called by derived controller 
-         * constructors. 
+         * Constructor. Should only be called by derived controller
+         * constructors.
          */
         Controller ();
 

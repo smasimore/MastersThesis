@@ -30,10 +30,10 @@ class TestController final : public Controller
         /**
          * Inherited from base.
          */
-        virtual Error_t verifyConfig (bool &verifiedRet);
+        virtual Error_t verifyConfig ();
 
         /**
-         * Derived controller constructor. This must be public so that it is 
+         * Derived controller constructor. This must be public so that it is
          * visible to Controller::createNew.
          *
          * @param     config        Controller configuration.
@@ -45,4 +45,3 @@ class TestController final : public Controller
         /* Controller configuration. */
         struct TestConfig Config;
 };
-

@@ -14,10 +14,9 @@ Error_t TestController::runSafed ()
     return E_SUCCESS;
 }
 
-Error_t TestController::verifyConfig (bool &configValidRet)
+Error_t TestController::verifyConfig ()
 {
-    configValidRet = this->Config.valid;
-    return E_SUCCESS;
+    return this->Config.valid ? E_SUCCESS : E_INVALID_CONFIG;
 }
 
 TestController::TestController (struct TestController::TestConfig config) :
