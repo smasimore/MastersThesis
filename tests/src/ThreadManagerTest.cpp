@@ -98,13 +98,21 @@ void *threadFuncSpin (void *rawArgs)
 
 TEST_GROUP (ThreadManagerInit)
 {
-    // Reset priorities of ktimersoftd threads.
+    // Reset priorities of software irq threads.
     void teardown()
     {
+		// Priority of threads on boot.
+        const uint8_t KSOFTIRQD_PRIORITY = 8;
+        const uint8_t KTIMERSOFTD_PRIORITY = 1;
+
         ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::KSOFTIRQD_PRIORITY);
+                                           KSOFTIRQD_PRIORITY);
         ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_1_PID,
-                                    ThreadManager::KSOFTIRQD_PRIORITY);
+                                           KSOFTIRQD_PRIORITY);
+        ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID,
+                                           KTIMERSOFTD_PRIORITY);
+        ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID,
+                                           KTIMERSOFTD_PRIORITY);
     }
 };
 
@@ -112,7 +120,7 @@ TEST_GROUP (ThreadManagerInit)
 TEST (ThreadManagerInit, VerifyProcess)
 {
     // Test using process rcu_preempt. On RT Linux this is PID 7. 
-    const uint8_t SYSTEMD_PID = 7;
+    const uint8_t SYSTEMD_PID = 9;
     const std::string SYSTEMD_NAME = "rcu_preempt";
 
     // Test incorrect name.
@@ -138,11 +146,11 @@ TEST (ThreadManagerInit, SetProcessPriority)
     // Set priority and verify.
     Error_t ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::KSOFTIRQD_PRIORITY); 
+                                    ThreadManager::SW_IRQ_PRIORITY); 
     CHECK_EQUAL (E_SUCCESS, ret);
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KSOFTIRQD_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
                  schedParam.__sched_priority);
     
     // Set priority back to default and verify.
@@ -185,15 +193,20 @@ TEST (ThreadManagerInit, ConstructTwo)
     // Verify they point to the same ThreadManager.
     CHECK_TRUE (pThreadManagerOne == pThreadManagerTwo);
 
-    // Verify that ktimersoftd thread priorities set.
-
+    // Verify software irq thread priorities set.
     struct sched_param schedParam;
 
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KSOFTIRQD_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
                  schedParam.__sched_priority);
     sched_getparam (ThreadManager::KSOFTIRQD_1_PID, &schedParam);
-    CHECK_EQUAL (ThreadManager::KSOFTIRQD_PRIORITY, 
+    CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
+                 schedParam.__sched_priority);
+    sched_getparam (ThreadManager::KTIMERSOFTD_0_PID, &schedParam);
+    CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
+                 schedParam.__sched_priority);
+    sched_getparam (ThreadManager::KTIMERSOFTD_1_PID, &schedParam);
+    CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
                  schedParam.__sched_priority);
 
     // Verify that the current thread sched policy and priority was set.
@@ -507,7 +520,7 @@ TEST (ThreadManagerCreate, CreatePeriodicThreadNoArgs)
                                         thread, pThreadFunc, nullptr, 0,
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL,
-    									THREAD_PERIOD_MS);
+                                        THREAD_PERIOD_MS);
    CHECK_EQUAL (E_SUCCESS, ret);
 
     // Clean up thread. 

@@ -31,13 +31,18 @@
  * 
  * 2. Software IRQ Threads: These kernel threads are sometimes scheduled by the 
  *    hw IRQ threads to finish servicing a hardware interrupt. The sw IRQ 
- *    threads we are about are the ksoftirqd/N threads, where N is the core
- *    ID the thread runs on. These threads are critical for the periodic thread
- *    implementation in the ThreadManager, which relies on the hardware timer, 
- *    and must not be starved. Their default scheduling policy is SCHED_FIFO 
- *    with a priority of 8. The ThreadManager increases this priority to 14 so
- *    that we have a larger priority range to give to FSW threads (which should
- *    run at priorities 1 to ksoftirqd/N priority - 2. 
+ *    threads we care about are the ksoftirqd/N and ktimersoftirqd/N threads, 
+ *    where N is the core ID the thread runs on. These threads are critical 
+ *    for the periodic thread implementation in the ThreadManager, which relies 
+ *    on the hardware timer, and must not be starved. Additionally, these 
+ *    threads are used to service network rx and tx. Their default scheduling 
+ *    policy is SCHED_FIFO with a priority of 1 (timer) and 8 (soft). The 
+ *    ThreadManager increases the priorities to 14 so that we have a larger 
+ *    real-time priority range to give to FSW threads (which should run at 
+ *    priorities lower than these threads).
+ *
+ *    Note: The hardware serviced by the ksoftird/n threads is listed in 
+ *          kernel/softirq.c in the kernel source.
  * 
  * 3. FSW Init Thread: This is the thread per node that initializes the other
  *    FSW threads (e.g. initializes a RIO's main loop thread & comms thread).
@@ -220,13 +225,15 @@ public:
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
      * 
-     * PID's of the timer soft IRQ kernel threads. There is one per core, and
+     * PID's of the software IRQ kernel threads. There is one per core, and
      * the sbRIO-96<2|3>7 has 2 cores. Hardcode the PID's since these do not
      * appear to change per system boot and getting the PID's dynamically is
      * tricky. These are verified on initialization using verifyProcess. 
      */
     static const uint8_t KSOFTIRQD_0_PID;
     static const uint8_t KSOFTIRQD_1_PID;
+    static const uint8_t KTIMERSOFTD_0_PID;
+    static const uint8_t KTIMERSOFTD_1_PID;
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
@@ -234,7 +241,7 @@ public:
      * Hardcoded thread priorities.
      */
     static const uint8_t HW_IRQ_PRIORITY;
-    static const uint8_t KSOFTIRQD_PRIORITY;
+    static const uint8_t SW_IRQ_PRIORITY;
     static const uint8_t FSW_INIT_THREAD_PRIORITY;
 
     /**
@@ -324,9 +331,8 @@ private:
      *    priority. Sets current thread to have affinity to CPU 0 to provide 
      *    determinism in the FSW app startup and for testing purposes.
      * 
-     * 2. Sets the ktimersoftd threads (one per core) to have a priority of 49. 
-     *    This is below the priority of the hw IRQ threads (50) and gives plenty 
-     *    of room below this to set priorities for fsw threads. 
+     * 2. Sets the software irq threads to have a priority below the hardware
+     *    irq threads and above the max allowable fsw thread priorities.
      * 
      * @ret     E_SUCCESS                   Successfully initialized kernel 
      *                                      scheduling env. 

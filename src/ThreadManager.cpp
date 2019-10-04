@@ -13,13 +13,15 @@
 
 /******************************* CONSTANTS ************************************/
 
-const uint8_t ThreadManager::KSOFTIRQD_0_PID = 3;
-const uint8_t ThreadManager::KSOFTIRQD_1_PID = 20;
+const uint8_t ThreadManager::KSOFTIRQD_0_PID = 7;
+const uint8_t ThreadManager::KSOFTIRQD_1_PID = 22;
+const uint8_t ThreadManager::KTIMERSOFTD_0_PID = 8;
+const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 21;
 const uint8_t ThreadManager::HW_IRQ_PRIORITY = 15;
-const uint8_t ThreadManager::KSOFTIRQD_PRIORITY = 
+const uint8_t ThreadManager::SW_IRQ_PRIORITY =
     ThreadManager::HW_IRQ_PRIORITY - 1;
 const uint8_t ThreadManager::FSW_INIT_THREAD_PRIORITY = 
-    ThreadManager::KSOFTIRQD_PRIORITY - 1;
+    ThreadManager::SW_IRQ_PRIORITY - 1;
 const uint8_t ThreadManager::MAX_NEW_THREAD_PRIORITY = 
     ThreadManager::FSW_INIT_THREAD_PRIORITY - 1;
 const uint8_t ThreadManager::MIN_NEW_THREAD_PRIORITY = 1;
@@ -282,7 +284,6 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
                                       const std::string expectedName, 
                                       bool &verified)
 {
-
     verified = true;
 
     // 1) Build path to file 
@@ -362,7 +363,6 @@ ThreadManager& ThreadManager::operator= (ThreadManager const &)
 
 Error_t ThreadManager::initKernelSchedulingEnvironment () 
 {
-
     // 1) Set the current thread to have FSW_INIT_THREAD_PRIORITY. This is 1 
     //    above the maximum priority allowed for new threads. This is done so 
     //    that the initial FSW thread can create all threads before being 
@@ -387,10 +387,12 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
         return E_FAILED_TO_SET_AFFINITY;
     }
 
-    // 3) Verify that the hardcoded ksoftirqd/n PID's map to the correct 
-    //     processes.
+    // 3) Verify that the hardcoded sw irq PID's map to the correct processes.
     const std::string EXPECTED_KSOFTIRQD_0_NAME = "ksoftirqd/0";
     const std::string EXPECTED_KSOFTIRQD_1_NAME = "ksoftirqd/1";
+    const std::string EXPECTED_KTIMERSOFTD_0_NAME = "ktimersoftd/0";
+    const std::string EXPECTED_KTIMERSOFTD_1_NAME = "ktimersoftd/1";
+
     bool verified = false;
     Error_t ret = ThreadManager::verifyProcess (KSOFTIRQD_0_PID, 
                                                 EXPECTED_KSOFTIRQD_0_NAME, 
@@ -400,7 +402,6 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
         return E_FAILED_TO_VERIFY_PROCESS;
     }
 
-    verified = false;
     ret = ThreadManager::verifyProcess (KSOFTIRQD_1_PID, 
                                         EXPECTED_KSOFTIRQD_1_NAME, 
                                         verified);
@@ -409,15 +410,43 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
         return E_FAILED_TO_VERIFY_PROCESS;
     }
 
-    // 4) Set the priorities of the ksoftirqd/n threads.
+    ret = ThreadManager::verifyProcess (KTIMERSOFTD_0_PID, 
+                                        EXPECTED_KTIMERSOFTD_0_NAME, 
+                                        verified);
+    if (ret != E_SUCCESS || verified == false)
+    {
+        return E_FAILED_TO_VERIFY_PROCESS;
+    }
+
+    ret = ThreadManager::verifyProcess (KTIMERSOFTD_1_PID, 
+                                        EXPECTED_KTIMERSOFTD_1_NAME, 
+                                        verified);
+    if (ret != E_SUCCESS || verified == false)
+    {
+        return E_FAILED_TO_VERIFY_PROCESS;
+    }
+
+    // 4) Set the priorities of the sw irq threads.
     ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID, 
-                                        ThreadManager::KSOFTIRQD_PRIORITY);
+                                             ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
     ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_1_PID, 
-                                        ThreadManager::KSOFTIRQD_PRIORITY);
+                                             ThreadManager::SW_IRQ_PRIORITY);
+    if (ret != E_SUCCESS)
+    {
+        return E_FAILED_TO_SET_PRIORITY;
+    }
+    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
+                                             ThreadManager::SW_IRQ_PRIORITY);
+    if (ret != E_SUCCESS)
+    {
+        return E_FAILED_TO_SET_PRIORITY;
+    }
+    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID, 
+                                             ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
