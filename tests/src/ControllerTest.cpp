@@ -63,7 +63,7 @@ TEST(ControllerTest, InitInvalidConfig)
                                                                     pInvalid);
 
     // Verify failure.
-    CHECK_EQUAL (ret, E_INVALID_CONFIG);
+    CHECK_EQUAL (ret, E_OUT_OF_BOUNDS);
     POINTERS_EQUAL (pInvalid.get (), nullptr);
 }
 

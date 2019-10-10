@@ -22,9 +22,9 @@ typedef enum Error
     E_NONFINITE_VALUE,
     E_OUT_OF_BOUNDS,
     E_OVERFLOW,
+    E_INVALID_ENUM,
 
     /* Test Log */
-    E_INVALID_ENUM,
     E_FAILED_TO_INIT_LOCK,
     E_FAILED_TO_LOCK,
     E_FAILED_TO_UNLOCK,
@@ -81,9 +81,6 @@ typedef enum Error
 
     /* Testing */
     E_TEST_ERROR,
-
-    /* Controller */
-    E_INVALID_CONFIG,
 
     LAST
 } Error_t;

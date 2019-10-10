@@ -16,7 +16,7 @@ Error_t TestController::runSafed ()
 
 Error_t TestController::verifyConfig ()
 {
-    return this->Config.valid ? E_SUCCESS : E_INVALID_CONFIG;
+    return this->Config.valid ? E_SUCCESS : E_OUT_OF_BOUNDS;
 }
 
 TestController::TestController (struct TestController::TestConfig config) :
