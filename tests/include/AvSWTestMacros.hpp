@@ -26,10 +26,12 @@ static Error_t gErr;
  * @param   kVal Actual value.
  */
 #define CHECK_APPROX(kExp, kVal)                                               \
-if (fabs(kExp - kVal) > 1e-6)                                                  \
 {                                                                              \
-    gFailstr = std::to_string(kExp) + " !~ " + std::to_string(kVal);           \
-    FAIL(gFailstr.c_str());                                                    \
+    if (fabs (kExp - kVal) > 1e-6)                                             \
+    {                                                                          \
+        gFailstr = std::to_string(kExp) + " !~ " + std::to_string (kVal);      \
+        FAIL (gFailstr.c_str ());                                              \
+    }                                                                          \
 }
 
 /**
@@ -38,12 +40,31 @@ if (fabs(kExp - kVal) > 1e-6)                                                  \
  * @param   kExpr Expression to evaluate.
  */
 #define CHECK_SUCCESS(kExpr)                                                   \
-gErr = kExpr;                                                                  \
-if (gErr != E_SUCCESS)                                                         \
 {                                                                              \
-    gFailstr = "Call produced error " + std::to_string(gErr) +                 \
-               " when success was expected";                                   \
-    FAIL(gFailstr.c_str());                                                    \
+    gErr = kExpr;                                                              \
+    if (gErr != E_SUCCESS)                                                     \
+    {                                                                          \
+        gFailstr = "Call produced error " + std::to_string (gErr) +            \
+                   " when success was expected";                               \
+        FAIL (gFailstr.c_str ());                                              \
+    }                                                                          \
+}
+
+/**
+ * Fails the ongoing test if some expression does not evaluate to err.
+ *
+ * @param   kExpr Expression to evaluate.
+ * @param   err   Expected error.
+ */
+#define CHECK_ERROR(kExpr, err)                                                \
+{                                                                              \
+    gErr = kExpr;                                                              \
+    if (gErr != err)                                                           \
+    {                                                                          \
+        gFailstr = "Call produced error " + std::to_string (gErr) +            \
+                   " when " + std::to_string (err) + " was expected";          \
+        FAIL (gFailstr.c_str());                                               \
+    }                                                                          \
 }
 
 # endif

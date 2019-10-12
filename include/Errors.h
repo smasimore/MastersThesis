@@ -82,7 +82,13 @@ typedef enum Error
     /* Testing */
     E_TEST_ERROR,
 
-    LAST
+    /* State Vector */
+    E_EMPTY_CONFIG,
+    E_EMPTY_ELEMS,
+    E_DUPLICATE_REGION,
+    E_DUPLICATE_ELEM,
+
+    E_LAST
 } Error_t;
 
 #endif
