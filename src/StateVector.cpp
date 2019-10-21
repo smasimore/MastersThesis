@@ -79,7 +79,7 @@ Error_t StateVector::verifyConfig (StateVector::StateVectorConfig_t& config)
             }
 
             // Verify valid type enum.
-            if (elemType >= T_LAST)
+            if (elemType >= SV_T_LAST)
             {
                 return E_INVALID_ENUM;
             }

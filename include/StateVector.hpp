@@ -7,6 +7,19 @@
  *
  *         1) Define a StateVector::StateVectorConfig_t (see StateVectorTest.cpp 
  *            for examples). 
+ *
+ *            WARNING: The initial values passed into the SV_ADD_<type> macros are 
+ *                     not validated against <type>. Be careful to avoid mistakes
+ *                     such as:
+ *
+ *                     a) Setting initialVal = 2    for a bool element.
+ *                     b) Setting initialVal = 1.23 for an element that is not a 
+ *                        float or double.
+ *                     c) Setting initialVal = 2^33 for an element that only fits
+ *                        <= 32 bits.
+ *                     d) Setting initialVal = -2   for an unsigned element (e.g.
+ *                        SV_T_UINT32).
+ *
  *         2) Call StateVector::createNew (yourConfig).
  *         3) Use the read and write methods to interact with elements in the
  *            State Vector.
@@ -29,6 +42,120 @@
 
 #include "Errors.h"
 #include "StateVectorEnums.hpp"
+
+/*********************** HELPER MACROS FOR SV CONFIG *************************/
+
+/**
+ * Defines an ElementConfig_t of type SV_T_UINT8.
+ */
+#define SV_ADD_UINT8(elem, initialVal)                                        \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_UINT8,                                                          \
+         StateVector::toUInt64<uint8_t> (initialVal)                          \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_UINT16.
+ */
+#define SV_ADD_UINT16(elem, initialVal)                                       \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_UINT16,                                                         \
+         StateVector::toUInt64<uint16_t> (initialVal)                         \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_UINT32.
+ */
+#define SV_ADD_UINT32(elem, initialVal)                                       \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_UINT32,                                                         \
+         StateVector::toUInt64<uint32_t> (initialVal)                         \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_UINT64.
+ */
+#define SV_ADD_UINT64(elem, initialVal)                                       \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_UINT64,                                                         \
+         StateVector::toUInt64<uint64_t> (initialVal)                         \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_INT8.
+ */
+#define SV_ADD_INT8(elem, initialVal)                                         \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_INT8,                                                           \
+         StateVector::toUInt64<int8_t> (initialVal)                           \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_INT16.
+ */
+#define SV_ADD_INT16(elem, initialVal)                                        \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_INT16,                                                          \
+         StateVector::toUInt64<int16_t> (initialVal)                          \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_INT32.
+ */
+#define SV_ADD_INT32(elem, initialVal)                                        \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_INT32,                                                          \
+         StateVector::toUInt64<int32_t> (initialVal)                          \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_INT64.
+ */
+#define SV_ADD_INT64(elem, initialVal)                                        \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_INT64,                                                          \
+         StateVector::toUInt64<int64_t> (initialVal)                          \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_FLOAT.
+ */
+#define SV_ADD_FLOAT(elem, initialVal)                                        \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_FLOAT,                                                          \
+         StateVector::toUInt64<float> (initialVal)                            \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_DOUBLE.
+ */
+#define SV_ADD_DOUBLE(elem, initialVal)                                       \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_DOUBLE,                                                         \
+         StateVector::toUInt64<double> (initialVal)                           \
+    })
+
+/**
+ * Defines an ElementConfig_t of type SV_T_BOOL.
+ */
+#define SV_ADD_BOOL(elem, initialVal)                                         \
+    ((StateVector::ElementConfig_t) {                                         \
+         elem,                                                                \
+         SV_T_BOOL,                                                           \
+         StateVector::toUInt64<bool> (initialVal)                             \
+    })
+
+/**************************** STATE VECTOR CLASS *****************************/
 
 class StateVector final 
 {

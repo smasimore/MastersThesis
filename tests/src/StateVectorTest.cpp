@@ -5,15 +5,14 @@
 
 #include "CppUTest/TestHarness.h"
 
-/********************************* TESTS **************************************/
-
-TEST_GROUP (StateVector)
+/* Group of tests verifying verifyConfig method. */
+TEST_GROUP (StateVectorConfig)
 {
 
 };
 
 /* Test initializing with empty config. */
-TEST (StateVector, Create_EmptyConfig)
+TEST (StateVectorConfig, Create_EmptyConfig)
 {
     StateVector::StateVectorConfig_t config = {};
     std::shared_ptr<StateVector> pSv; 
@@ -21,7 +20,7 @@ TEST (StateVector, Create_EmptyConfig)
 }
 
 /* Test initializing with element list empty. */
-TEST (StateVector, Create_EmptyElementList)
+TEST (StateVectorConfig, Create_EmptyElementList)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -32,7 +31,8 @@ TEST (StateVector, Create_EmptyElementList)
             {SV_REG_LAST, 
 
             // Elements
-            {}}
+            {
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -42,7 +42,7 @@ TEST (StateVector, Create_EmptyElementList)
 }
 
 /* Test initializing with invalid region enum. */
-TEST (StateVector, Create_InvalidRegionEnum)
+TEST (StateVectorConfig, Create_InvalidRegionEnum)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -53,8 +53,10 @@ TEST (StateVector, Create_InvalidRegionEnum)
             {SV_REG_LAST,
 
             // Elements
-            // ELEM             TYPE                                        INITIAL_VALUE
-            {{SV_ELEM_TEST0,   T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -64,7 +66,7 @@ TEST (StateVector, Create_InvalidRegionEnum)
 }
 
 /* Test initializing with invalid element enum. */
-TEST (StateVector, Create_InvalidElemEnum)
+TEST (StateVectorConfig, Create_InvalidElemEnum)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -75,8 +77,10 @@ TEST (StateVector, Create_InvalidElemEnum)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                        INITIAL_VALUE
-            {{SV_ELEM_LAST,    T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_LAST,             0            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -84,33 +88,9 @@ TEST (StateVector, Create_InvalidElemEnum)
     std::shared_ptr<StateVector> pSv; 
     CHECK_ERROR (StateVector::createNew (config, pSv), E_INVALID_ENUM);
 }
-
-/* Test initializing with invalid type enum. */
-TEST (StateVector, Create_InvalidTypeEnum)
-{
-    StateVector::StateVectorConfig_t config = {
-        // Regions
-        {
-            //////////////////////////////////////////////////////////////////////////////////
-
-            // Region
-            {SV_REG_TEST0,
-
-            // Elements
-            // ELEM              TYPE                                       INITIAL_VALUE
-            {{SV_ELEM_LAST,     T_LAST,    StateVector::toUInt64<uint8_t> (       0       )}}}
-
-
-            //////////////////////////////////////////////////////////////////////////////////
-        }
-    };
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_ERROR (StateVector::createNew (config, pSv), E_INVALID_ENUM);
-}
-
 
 /* Test initializing with duplicate region name. */
-TEST (StateVector, Create_DuplicateRegion)
+TEST (StateVectorConfig, Create_DuplicateRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -121,9 +101,11 @@ TEST (StateVector, Create_DuplicateRegion)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST0,    T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )},
-             {SV_ELEM_TEST1,    T_BOOL,     StateVector::toUInt64<bool>    (       1       )}}},
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+                SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -131,8 +113,10 @@ TEST (StateVector, Create_DuplicateRegion)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST2,   T_FLOAT,    StateVector::toUInt64<float>   (       1.23    )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+            }}
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -142,7 +126,7 @@ TEST (StateVector, Create_DuplicateRegion)
 }
 
 /* Test initializing with duplicate element name in different region. */
-TEST (StateVector, Create_DuplicateElementDiffRegion)
+TEST (StateVectorConfig, Create_DuplicateElementDiffRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -153,9 +137,11 @@ TEST (StateVector, Create_DuplicateElementDiffRegion)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST0,    T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )},
-            { SV_ELEM_TEST1,    T_BOOL,     StateVector::toUInt64<bool>    (       1       )}}},
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+                SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -163,8 +149,10 @@ TEST (StateVector, Create_DuplicateElementDiffRegion)
             {SV_REG_TEST1,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{ SV_ELEM_TEST0,   T_FLOAT,    StateVector::toUInt64<float>   (       1.23    )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_FLOAT  (           SV_ELEM_TEST0,            1.23         )
+            }}
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -174,7 +162,7 @@ TEST (StateVector, Create_DuplicateElementDiffRegion)
 }
 
 /* Test initializing with duplicate element name in same region. */
-TEST (StateVector, Create_DuplicateElementSameRegion)
+TEST (StateVectorConfig, Create_DuplicateElementSameRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -185,9 +173,11 @@ TEST (StateVector, Create_DuplicateElementSameRegion)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST0,    T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )},
-             {SV_ELEM_TEST0,    T_BOOL,     StateVector::toUInt64<bool>    (       1       )}}},
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+                SV_ADD_BOOL   (           SV_ELEM_TEST0,            1            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -195,8 +185,10 @@ TEST (StateVector, Create_DuplicateElementSameRegion)
             {SV_REG_TEST1,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST2,   T_FLOAT,    StateVector::toUInt64<float>    (       1.23    )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+            }}
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -206,7 +198,7 @@ TEST (StateVector, Create_DuplicateElementSameRegion)
 }
 
 /* Test initializing with a valid config. */
-TEST (StateVector, Create_Success)
+TEST (StateVectorConfig, Create_Success)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -217,9 +209,11 @@ TEST (StateVector, Create_Success)
             {SV_REG_TEST0,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST0,    T_UINT8,    StateVector::toUInt64<uint8_t> (       0       )},
-             {SV_ELEM_TEST1,    T_BOOL,     StateVector::toUInt64<bool>    (       1       )}}},
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+                SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+            }},
 
             //////////////////////////////////////////////////////////////////////////////////
 
@@ -227,8 +221,10 @@ TEST (StateVector, Create_Success)
             {SV_REG_TEST1,
 
             // Elements
-            // ELEM             TYPE                                         INITIAL_VALUE
-            {{SV_ELEM_TEST2,    T_FLOAT,    StateVector::toUInt64<float>   (       1.23    )}}}
+            //      TYPE                      ELEM            INITIAL_VALUE
+            {
+                SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+            }}
 
             //////////////////////////////////////////////////////////////////////////////////
         }
@@ -236,4 +232,3 @@ TEST (StateVector, Create_Success)
     std::shared_ptr<StateVector> pSv; 
     CHECK_SUCCESS (StateVector::createNew (config, pSv));
 }
-

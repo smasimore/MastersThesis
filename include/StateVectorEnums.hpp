@@ -14,19 +14,19 @@
  */
 enum StateVectorElementType_t : uint8_t
 {
-    T_UINT8,
-    T_UINT16,
-    T_UINT32,
-    T_UINT64,
-    T_INT8,
-    T_INT16,
-    T_INT32,
-    T_INT64,
-    T_FLOAT,
-    T_DOUBLE,
-    T_BOOL,
+    SV_T_UINT8,
+    SV_T_UINT16,
+    SV_T_UINT32,
+    SV_T_UINT64,
+    SV_T_INT8,
+    SV_T_INT16,
+    SV_T_INT32,
+    SV_T_INT64,
+    SV_T_FLOAT,
+    SV_T_DOUBLE,
+    SV_T_BOOL,
 
-    T_LAST
+    SV_T_LAST
 };
 
 /**
