@@ -1,35 +1,43 @@
 /**
- * The purpose of the State Vector is to store a vector of elements and their 
- * corresponding values, representing the current state of the system from the
- * perspective of the compute node it is running on. 
+ * The State Vector stores a vector of elements and their 
+ * corresponding values. This collection of values represents the current 
+ * state of the system from the perspective of the compute node the State
+ * Vector is running on. 
+ *
+ * The State Vector functions as the shared memory abstraction for the avionics 
+ * software system. It facilitates sharing memory between software modules 
+ * (e.g. between the State Machine, Controllers, and Drivers), between threads
+ * (e.g. the main RIO thread and the RIO comms thread), and between compute
+ * nodes (e.g. tx'ing a region from a RIO to the FC using the Network
+ * Interface). 
  *
  *                   ------ Using the State Vector --------
  *
- *         1) Define a StateVector::StateVectorConfig_t (see StateVectorTest.cpp 
- *            for examples). 
+ *     1) Define a StateVector::StateVectorConfig_t (see StateVectorTest.cpp 
+ *        for examples). 
  *
- *            WARNING: The initial values passed into the SV_ADD_<type> macros are 
- *                     not validated against <type>. Be careful to avoid mistakes
- *                     such as:
+ *        WARNING: The initial values passed into the SV_ADD_<type> macros are 
+ *                 not validated against <type>. Be careful to avoid mistakes
+ *                 such as:
  *
- *                     a) Setting initialVal = 2    for a bool element.
- *                     b) Setting initialVal = 1.23 for an element that is not a 
- *                        float or double.
- *                     c) Setting initialVal = 2^33 for an element that only fits
- *                        <= 32 bits.
- *                     d) Setting initialVal = -2   for an unsigned element (e.g.
- *                        SV_T_UINT32).
+ *                 a) Setting initialVal = 2    for a bool element.
+ *                 b) Setting initialVal = 1.23 for an element that is not a
+ *                    float or double.
+ *                 c) Setting initialVal = 2^33 for an element that only fits
+ *                    <= 32 bits.
+ *                 d) Setting initialVal = -2   for an unsigned element (e.g.
+ *                    SV_T_UINT32).
  *
- *         2) Call StateVector::createNew (yourConfig).
- *         3) Use the read and write methods to interact with elements in the
- *            State Vector.
+ *     2) Call StateVector::createNew (yourConfig).
+ *     3) Use the read and write methods to interact with elements in the
+ *        State Vector. Note, elements cannot be added to the State Vector after
+ *        it has been constructed.
  *    
- * NOTE: 
- *   #1  This object is currently not threadsafe and should only be called from
- *       one thread.
- *   #2  While each compute node should only create 1 state vector, this object
- *       is not a singleton in order to facilitate testing.
- *   #3  Elements of type array are currently unsupported.
+ * Assumptions: 
+ *   #1  Little endian architecture.
+ *   #2  The State Vector is only called from one thread.
+ *   #3  Only 1 State Vector is created per compute node. This object is not a 
+ *       singleton in order to facilitate testing.
  *
  */
 
@@ -39,6 +47,7 @@
 #include <stdint.h>
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 #include "Errors.h"
 #include "StateVectorEnums.hpp"
@@ -190,6 +199,24 @@ public:
      */
     typedef std::vector<RegionConfig_t> StateVectorConfig_t;
 
+    /** 
+     * Struct containing the State Vector's start pointer and size in bytes.
+     */
+    typedef struct StateVectorInfo
+    {   
+        uint8_t* pStart;
+        uint32_t sizeBytes;
+    } StateVectorInfo_t;
+
+    /** 
+     * Struct containing a region's start pointer and size in bytes.
+     */
+    typedef struct RegionInfo
+    {   
+        uint8_t* pStart;
+        uint32_t sizeBytes;
+    } RegionInfo_t;
+
     /**
      * Function to cast various types to a uint64_t bitwise. This is used in 
      * defining the initial values in the State Vector config. In order to 
@@ -225,6 +252,19 @@ public:
                               std::shared_ptr<StateVector>& pStateVectorRet);
 
     /**
+     * Given a State Vector element type, stores the size of that type (bytes)
+     * in the sizeBytesRet parameter.
+     *
+     * @param   type                Type to get size of.
+     * @param   sizeBytesRet        Param to store element's size in.
+     *
+     * @ret     E_SUCCESS           Size stored in sizeBytesRet successfully.
+     *          E_INVALID_ENUM      Type not supported.
+     */
+    static Error_t getSizeBytesFromType (StateVectorElementType_t type, 
+                                         uint8_t& sizeBytesRet);
+
+    /**
      * Read an element from the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
@@ -256,15 +296,81 @@ public:
         return E_SUCCESS;
     }
 
+    /**
+     * Returns a copy of the State Vector's info struct.
+     *
+     * @param    stateVectorInfoRet    Struct to store State Vector info in.
+     *
+     * @ret      E_SUCCESS             Info returned successfully.
+     */
+    Error_t getStateVectorInfo (StateVectorInfo_t& stateVectorInfoRet);
+
+    /**
+     * Returns a copy of a region's info struct.
+     *
+     * @param    region            Region to get info for.
+     * @param    regionInfoRet     Struct to store region info in.    
+     *
+     * @ret      E_SUCCESS         Region info returned successfully.
+     *           E_INVALID_REGION  Region enum invalid or not in State Vector.
+     */
+    Error_t getRegionInfo (StateVectorRegion_t region,
+                           RegionInfo_t& regionInfoRet);
+
 private:
 
     /**
-     * Constructor.
+     * In order to use any enum classes we've defined as the key for an 
+     * unordered_map, we need to define a hash function that maps the key
+     * type to size_t. Hash function copied from:
+     * https://stackoverflow.com/questions/18837857/cant-use-enum-class-as-unordered-map-key
+     */
+    struct EnumClassHash
+    {
+        template <typename T>
+        std::size_t operator()(T t) const
+        {
+            return static_cast<std::size_t>(t);
+        }
+    };
+
+    /**
+     * Buffer containing State Vector element data.
+     */
+    std::vector<uint8_t> mBuffer;
+
+    /**
+     * Struct containing State Vector info (starting address and size in 
+     * bytes).
+     */
+    StateVectorInfo_t mStateVectorInfo;
+
+    /**
+     * Map from region to region's info, which contains the region's starting
+     * address and size in bytes.
+     */
+    std::unordered_map<StateVectorRegion_t, 
+                       RegionInfo_t, 
+                       EnumClassHash> mRegionToRegionInfo;
+
+    /**
+     * Constructor. Given a config, builds mBuffer, mStateVectorInfo, and
+     * mRegionToRegionInfo. Because StateVector::getSizeBytesFromType is called
+     * while building the State Vector's underlying data structures, the 
+     * constructor can fail. If this happens, return an error code in the ret
+     * parameter.
+     *
+     * @param    config     State Vector config.
+     * @param    ret        Returns E_INVALID_ENUM if an element type in the 
+     *                      config is not supported by getSizeBytesFromType.
+     *                      Returns E_SUCCESS otherwise.
      */        
-    StateVector (StateVectorConfig_t& config);
+    StateVector (StateVectorConfig_t& config, Error_t& ret);
 
     /**
      * Verifies provided config.
+     *
+     * @param   config              Config to check.
      *
      * @ret     E_SUCCESS           Config valid.
      *          E_EMPTY_CONFIG      Config empty.

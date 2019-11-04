@@ -87,6 +87,7 @@ typedef enum Error
     E_EMPTY_ELEMS,
     E_DUPLICATE_REGION,
     E_DUPLICATE_ELEM,
+    E_INVALID_REGION,
 
     E_LAST
 } Error_t;
