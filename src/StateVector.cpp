@@ -5,94 +5,68 @@
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
-Error_t StateVector::createNew (StateVector::StateVectorConfig_t& config,
-                                std::shared_ptr<StateVector>& pStateVectorRet)
+Error_t StateVector::createNew (StateVector::StateVectorConfig_t& kConfig,
+                                std::shared_ptr<StateVector>& kPStateVectorRet)
 {
     Error_t ret = E_SUCCESS;
 
     // Verify config.
-    ret = StateVector::verifyConfig (config);
+    ret = StateVector::verifyConfig (kConfig);
     if (ret != E_SUCCESS)
     {
         return ret;
     }
 
     // Create State Vector.
-    pStateVectorRet.reset (new StateVector (config, ret));
+    kPStateVectorRet.reset (new StateVector (kConfig, ret));
 
     // Check for error on construct and free memory if it failed.
     if (ret != E_SUCCESS)
     {
-        pStateVectorRet.reset ();
+        kPStateVectorRet.reset ();
         return ret;
     }
 
     return E_SUCCESS;
 }
 
-Error_t StateVector::getStateVectorInfo (StateVectorInfo_t& stateVectorInfoRet)
+Error_t StateVector::getSizeBytesFromType (StateVectorElementType_t kType,
+                                           uint8_t& kSizeBytesRet)
 {
-    // Store State Vector info in return param.
-    stateVectorInfoRet.pStart = mStateVectorInfo.pStart;
-    stateVectorInfoRet.sizeBytes = mStateVectorInfo.sizeBytes;
-
-    return E_SUCCESS;
-}
-
-Error_t StateVector::getRegionInfo (StateVectorRegion_t region,
-                                    RegionInfo_t& regionInfoRet)
-{
-    // Get region info. If region not in State Vector, return error.
-    if (mRegionToRegionInfo.find (region) == mRegionToRegionInfo.end ())
-    {
-        return E_INVALID_REGION;
-    }
-
-    // Store region info in return param.
-    RegionInfo_t* pRegionInfo = &mRegionToRegionInfo[region];
-    regionInfoRet.pStart = pRegionInfo->pStart;
-    regionInfoRet.sizeBytes = pRegionInfo->sizeBytes;
-
-    return E_SUCCESS;
-}
-
-Error_t StateVector::getSizeBytesFromType (StateVectorElementType_t type,
-                                           uint8_t& sizeBytesRet)
-{
-    switch (type)
+    switch (kType)
     {
         case SV_T_UINT8:
-            sizeBytesRet = sizeof (uint8_t);
+            kSizeBytesRet = sizeof (uint8_t);
             break;
         case SV_T_UINT16:
-            sizeBytesRet = sizeof (uint16_t);
+            kSizeBytesRet = sizeof (uint16_t);
             break;
         case SV_T_UINT32:
-            sizeBytesRet = sizeof (uint32_t);
+            kSizeBytesRet = sizeof (uint32_t);
             break;
         case SV_T_UINT64:
-            sizeBytesRet = sizeof (uint64_t);
+            kSizeBytesRet = sizeof (uint64_t);
             break;
         case SV_T_INT8:
-            sizeBytesRet = sizeof (int8_t);
+            kSizeBytesRet = sizeof (int8_t);
             break;
         case SV_T_INT16:
-            sizeBytesRet = sizeof (int16_t);
+            kSizeBytesRet = sizeof (int16_t);
             break;
         case SV_T_INT32:
-            sizeBytesRet = sizeof (int32_t);
+            kSizeBytesRet = sizeof (int32_t);
             break;
         case SV_T_INT64:
-            sizeBytesRet = sizeof (int64_t);
+            kSizeBytesRet = sizeof (int64_t);
             break;
         case SV_T_FLOAT:
-            sizeBytesRet = sizeof (float);
+            kSizeBytesRet = sizeof (float);
             break;
         case SV_T_DOUBLE:
-            sizeBytesRet = sizeof (double);
+            kSizeBytesRet = sizeof (double);
             break;
         case SV_T_BOOL:
-            sizeBytesRet = sizeof (bool);
+            kSizeBytesRet = sizeof (bool);
             break;
         default:
             return E_INVALID_ENUM;
@@ -101,13 +75,39 @@ Error_t StateVector::getSizeBytesFromType (StateVectorElementType_t type,
     return E_SUCCESS;
 }
 
+Error_t StateVector::getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet)
+{
+    // Store State Vector info in return param.
+    kStateVectorInfoRet.pStart = mStateVectorInfo.pStart;
+    kStateVectorInfoRet.sizeBytes = mStateVectorInfo.sizeBytes;
+
+    return E_SUCCESS;
+}
+
+Error_t StateVector::getRegionInfo (StateVectorRegion_t kRegion,
+                                    RegionInfo_t& kRegionInfoRet)
+{
+    // Get kRegion info. If kRegion not in State Vector, return error.
+    if (mRegionToRegionInfo.find (kRegion) == mRegionToRegionInfo.end ())
+    {
+        return E_INVALID_REGION;
+    }
+
+    // Store kRegion info in return param.
+    RegionInfo_t* pRegionInfo = &mRegionToRegionInfo[kRegion];
+    kRegionInfoRet.pStart = pRegionInfo->pStart;
+    kRegionInfoRet.sizeBytes = pRegionInfo->sizeBytes;
+
+    return E_SUCCESS;
+}
+
 /**************************** PRIVATE FUNCTIONS *******************************/
 
-StateVector::StateVector (StateVector::StateVectorConfig_t& config, 
-                          Error_t& ret) 
+StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig, 
+                          Error_t& kRet) 
 {
-    // 1) Set return value to success.
-    ret = E_SUCCESS;
+    // 1) Set kReturn value to success.
+    kRet = E_SUCCESS;
 
     // 2) Initialize a map from region to the region's starting index in 
     //    mBuffer. This will be used at the end of the constructor to create
@@ -121,9 +121,9 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& config,
     // 3) Loop over each region, adding the region's element data to mBuffer
     //    and partially building mRegionToRegionInfo.
     uint32_t stateVectorSizeBytes = 0;
-    for (uint32_t regionIdx = 0; regionIdx < config.size (); regionIdx++)
+    for (uint32_t regionIdx = 0; regionIdx < kConfig.size (); regionIdx++)
     {
-        RegionConfig_t* pRegionConfig = &(config[regionIdx]);
+        RegionConfig_t* pRegionConfig = &(kConfig[regionIdx]);
         std::vector<ElementConfig_t>* pElems = &(pRegionConfig->elems);
         StateVectorRegion_t region = pRegionConfig->region;
 
@@ -135,14 +135,14 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& config,
         uint32_t regionSizeBytes = 0;
         for (uint32_t elemIdx = 0; elemIdx < pElems->size (); elemIdx++)
         {
-            // 3b i) Get pointer to element config.
+            // 3b i) Get pointer to element kConfig.
             ElementConfig_t* pElem = &(pElems->at (elemIdx));
 
             // 3b ii) Get size of element.
             uint8_t elemSizeBytes;
-            ret = StateVector::getSizeBytesFromType (pElem->type, 
+            kRet = StateVector::getSizeBytesFromType (pElem->type, 
                                                      elemSizeBytes);
-            if (ret != E_SUCCESS)
+            if (kRet != E_SUCCESS)
             {
                 return;
             }
@@ -189,10 +189,10 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& config,
     mStateVectorInfo.sizeBytes = stateVectorSizeBytes;
 }
 
-Error_t StateVector::verifyConfig (StateVector::StateVectorConfig_t& config)
+Error_t StateVector::verifyConfig (StateVector::StateVectorConfig_t& kConfig)
 {
-    // 1) Verify config not empty.
-    if (config.size () == 0)
+    // 1) Verify kConfig not empty.
+    if (kConfig.size () == 0)
     {
         return E_EMPTY_CONFIG;
     }
@@ -201,9 +201,9 @@ Error_t StateVector::verifyConfig (StateVector::StateVectorConfig_t& config)
     //    valid.
     std::set<StateVectorRegion_t>  regSet;
     std::set<StateVectorElement_t> elemSet;
-    for (uint32_t i_region = 0; i_region < config.size (); i_region++)
+    for (uint32_t i_region = 0; i_region < kConfig.size (); i_region++)
     {
-        StateVector::RegionConfig_t               regConfig = config[i_region];
+        StateVector::RegionConfig_t               regConfig = kConfig[i_region];
         StateVectorRegion_t                       reg       = regConfig.region;
         std::vector<StateVector::ElementConfig_t> regElems  = regConfig.elems;
 

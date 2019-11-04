@@ -10,13 +10,13 @@
 #include "CppUTest/TestHarness.h"
 
 /* Group of tests verifying verifyConfig method. */
-TEST_GROUP (StateVectorVerifyConfig)
+TEST_GROUP (StateVector_verifyConfig)
 {
 
 };
 
 /* Test initializing with empty config. */
-TEST (StateVectorVerifyConfig, EmptyConfig)
+TEST (StateVector_verifyConfig, EmptyConfig)
 {
     StateVector::StateVectorConfig_t config = {};
     std::shared_ptr<StateVector> pSv; 
@@ -24,7 +24,7 @@ TEST (StateVectorVerifyConfig, EmptyConfig)
 }
 
 /* Test initializing with element list empty. */
-TEST (StateVectorVerifyConfig, EmptyElementList)
+TEST (StateVector_verifyConfig, EmptyElementList)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -46,7 +46,7 @@ TEST (StateVectorVerifyConfig, EmptyElementList)
 }
 
 /* Test initializing with invalid region enum. */
-TEST (StateVectorVerifyConfig, InvalidRegionEnum)
+TEST (StateVector_verifyConfig, InvalidRegionEnum)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -70,7 +70,7 @@ TEST (StateVectorVerifyConfig, InvalidRegionEnum)
 }
 
 /* Test initializing with invalid element enum. */
-TEST (StateVectorVerifyConfig, InvalidElemEnum)
+TEST (StateVector_verifyConfig, InvalidElemEnum)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -94,7 +94,7 @@ TEST (StateVectorVerifyConfig, InvalidElemEnum)
 }
 
 /* Test initializing with duplicate region name. */
-TEST (StateVectorVerifyConfig, DuplicateRegion)
+TEST (StateVector_verifyConfig, DuplicateRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -130,7 +130,7 @@ TEST (StateVectorVerifyConfig, DuplicateRegion)
 }
 
 /* Test initializing with duplicate element name in different region. */
-TEST (StateVectorVerifyConfig, DuplicateElementDiffRegion)
+TEST (StateVector_verifyConfig, DuplicateElementDiffRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -166,7 +166,7 @@ TEST (StateVectorVerifyConfig, DuplicateElementDiffRegion)
 }
 
 /* Test initializing with duplicate element name in same region. */
-TEST (StateVectorVerifyConfig, DuplicateElementSameRegion)
+TEST (StateVector_verifyConfig, DuplicateElementSameRegion)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -202,7 +202,7 @@ TEST (StateVectorVerifyConfig, DuplicateElementSameRegion)
 }
 
 /* Test initializing with a valid config. */
-TEST (StateVectorVerifyConfig, Success)
+TEST (StateVector_verifyConfig, Success)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -238,13 +238,13 @@ TEST (StateVectorVerifyConfig, Success)
 }
 
 /* Group of tests to verify State Vector's underlying buffer. */
-TEST_GROUP (StateVector)
+TEST_GROUP (StateVector_Construct)
 {
 
 };
 
 /* Test constructing State Vector with 1 element. */
-TEST (StateVector, Construct_1Elem_TypesAndBoundaryVals)
+TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
 {
     typedef struct ConstructTestCase
     {
@@ -393,7 +393,7 @@ TEST (StateVector, Construct_1Elem_TypesAndBoundaryVals)
 }
 
 /* Test constructing State Vector with multiple elements. */
-TEST (StateVector, Construct_MultipleElem_TypesAndBoundaryVals)
+TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals)
 {
     StateVector::StateVectorConfig_t config = {
         // Regions
@@ -598,7 +598,7 @@ TEST (StateVector, Construct_MultipleElem_TypesAndBoundaryVals)
 }
 
 /* Group of tests to verify getSizeBytes. */
-TEST_GROUP (StateVectorGetSizeFromBytes)
+TEST_GROUP (StateVector_getSizeFromBytes)
 {
 
 };
@@ -606,7 +606,7 @@ TEST_GROUP (StateVectorGetSizeFromBytes)
 /* Verify that all types are supported by getSizeBytesFromType. This will fail
    if someone, for example, adds SV_T_ARRAY and forgets to add the case to the
    switch statement in getSizeBytesFromType. */
-TEST (StateVectorGetSizeFromBytes, AllTypesInSwitch)
+TEST (StateVector_getSizeFromBytes, AllTypesInSwitch)
 {
     uint8_t sizeBytes;
     for (uint8_t typeEnum; typeEnum < SV_T_LAST; typeEnum++)
@@ -618,7 +618,7 @@ TEST (StateVectorGetSizeFromBytes, AllTypesInSwitch)
 }
 
 /* Test getting size of invalid type. */
-TEST (StateVectorGetSizeFromBytes, InvalidEnum)
+TEST (StateVector_getSizeFromBytes, InvalidEnum)
 {
     uint8_t sizeBytes;
     CHECK_ERROR (StateVector::getSizeBytesFromType (SV_T_LAST, sizeBytes), 
@@ -626,7 +626,7 @@ TEST (StateVectorGetSizeFromBytes, InvalidEnum)
 }
 
 /* Test getting size of all valid types. */
-TEST (StateVectorGetSizeFromBytes, Success)
+TEST (StateVector_getSizeFromBytes, Success)
 {
     std::vector<std::pair<StateVectorElementType_t, uint8_t>> testCases = 
     {
@@ -654,10 +654,10 @@ TEST (StateVectorGetSizeFromBytes, Success)
 }
 
 /**
- * Globals used in StateVectorGetRegionInfo tests.
+ * Globals used in StateVector_getRegionInfo tests.
  */
-std::shared_ptr<StateVector> PGetRegionSv; 
-StateVector::StateVectorConfig_t GetRegionConfig = {
+std::shared_ptr<StateVector> gPGetRegionSv; 
+StateVector::StateVectorConfig_t gGetRegionConfig = {
     // Regions
     {
         //////////////////////////////////////////////////////////////////////////////////
@@ -689,40 +689,40 @@ StateVector::StateVectorConfig_t GetRegionConfig = {
 
 /* Group of tests to verify getRegionInfo error returns. Successful returns will
    be verified in the State Vector constructor test group. */
-TEST_GROUP (StateVectorGetRegionInfo)
+TEST_GROUP (StateVector_getRegionInfo)
 {
     void setup () 
     {
-        CHECK_SUCCESS (StateVector::createNew (GetRegionConfig, PGetRegionSv));
+        CHECK_SUCCESS (StateVector::createNew (gGetRegionConfig, gPGetRegionSv));
     }
 
     void teardown ()
     {
-        PGetRegionSv.reset ();
+        gPGetRegionSv.reset ();
     }
 
 };
 
 /* Test getting invalid region enum. */
-TEST (StateVectorGetRegionInfo, getRegionInfo_InvalidEnum)
+TEST (StateVector_getRegionInfo, InvalidEnum)
 {
     StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (PGetRegionSv->getRegionInfo (SV_REG_LAST, regionInfo),
+    CHECK_ERROR (gPGetRegionSv->getRegionInfo (SV_REG_LAST, regionInfo),
                  E_INVALID_REGION);
 }
 
 /* Test getting region not in State Vector. */
-TEST (StateVectorGetRegionInfo, getRegionInfo_NotInSV)
+TEST (StateVector_getRegionInfo, NotInSV)
 {
     StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (PGetRegionSv->getRegionInfo (SV_REG_TEST2, regionInfo),
+    CHECK_ERROR (gPGetRegionSv->getRegionInfo (SV_REG_TEST2, regionInfo),
                  E_INVALID_REGION);
 }
 
 /* Test getting region not in State Vector. */
-TEST (StateVectorGetRegionInfo, getRegionInfo_Success)
+TEST (StateVector_getRegionInfo, Success)
 {
     StateVector::RegionInfo_t regionInfo;
-    CHECK_SUCCESS (PGetRegionSv->getRegionInfo (SV_REG_TEST0, regionInfo));
-    CHECK_SUCCESS (PGetRegionSv->getRegionInfo (SV_REG_TEST1, regionInfo));
+    CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST0, regionInfo));
+    CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST1, regionInfo));
 }

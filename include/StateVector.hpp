@@ -242,39 +242,39 @@ public:
      * passed in config. This should only be called once per compute node, although
      * this is not enforced to facilitate testing.
      *
-     * @param   config              State Vector's config data.
-     * @param   pStateVectorRet     Pointer to return State Vector.
+     * @param   kConfig             State Vector's config data.
+     * @param   kPStateVectorRet    Pointer to return State Vector.
      *
      * @ret     E_SUCCESS           State Vector successfully created.
      *          E_EMPTY_CONFIG      Config empty.
     */
-    static Error_t createNew (StateVectorConfig_t& config,
-                              std::shared_ptr<StateVector>& pStateVectorRet);
+    static Error_t createNew (StateVectorConfig_t& kConfig,
+                              std::shared_ptr<StateVector>& kPStateVectorRet);
 
     /**
      * Given a State Vector element type, stores the size of that type (bytes)
      * in the sizeBytesRet parameter.
      *
-     * @param   type                Type to get size of.
-     * @param   sizeBytesRet        Param to store element's size in.
+     * @param   kType               Type to get size of.
+     * @param   kSizeBytesRet       Param to store element's size in.
      *
      * @ret     E_SUCCESS           Size stored in sizeBytesRet successfully.
      *          E_INVALID_ENUM      Type not supported.
      */
-    static Error_t getSizeBytesFromType (StateVectorElementType_t type, 
-                                         uint8_t& sizeBytesRet);
+    static Error_t getSizeBytesFromType (StateVectorElementType_t kType,
+                                         uint8_t& kSizeBytesRet);
 
     /**
      * Read an element from the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
-     * @param   elem         Element to read.
-     * @param   valueRet     Variable to store element's value.
+     * @param   kElem        Element to read.
+     * @param   kValueRet    Variable to store element's value.
      *
      * @ret     E_SUCCESS    Element read successfully.
     */
     template<class Elem_T>
-    Error_t read (StateVectorElement_t elem, Elem_T& valueRet)
+    Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
     {
         // TODO(smasimore): Implement.
         return E_SUCCESS;
@@ -284,13 +284,13 @@ public:
      * Write a value to the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
-     * @param   elem         Element to write to.
-     * @param   value        Value to write.
+     * @param   kElem        Element to write to.
+     * @param   kValue       Value to write.
      *
      * @ret     E_SUCCESS    Element written to successfully.
     */
     template<class Elem_T>
-    Error_t write (StateVectorElement_t elem, Elem_T value)
+    Error_t write (StateVectorElement_t kElem, Elem_T kValue)
     {
         // TODO(smasimore): Implement.
         return E_SUCCESS;
@@ -299,23 +299,23 @@ public:
     /**
      * Returns a copy of the State Vector's info struct.
      *
-     * @param    stateVectorInfoRet    Struct to store State Vector info in.
+     * @param    kStateVectorInfoRet   Struct to store State Vector info in.
      *
      * @ret      E_SUCCESS             Info returned successfully.
      */
-    Error_t getStateVectorInfo (StateVectorInfo_t& stateVectorInfoRet);
+    Error_t getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet);
 
     /**
      * Returns a copy of a region's info struct.
      *
-     * @param    region            Region to get info for.
-     * @param    regionInfoRet     Struct to store region info in.    
+     * @param    kRegion           Region to get info for.
+     * @param    kRegionInfoRet    Struct to store region info in.    
      *
      * @ret      E_SUCCESS         Region info returned successfully.
      *           E_INVALID_REGION  Region enum invalid or not in State Vector.
      */
-    Error_t getRegionInfo (StateVectorRegion_t region,
-                           RegionInfo_t& regionInfoRet);
+    Error_t getRegionInfo (StateVectorRegion_t kRegion,
+                           RegionInfo_t& kRegionInfoRet);
 
 private:
 
@@ -360,17 +360,17 @@ private:
      * constructor can fail. If this happens, return an error code in the ret
      * parameter.
      *
-     * @param    config     State Vector config.
-     * @param    ret        Returns E_INVALID_ENUM if an element type in the 
+     * @param    kConfig    State Vector config.
+     * @param    kRet       Returns E_INVALID_ENUM if an element type in the 
      *                      config is not supported by getSizeBytesFromType.
      *                      Returns E_SUCCESS otherwise.
      */        
-    StateVector (StateVectorConfig_t& config, Error_t& ret);
+    StateVector (StateVectorConfig_t& kConfig, Error_t& kRet);
 
     /**
      * Verifies provided config.
      *
-     * @param   config              Config to check.
+     * @param   kConfig             Config to check.
      *
      * @ret     E_SUCCESS           Config valid.
      *          E_EMPTY_CONFIG      Config empty.
@@ -379,7 +379,7 @@ private:
      *          E_DUPLICATE_ELEM    Duplicate element.
      *          E_INVALID_ENUM      Invalid enumeration.
      */
-    static Error_t verifyConfig (StateVectorConfig_t& config);
+    static Error_t verifyConfig (StateVectorConfig_t& kConfig);
 };
 
 #endif
