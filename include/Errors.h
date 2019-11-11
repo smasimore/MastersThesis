@@ -18,7 +18,7 @@ typedef enum Error
 {
 
     /* General */
-    E_SUCCESS,
+    E_SUCCESS = 0,
     E_NONFINITE_VALUE,
     E_OUT_OF_BOUNDS,
     E_OVERFLOW,
@@ -29,8 +29,11 @@ typedef enum Error
     E_FAILED_TO_LOCK,
     E_FAILED_TO_UNLOCK,
 
+    /* Testing */
+    E_TEST_ERROR,
+
     /* Thread Manager */
-    E_INVALID_PRIORITY,
+    E_INVALID_PRIORITY = 25,
     E_INVALID_POINTER,
     E_INVALID_AFFINITY,
     E_INVALID_ARGS_LENGTH,
@@ -59,7 +62,7 @@ typedef enum Error
     E_MISSED_SCHEDULER_DEADLINE,
 
     /* Network Interface */
-    E_SOCKET_NOT_INITIALIZED,
+    E_SOCKET_NOT_INITIALIZED = 50,
     E_FAILED_TO_CREATE_SOCKET,
     E_FAILED_TO_ALLOCATE_SOCKET,
     E_FAILED_TO_BIND_TO_SOCKET,
@@ -74,20 +77,20 @@ typedef enum Error
     E_WOULD_BLOCK,
 
     /* State Machine */
-    E_INVALID_TRANSITION,
+    E_INVALID_TRANSITION = 75,
     E_DUPLICATE_NAME,
     E_NAME_NOTFOUND,
     E_NO_STATES,
 
-    /* Testing */
-    E_TEST_ERROR,
-
     /* State Vector */
-    E_EMPTY_CONFIG,
+    E_EMPTY_CONFIG = 100,
     E_EMPTY_ELEMS,
     E_DUPLICATE_REGION,
     E_DUPLICATE_ELEM,
     E_INVALID_REGION,
+    E_INVALID_ELEM,
+    E_INVALID_TYPE,
+    E_INCORRECT_TYPE,
 
     E_LAST
 } Error_t;

@@ -109,14 +109,17 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
     // 1) Set kReturn value to success.
     kRet = E_SUCCESS;
 
-    // 2) Initialize a map from region to the region's starting index in 
-    //    mBuffer. This will be used at the end of the constructor to create
-    //    the mRegionToRegionInfo data structure. This temporary mapping is 
+    // 2) Initialize region/element maps from region/element to the starting
+    //    index in mBuffer. This will be used at the end of the constructor to 
+    //    get the region/element starting pointers. This temporary mapping is
     //    necessary since resizing a vector invalidates previously defined 
     //    pointers to the vector's elements. 
     std::unordered_map<StateVectorRegion_t, 
                        uint32_t, 
                        EnumClassHash> regionToStartIdx;
+    std::unordered_map<StateVectorElement_t, 
+                       uint32_t, 
+                       EnumClassHash> elementToStartIdx;
 
     // 3) Loop over each region, adding the region's element data to mBuffer
     //    and partially building mRegionToRegionInfo.
@@ -124,7 +127,7 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
     for (uint32_t regionIdx = 0; regionIdx < kConfig.size (); regionIdx++)
     {
         RegionConfig_t* pRegionConfig = &(kConfig[regionIdx]);
-        std::vector<ElementConfig_t>* pElems = &(pRegionConfig->elems);
+        std::vector<ElementConfig_t>* pElemConfigs = &(pRegionConfig->elems);
         StateVectorRegion_t region = pRegionConfig->region;
 
         // 3a) Store current size of mBuffer as the starting index of the 
@@ -133,14 +136,14 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
 
         // 3b) Loop over the region's elements.
         uint32_t regionSizeBytes = 0;
-        for (uint32_t elemIdx = 0; elemIdx < pElems->size (); elemIdx++)
+        for (uint32_t elemIdx = 0; elemIdx < pElemConfigs->size (); elemIdx++)
         {
             // 3b i) Get pointer to element kConfig.
-            ElementConfig_t* pElem = &(pElems->at (elemIdx));
+            ElementConfig_t* pElemConfig = &(pElemConfigs->at (elemIdx));
 
             // 3b ii) Get size of element.
             uint8_t elemSizeBytes;
-            kRet = StateVector::getSizeBytesFromType (pElem->type, 
+            kRet = StateVector::getSizeBytesFromType (pElemConfig->type, 
                                                      elemSizeBytes);
             if (kRet != E_SUCCESS)
             {
@@ -158,10 +161,21 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
             // 3b v) Copy the element's initial value to mBuffer. This step
             //       assumes the CPU uses little endian byte ordering.
             uint8_t* pElemStart = &mBuffer[elemStartIdx];
-            std::memcpy (pElemStart, &pElem->initialVal, elemSizeBytes);
+            std::memcpy (pElemStart, &pElemConfig->initialVal, elemSizeBytes);
 
             // 3b vi) Update the running count of the region's size.
             regionSizeBytes += elemSizeBytes;
+
+            // 3b vii) Create the element's info struct and add it to the global
+            //         map. pStart is temporarily null and will be updated
+            //         after mBuffer has been completely filled.
+            ElementInfo_t elementInfo;
+            elementInfo.pStart = nullptr;
+            elementInfo.type = pElemConfig->type;
+            mElementToElementInfo[pElemConfig->elem] = elementInfo;
+
+            // 3b viii) Store element's start idx.
+            elementToStartIdx[pElemConfig->elem] = elemStartIdx;
         }
         
         // 3c) Create the region's info struct and add it to the global map.
@@ -184,7 +198,15 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
         mRegionToRegionInfo[region].pStart = &mBuffer[startIdx];
     }
 
-    // 5) Set State Vector info struct.
+    // 5) Update each element's pStart value.
+    for (std::pair<StateVectorElement_t, uint32_t> pair : elementToStartIdx) 
+    {
+        StateVectorElement_t element = pair.first;
+        uint32_t startIdx = pair.second;
+        mElementToElementInfo[element].pStart = &mBuffer[startIdx];
+    }
+
+    // 6) Set State Vector info struct.
     mStateVectorInfo.pStart = &mBuffer[0];
     mStateVectorInfo.sizeBytes = stateVectorSizeBytes;
 }

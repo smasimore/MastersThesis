@@ -9,6 +9,150 @@
 
 #include "CppUTest/TestHarness.h"
 
+/******************************** MACROS **************************************/
+
+/**
+ * Check if read is successful and verify value read. 
+ */
+#define CHECK_READ_SUCCESS(elem, actualVal, expectedVal)                       \
+{                                                                              \
+    CHECK_SUCCESS (pSv->read (elem, actualVal));                               \
+    CHECK_EQUAL (actualVal, expectedVal);                                      \
+}
+
+/**
+ * Check if write is successful and verify by reading the value. 
+ */
+#define CHECK_WRITE_SUCCESS(elem, readVar, writeVar)                           \
+{                                                                              \
+    CHECK_SUCCESS (pSv->write (elem, writeVar));                               \
+    CHECK_READ_SUCCESS (elem, readVar, writeVar);                              \
+}
+
+/******************************** GLOBALS *************************************/
+
+/**
+ * Globals used in StateVector_getRegionInfo tests.
+ */
+std::shared_ptr<StateVector> gPGetRegionSv; 
+StateVector::StateVectorConfig_t gGetRegionConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST1,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+        }}
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
+/**
+ * Global config used in StateVector_Construct and StateVector_ReadWrite tests.
+ */
+StateVector::StateVectorConfig_t gMultiElemConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST0,   std::numeric_limits<uint8_t> ::min ()     ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST5,   std::numeric_limits<uint16_t>::max ()     ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST7,    1                                        ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST9,   std::numeric_limits<uint64_t>::min ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST12,  std::numeric_limits<int8_t>  ::min ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST15,   1                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST18,  -1                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST21,  std::numeric_limits<int16_t> ::max ()     ),
+            SV_ADD_INT32  (    SV_ELEM_TEST24,   0                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST27,  std::numeric_limits<int64_t> ::min ()     ),
+            SV_ADD_INT64  (    SV_ELEM_TEST30,   1                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST33,   0                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST36,  std::numeric_limits<float>   ::max ()     ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST39,   0                                        ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST42,  std::numeric_limits<double>  ::max ()     ),
+            SV_ADD_BOOL   (    SV_ELEM_TEST45,   true                                     ),
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST1,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST1,    1                                        ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST4,    1                                        ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST8,   std::numeric_limits<uint32_t>::max ()     ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST10,   1                                        ),
+            SV_ADD_INT8   (    SV_ELEM_TEST13,  -1                                        ),
+            SV_ADD_INT8   (    SV_ELEM_TEST16,  std::numeric_limits<int8_t>  ::max ()     ),
+            SV_ADD_INT16  (    SV_ELEM_TEST19,   0                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST22,  std::numeric_limits<int32_t> ::min ()     ),
+            SV_ADD_INT32  (    SV_ELEM_TEST25,   1                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST28,  -1                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST31,  std::numeric_limits<int64_t> ::max ()     ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST34,   37.81999                                 ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST37,  std::numeric_limits<float>   ::infinity ()),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST40,   37.81999                                 ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST43,  std::numeric_limits<double>  ::infinity ()),
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST2,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST2,   std::numeric_limits<uint8_t> ::max ()     ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST3,   std::numeric_limits<uint16_t>::min ()     ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST6,   std::numeric_limits<uint32_t>::min ()     ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST11,  std::numeric_limits<uint64_t>::max ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST14,   0                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST17,  std::numeric_limits<int16_t> ::min ()     ),
+            SV_ADD_INT16  (    SV_ELEM_TEST20,   1                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST23,  -1                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST26,  std::numeric_limits<int32_t> ::max ()     ),
+            SV_ADD_INT64  (    SV_ELEM_TEST29,   0                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST32,  std::numeric_limits<float>   ::min ()     ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST35,  -37.81999                                 ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST38,  std::numeric_limits<double>  ::min ()     ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST41,  -37.81999                                 ),
+            SV_ADD_BOOL   (    SV_ELEM_TEST44,   false                                    ),
+        }}
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
+/********************************* TESTS **************************************/
+
 /* Group of tests verifying verifyConfig method. */
 TEST_GROUP (StateVector_verifyConfig)
 {
@@ -393,91 +537,7 @@ TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
 }
 
 /* Test constructing State Vector with multiple elements. */
-TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals)
-{
-    StateVector::StateVectorConfig_t config = {
-        // Regions
-        {
-            //////////////////////////////////////////////////////////////////////////////////
-
-            // Region
-            {SV_REG_TEST0,
-
-            // Elements
-            //      TYPE               ELEM                   INITIAL_VALUE
-            {
-                SV_ADD_UINT8  (    SV_ELEM_TEST0,   std::numeric_limits<uint8_t> ::min ()     ),
-                SV_ADD_UINT16 (    SV_ELEM_TEST5,   std::numeric_limits<uint16_t>::max ()     ),
-                SV_ADD_UINT32 (    SV_ELEM_TEST7,    1                                        ),
-                SV_ADD_UINT64 (    SV_ELEM_TEST9,   std::numeric_limits<uint64_t>::min ()     ),
-                SV_ADD_INT8   (    SV_ELEM_TEST12,  std::numeric_limits<int8_t>  ::min ()     ),
-                SV_ADD_INT8   (    SV_ELEM_TEST15,   1                                        ),
-                SV_ADD_INT16  (    SV_ELEM_TEST18,  -1                                        ),
-                SV_ADD_INT16  (    SV_ELEM_TEST21,  std::numeric_limits<int16_t> ::max ()     ),
-                SV_ADD_INT32  (    SV_ELEM_TEST24,   0                                        ),
-                SV_ADD_INT64  (    SV_ELEM_TEST27,  std::numeric_limits<int64_t> ::min ()     ),
-                SV_ADD_INT64  (    SV_ELEM_TEST30,   1                                        ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST33,   0                                        ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST36,  std::numeric_limits<float>   ::max ()     ),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST39,   0                                        ),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST42,  std::numeric_limits<double>  ::max ()     ),
-                SV_ADD_BOOL   (    SV_ELEM_TEST45,   true                                     ),
-            }},
-
-            //////////////////////////////////////////////////////////////////////////////////
-
-            // Region
-            {SV_REG_TEST1,
-
-            // Elements
-            //      TYPE               ELEM                   INITIAL_VALUE
-            {
-                SV_ADD_UINT8  (    SV_ELEM_TEST1,    1                                        ),
-                SV_ADD_UINT16 (    SV_ELEM_TEST4,    1                                        ),
-                SV_ADD_UINT32 (    SV_ELEM_TEST8,   std::numeric_limits<uint32_t>::max ()     ),
-                SV_ADD_UINT64 (    SV_ELEM_TEST10,   1                                        ),
-                SV_ADD_INT8   (    SV_ELEM_TEST13,  -1                                        ),
-                SV_ADD_INT8   (    SV_ELEM_TEST16,  std::numeric_limits<int8_t>  ::max ()     ),
-                SV_ADD_INT16  (    SV_ELEM_TEST19,   0                                        ),
-                SV_ADD_INT32  (    SV_ELEM_TEST22,  std::numeric_limits<int32_t> ::min ()     ),
-                SV_ADD_INT32  (    SV_ELEM_TEST25,   1                                        ),
-                SV_ADD_INT64  (    SV_ELEM_TEST28,  -1                                        ),
-                SV_ADD_INT64  (    SV_ELEM_TEST31,  std::numeric_limits<int64_t> ::max ()     ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST34,   37.81999                                 ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST37,  std::numeric_limits<float>   ::infinity ()),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST40,   37.81999                                 ),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST43,  std::numeric_limits<double>  ::infinity ()),
-            }},
-
-            //////////////////////////////////////////////////////////////////////////////////
-
-            // Region
-            {SV_REG_TEST2,
-
-            // Elements
-            //      TYPE               ELEM                   INITIAL_VALUE
-            {
-                SV_ADD_UINT8  (    SV_ELEM_TEST2,   std::numeric_limits<uint8_t> ::max ()     ),
-                SV_ADD_UINT16 (    SV_ELEM_TEST3,   std::numeric_limits<uint16_t>::min ()     ),
-                SV_ADD_UINT32 (    SV_ELEM_TEST6,   std::numeric_limits<uint32_t>::min ()     ),
-                SV_ADD_UINT64 (    SV_ELEM_TEST11,  std::numeric_limits<uint64_t>::max ()     ),
-                SV_ADD_INT8   (    SV_ELEM_TEST14,   0                                        ),
-                SV_ADD_INT16  (    SV_ELEM_TEST17,  std::numeric_limits<int16_t> ::min ()     ),
-                SV_ADD_INT16  (    SV_ELEM_TEST20,   1                                        ),
-                SV_ADD_INT32  (    SV_ELEM_TEST23,  -1                                        ),
-                SV_ADD_INT32  (    SV_ELEM_TEST26,  std::numeric_limits<int32_t> ::max ()     ),
-                SV_ADD_INT64  (    SV_ELEM_TEST29,   0                                        ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST32,  std::numeric_limits<float>   ::min ()     ),
-                SV_ADD_FLOAT  (    SV_ELEM_TEST35,  -37.81999                                 ),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST38,  std::numeric_limits<double>  ::min ()     ),
-                SV_ADD_DOUBLE (    SV_ELEM_TEST41,  -37.81999                                 ),
-                SV_ADD_BOOL   (    SV_ELEM_TEST44,   false                                    ),
-            }}
-
-            //////////////////////////////////////////////////////////////////////////////////
-        }
-    };
-
+TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     std::vector<uint8_t> region0ExpectedBuffer = {
         0x00, 
         0xff, 0xff,
@@ -535,7 +595,7 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals)
 
     // Create SV
     std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (config, pSv));
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
 
     // Get State Vector info.
     StateVector::StateVectorInfo_t stateVectorInfo;
@@ -653,40 +713,6 @@ TEST (StateVector_getSizeFromBytes, Success)
     }
 }
 
-/**
- * Globals used in StateVector_getRegionInfo tests.
- */
-std::shared_ptr<StateVector> gPGetRegionSv; 
-StateVector::StateVectorConfig_t gGetRegionConfig = {
-    // Regions
-    {
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST0,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
-            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
-        }},
-
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST1,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
-        }}
-
-        //////////////////////////////////////////////////////////////////////////////////
-    }
-};
-
 /* Group of tests to verify getRegionInfo error returns. Successful returns will
    be verified in the State Vector constructor test group. */
 TEST_GROUP (StateVector_getRegionInfo)
@@ -725,4 +751,271 @@ TEST (StateVector_getRegionInfo, Success)
     StateVector::RegionInfo_t regionInfo;
     CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST0, regionInfo));
     CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST1, regionInfo));
+}
+
+/* Test State Vector read and write methods. */
+TEST_GROUP (StateVector_readWrite)
+{
+
+};
+
+/* Test reading invalid elem. */
+TEST (StateVector_readWrite, InvalidReadElem)
+{
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+
+    bool value = false;
+    CHECK_ERROR (pSv->read (SV_ELEM_TEST46, value), E_INVALID_ELEM);
+}
+
+/* Test reading elem with incorrect type. */
+TEST (StateVector_readWrite, InvalidReadType)
+{
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+
+    bool value = false;
+    CHECK_ERROR (pSv->read (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test writing invalid elem. */
+TEST (StateVector_readWrite, InvalidWriteElem)
+{
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+
+    bool value = false;
+    CHECK_ERROR (pSv->write (SV_ELEM_TEST46, value), E_INVALID_ELEM);
+}
+
+/* Test writing elem with incorrect type. */
+TEST (StateVector_readWrite, InvalidWriteType)
+{
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+
+    bool value = false;
+    CHECK_ERROR (pSv->write (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test reading each element after constructing. */
+TEST (StateVector_readWrite, SuccessfulRead)
+{
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+
+    uint8_t  valU8     = 0;
+    uint16_t valU16    = 0;
+    uint32_t valU32    = 0;
+    uint64_t valU64    = 0;
+    int8_t   val8      = 0;
+    int16_t  val16     = 0;
+    int32_t  val32     = 0;
+    int64_t  val64     = 0;
+    float    valFloat  = 0;
+    double   valDouble = 0;
+    bool     valBool   = 0;
+
+    CHECK_READ_SUCCESS (SV_ELEM_TEST0,  valU8,     std::numeric_limits<uint8_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST1,  valU8,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST2,  valU8,     std::numeric_limits<uint8_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST3,  valU16,    std::numeric_limits<uint16_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST4,  valU16,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST5,  valU16,    std::numeric_limits<uint16_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST6,  valU32,    std::numeric_limits<uint32_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST7,  valU32,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST8,  valU32,    std::numeric_limits<uint32_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST9,  valU64,    std::numeric_limits<uint64_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST10, valU64,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST11, valU64,    std::numeric_limits<uint64_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST12, val8,      std::numeric_limits<int8_t>  ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST13, val8,      -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST14, val8,       0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST15, val8,       1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST16, val8,      std::numeric_limits<int8_t>  ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST17, val16,     std::numeric_limits<int16_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST18, val16,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST19, val16,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST20, val16,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST21, val16,     std::numeric_limits<int16_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST22, val32,     std::numeric_limits<int32_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST23, val32,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST24, val32,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST25, val32,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST26, val32,     std::numeric_limits<int32_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST27, val64,     std::numeric_limits<int64_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST28, val64,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST29, val64,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST30, val64,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST31, val64,     std::numeric_limits<int64_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST32, valFloat,  std::numeric_limits<float>   ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST33, valFloat,   0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST34, valFloat,  (float)  37.81999                         );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST35, valFloat,  (float) -37.81999                         );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST36, valFloat,  std::numeric_limits<float>   ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST37, valFloat,  std::numeric_limits<float>   ::infinity ());
+    CHECK_READ_SUCCESS (SV_ELEM_TEST38, valDouble, std::numeric_limits<double>  ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST39, valDouble,  0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST40, valDouble, (double)  37.81999                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST41, valDouble, (double) -37.81999                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST42, valDouble, std::numeric_limits<double>  ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST43, valDouble, std::numeric_limits<double>  ::infinity ());
+    CHECK_READ_SUCCESS (SV_ELEM_TEST44, valBool,   false                                     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST45, valBool,   true                                      );
+}
+
+/* Test writing each element after constructing with all elems set to 0. */
+TEST (StateVector_readWrite, SuccessfulWrite)
+{
+    StateVector::StateVectorConfig_t multiElemConfigEmpty = {
+        // Regions
+        {
+            //////////////////////////////////////////////////////////////////////////////////
+
+            // Region
+            {SV_REG_TEST0,
+
+            // Elements
+            //      TYPE               ELEM      INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (    SV_ELEM_TEST0,      0    ),
+                SV_ADD_UINT16 (    SV_ELEM_TEST5,      0    ),
+                SV_ADD_UINT32 (    SV_ELEM_TEST7,      0    ),
+                SV_ADD_UINT64 (    SV_ELEM_TEST9,      0    ),
+                SV_ADD_INT8   (    SV_ELEM_TEST12,     0    ),
+                SV_ADD_INT8   (    SV_ELEM_TEST15,     0    ),
+                SV_ADD_INT16  (    SV_ELEM_TEST18,     0    ),
+                SV_ADD_INT16  (    SV_ELEM_TEST21,     0    ),
+                SV_ADD_INT32  (    SV_ELEM_TEST24,     0    ),
+                SV_ADD_INT64  (    SV_ELEM_TEST27,     0    ),
+                SV_ADD_INT64  (    SV_ELEM_TEST30,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST33,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST36,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST39,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST42,     0    ),
+                SV_ADD_BOOL   (    SV_ELEM_TEST45,     0    ),
+            }},
+
+            //////////////////////////////////////////////////////////////////////////////////
+
+            // Region
+            {SV_REG_TEST1,
+
+            // Elements
+            //      TYPE               ELEM      INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (    SV_ELEM_TEST1,      0    ),
+                SV_ADD_UINT16 (    SV_ELEM_TEST4,      0    ),
+                SV_ADD_UINT32 (    SV_ELEM_TEST8,      0    ),
+                SV_ADD_UINT64 (    SV_ELEM_TEST10,     0    ),
+                SV_ADD_INT8   (    SV_ELEM_TEST13,     0    ),
+                SV_ADD_INT8   (    SV_ELEM_TEST16,     0    ),
+                SV_ADD_INT16  (    SV_ELEM_TEST19,     0    ),
+                SV_ADD_INT32  (    SV_ELEM_TEST22,     0    ),
+                SV_ADD_INT32  (    SV_ELEM_TEST25,     0    ),
+                SV_ADD_INT64  (    SV_ELEM_TEST28,     0    ),
+                SV_ADD_INT64  (    SV_ELEM_TEST31,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST34,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST37,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST40,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST43,     0    ),
+            }},
+
+            //////////////////////////////////////////////////////////////////////////////////
+
+            // Region
+            {SV_REG_TEST2,
+
+            // Elements
+            //      TYPE               ELEM      INITIAL_VALUE
+            {
+                SV_ADD_UINT8  (    SV_ELEM_TEST2,      0    ),
+                SV_ADD_UINT16 (    SV_ELEM_TEST3,      0    ),
+                SV_ADD_UINT32 (    SV_ELEM_TEST6,      0    ),
+                SV_ADD_UINT64 (    SV_ELEM_TEST11,     0    ),
+                SV_ADD_INT8   (    SV_ELEM_TEST14,     0    ),
+                SV_ADD_INT16  (    SV_ELEM_TEST17,     0    ),
+                SV_ADD_INT16  (    SV_ELEM_TEST20,     0    ),
+                SV_ADD_INT32  (    SV_ELEM_TEST23,     0    ),
+                SV_ADD_INT32  (    SV_ELEM_TEST26,     0    ),
+                SV_ADD_INT64  (    SV_ELEM_TEST29,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST32,     0    ),
+                SV_ADD_FLOAT  (    SV_ELEM_TEST35,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST38,     0    ),
+                SV_ADD_DOUBLE (    SV_ELEM_TEST41,     0    ),
+                SV_ADD_BOOL   (    SV_ELEM_TEST44,     0    ),
+            }}
+
+            //////////////////////////////////////////////////////////////////////////////////
+        }
+    };
+
+    // Create SV
+    std::shared_ptr<StateVector> pSv; 
+    CHECK_SUCCESS (StateVector::createNew (multiElemConfigEmpty, pSv));
+
+    uint8_t  readVarU8     = 0;
+    uint16_t readVarU16    = 0;
+    uint32_t readVarU32    = 0;
+    uint64_t readVarU64    = 0;
+    int8_t   readVar8      = 0;
+    int16_t  readVar16     = 0;
+    int32_t  readVar32     = 0;
+    int64_t  readVar64     = 0;
+    float    readVarFloat  = 0;
+    double   readVarDouble = 0;
+    bool     readVarBool   = 0;
+
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST0,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST1,  readVarU8,     (uint8_t)   1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST2,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST3,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST4,  readVarU16,    (uint16_t)  1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST5,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST6,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST7,  readVarU32,    (uint32_t)  1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST8,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST9,  readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST10, readVarU64,    (uint64_t)  1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST11, readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST12, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST13, readVar8,      (int8_t)   -1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST14, readVar8,      (int8_t)    0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST15, readVar8,      (int8_t)    1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST16, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST17, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST18, readVar16,     (int16_t)  -1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST19, readVar16,     (int16_t)   0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST20, readVar16,     (int16_t)   1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST21, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST22, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST23, readVar32,     (int32_t)  -1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST24, readVar32,     (int32_t)   0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST25, readVar32,     (int32_t)   1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST26, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST27, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST28, readVar64,     (int64_t)  -1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST29, readVar64,     (int64_t)   0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST30, readVar64,     (int64_t)   1                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST31, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST32, readVarFloat,  (float)    std::numeric_limits<float>   ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST33, readVarFloat,  (float)     0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST34, readVarFloat,  (float)     37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST35, readVarFloat,  (float)    -37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST36, readVarFloat,  (float)    std::numeric_limits<float>   ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST37, readVarFloat,  (float)    std::numeric_limits<float>   ::infinity ());
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST38, readVarDouble, (double)   std::numeric_limits<double>  ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST39, readVarDouble, (double)    0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST40, readVarDouble, (double)    37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST41, readVarDouble, (double)   -37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST42, readVarDouble, (double)   std::numeric_limits<double>  ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST43, readVarDouble, (double)   std::numeric_limits<double>  ::infinity ());
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST44, readVarBool,   (bool)     false                                     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST45, readVarBool,   (bool)     true                                      );
 }

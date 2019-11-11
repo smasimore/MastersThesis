@@ -268,15 +268,27 @@ public:
      * Read an element from the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
-     * @param   kElem        Element to read.
-     * @param   kValueRet    Variable to store element's value.
+     * @param   kElem             Element to read.
+     * @param   kValueRet         Variable to store element's value.
      *
-     * @ret     E_SUCCESS    Element read successfully.
-    */
+     * @ret     E_SUCCESS         Element read successfully.
+     *          E_INVALID_ELEM    Element not in State Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
+     */
     template<class Elem_T>
     Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
     {
-        // TODO(smasimore): Implement.
+        Error_t ret = this->verifyElement (kElem, kValueRet); 
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Store element's value in kValueRet.
+        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
+        std::memcpy (&kValueRet, pElementInfo->pStart, sizeof (kValueRet));
+
         return E_SUCCESS;
     }
 
@@ -284,15 +296,27 @@ public:
      * Write a value to the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
-     * @param   kElem        Element to write to.
-     * @param   kValue       Value to write.
+     * @param   kElem             Element to write to.
+     * @param   kValue            Value to write.
      *
-     * @ret     E_SUCCESS    Element written to successfully.
+     * @ret     E_SUCCESS         Element written to successfully.
+     *          E_INVALID_ELEM    Element not in State Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
     */
     template<class Elem_T>
     Error_t write (StateVectorElement_t kElem, Elem_T kValue)
     {
-        // TODO(smasimore): Implement.
+        Error_t ret = this->verifyElement (kElem, kValue); 
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Store value in mBuffer.
+        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
+        std::memcpy (pElementInfo->pStart, &kValue, sizeof (kValue));
+
         return E_SUCCESS;
     }
 
@@ -318,6 +342,15 @@ public:
                            RegionInfo_t& kRegionInfoRet);
 
 private:
+
+    /** 
+     * Struct containing an element's start pointer and type.
+     */
+    typedef struct ElementInfo
+    {   
+        uint8_t* pStart;
+        StateVectorElementType_t type;
+    } ElementInfo_t;
 
     /**
      * In order to use any enum classes we've defined as the key for an 
@@ -354,6 +387,14 @@ private:
                        EnumClassHash> mRegionToRegionInfo;
 
     /**
+     * Map from element to element's info, which contains the element's starting
+     * address and type.
+     */
+    std::unordered_map<StateVectorElement_t, 
+                       ElementInfo_t, 
+                       EnumClassHash> mElementToElementInfo;
+
+    /**
      * Constructor. Given a config, builds mBuffer, mStateVectorInfo, and
      * mRegionToRegionInfo. Because StateVector::getSizeBytesFromType is called
      * while building the State Vector's underlying data structures, the 
@@ -380,6 +421,78 @@ private:
      *          E_INVALID_ENUM      Invalid enumeration.
      */
     static Error_t verifyConfig (StateVectorConfig_t& kConfig);
+
+    /**
+     * Verify element is in State Vector and kValue's type matches element's
+     * type. Defined in the header so that the templatized functions do not 
+     * need to each be instantiated explicitly.
+     *
+     * @param   elem              Config to check.
+     *
+     * @ret     E_SUCCESS         Element and kValue type valid.
+     *          E_INVALID_ELEM    Element not in State Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
+     */
+    template<class Elem_T>
+    Error_t verifyElement (StateVectorElement_t kElem, Elem_T& kValue)
+    {
+        // Check if element in State Vector.
+        if (mElementToElementInfo.find (kElem) == mElementToElementInfo.end ()) 
+        {   
+            return E_INVALID_ELEM;
+        }   
+
+        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
+
+        // Check if element's type matches type expected by caller.
+        bool typeMatches = false;
+        switch (pElementInfo->type)
+        {   
+            case SV_T_UINT8:
+                typeMatches = typeid (kValue) == typeid (uint8_t);
+                break;
+            case SV_T_UINT16:
+                typeMatches = typeid (kValue) == typeid (uint16_t);
+                break;
+            case SV_T_UINT32:
+                typeMatches = typeid (kValue) == typeid (uint32_t);
+                break;
+            case SV_T_UINT64:
+                typeMatches = typeid (kValue) == typeid (uint64_t);
+                break;
+            case SV_T_INT8:
+                typeMatches = typeid (kValue) == typeid (int8_t);
+                break;
+            case SV_T_INT16:
+                typeMatches = typeid (kValue) == typeid (int16_t);
+                break;
+            case SV_T_INT32:
+                typeMatches = typeid (kValue) == typeid (int32_t);
+                break;
+            case SV_T_INT64:
+                typeMatches = typeid (kValue) == typeid (int64_t);
+                break;
+            case SV_T_FLOAT:
+                typeMatches = typeid (kValue) == typeid (float);
+                break;
+            case SV_T_DOUBLE:
+                typeMatches = typeid (kValue) == typeid (double);
+                break;
+            case SV_T_BOOL:
+                typeMatches = typeid (kValue) == typeid (bool);
+                break;
+            default:
+                return E_INVALID_TYPE;
+        }   
+
+        if (typeMatches == false)
+        {   
+            return E_INCORRECT_TYPE;
+        }   
+
+        return E_SUCCESS;
+    }
 };
 
 #endif

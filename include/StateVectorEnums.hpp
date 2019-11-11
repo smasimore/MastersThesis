@@ -94,6 +94,7 @@ enum StateVectorElement_t : uint32_t
     SV_ELEM_TEST43,
     SV_ELEM_TEST44,
     SV_ELEM_TEST45,
+    SV_ELEM_TEST46,
 
     SV_ELEM_LAST
 };
