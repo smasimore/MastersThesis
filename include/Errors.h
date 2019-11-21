@@ -24,11 +24,6 @@ typedef enum Error
     E_OVERFLOW,
     E_INVALID_ENUM,
 
-    /* Test Log */
-    E_FAILED_TO_INIT_LOCK,
-    E_FAILED_TO_LOCK,
-    E_FAILED_TO_UNLOCK,
-
     /* Testing */
     E_TEST_ERROR,
 
@@ -91,6 +86,11 @@ typedef enum Error
     E_INVALID_ELEM,
     E_INVALID_TYPE,
     E_INCORRECT_TYPE,
+    E_FAILED_TO_INIT_LOCK,
+    E_FAILED_TO_LOCK,
+    E_FAILED_TO_UNLOCK,
+    E_FAILED_TO_READ_AND_UNLOCK,
+    E_FAILED_TO_WRITE_AND_UNLOCK,
 
     E_LAST
 } Error_t;

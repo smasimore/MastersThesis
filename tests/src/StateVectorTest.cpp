@@ -2,156 +2,23 @@
 #include <cstring>
 #include <sstream>
 #include <limits>
+#include <tuple>
 
 #include "Errors.h"
 #include "StateVector.hpp"
-#include "AvSWTestMacros.hpp"
+#include "TestHelpers.hpp"
+#include "Log.hpp"
 
 #include "CppUTest/TestHarness.h"
 
-/******************************** MACROS **************************************/
-
 /**
- * Check if read is successful and verify value read. 
+ * Initialize State Vector (pSv) given a config.
  */
-#define CHECK_READ_SUCCESS(elem, actualVal, expectedVal)                       \
-{                                                                              \
-    CHECK_SUCCESS (pSv->read (elem, actualVal));                               \
-    CHECK_EQUAL (actualVal, expectedVal);                                      \
-}
+#define INIT_STATE_VECTOR(config)                                              \
+    std::shared_ptr<StateVector> pSv;                                          \
+    CHECK_SUCCESS (StateVector::createNew (config, pSv));
 
-/**
- * Check if write is successful and verify by reading the value. 
- */
-#define CHECK_WRITE_SUCCESS(elem, readVar, writeVar)                           \
-{                                                                              \
-    CHECK_SUCCESS (pSv->write (elem, writeVar));                               \
-    CHECK_READ_SUCCESS (elem, readVar, writeVar);                              \
-}
-
-/******************************** GLOBALS *************************************/
-
-/**
- * Globals used in StateVector_getRegionInfo tests.
- */
-std::shared_ptr<StateVector> gPGetRegionSv; 
-StateVector::StateVectorConfig_t gGetRegionConfig = {
-    // Regions
-    {
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST0,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
-            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
-        }},
-
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST1,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
-        }}
-
-        //////////////////////////////////////////////////////////////////////////////////
-    }
-};
-
-/**
- * Global config used in StateVector_Construct and StateVector_ReadWrite tests.
- */
-StateVector::StateVectorConfig_t gMultiElemConfig = {
-    // Regions
-    {
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST0,
-
-        // Elements
-        //      TYPE               ELEM                   INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (    SV_ELEM_TEST0,   std::numeric_limits<uint8_t> ::min ()     ),
-            SV_ADD_UINT16 (    SV_ELEM_TEST5,   std::numeric_limits<uint16_t>::max ()     ),
-            SV_ADD_UINT32 (    SV_ELEM_TEST7,    1                                        ),
-            SV_ADD_UINT64 (    SV_ELEM_TEST9,   std::numeric_limits<uint64_t>::min ()     ),
-            SV_ADD_INT8   (    SV_ELEM_TEST12,  std::numeric_limits<int8_t>  ::min ()     ),
-            SV_ADD_INT8   (    SV_ELEM_TEST15,   1                                        ),
-            SV_ADD_INT16  (    SV_ELEM_TEST18,  -1                                        ),
-            SV_ADD_INT16  (    SV_ELEM_TEST21,  std::numeric_limits<int16_t> ::max ()     ),
-            SV_ADD_INT32  (    SV_ELEM_TEST24,   0                                        ),
-            SV_ADD_INT64  (    SV_ELEM_TEST27,  std::numeric_limits<int64_t> ::min ()     ),
-            SV_ADD_INT64  (    SV_ELEM_TEST30,   1                                        ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST33,   0                                        ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST36,  std::numeric_limits<float>   ::max ()     ),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST39,   0                                        ),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST42,  std::numeric_limits<double>  ::max ()     ),
-            SV_ADD_BOOL   (    SV_ELEM_TEST45,   true                                     ),
-        }},
-
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST1,
-
-        // Elements
-        //      TYPE               ELEM                   INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (    SV_ELEM_TEST1,    1                                        ),
-            SV_ADD_UINT16 (    SV_ELEM_TEST4,    1                                        ),
-            SV_ADD_UINT32 (    SV_ELEM_TEST8,   std::numeric_limits<uint32_t>::max ()     ),
-            SV_ADD_UINT64 (    SV_ELEM_TEST10,   1                                        ),
-            SV_ADD_INT8   (    SV_ELEM_TEST13,  -1                                        ),
-            SV_ADD_INT8   (    SV_ELEM_TEST16,  std::numeric_limits<int8_t>  ::max ()     ),
-            SV_ADD_INT16  (    SV_ELEM_TEST19,   0                                        ),
-            SV_ADD_INT32  (    SV_ELEM_TEST22,  std::numeric_limits<int32_t> ::min ()     ),
-            SV_ADD_INT32  (    SV_ELEM_TEST25,   1                                        ),
-            SV_ADD_INT64  (    SV_ELEM_TEST28,  -1                                        ),
-            SV_ADD_INT64  (    SV_ELEM_TEST31,  std::numeric_limits<int64_t> ::max ()     ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST34,   37.81999                                 ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST37,  std::numeric_limits<float>   ::infinity ()),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST40,   37.81999                                 ),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST43,  std::numeric_limits<double>  ::infinity ()),
-        }},
-
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST2,
-
-        // Elements
-        //      TYPE               ELEM                   INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (    SV_ELEM_TEST2,   std::numeric_limits<uint8_t> ::max ()     ),
-            SV_ADD_UINT16 (    SV_ELEM_TEST3,   std::numeric_limits<uint16_t>::min ()     ),
-            SV_ADD_UINT32 (    SV_ELEM_TEST6,   std::numeric_limits<uint32_t>::min ()     ),
-            SV_ADD_UINT64 (    SV_ELEM_TEST11,  std::numeric_limits<uint64_t>::max ()     ),
-            SV_ADD_INT8   (    SV_ELEM_TEST14,   0                                        ),
-            SV_ADD_INT16  (    SV_ELEM_TEST17,  std::numeric_limits<int16_t> ::min ()     ),
-            SV_ADD_INT16  (    SV_ELEM_TEST20,   1                                        ),
-            SV_ADD_INT32  (    SV_ELEM_TEST23,  -1                                        ),
-            SV_ADD_INT32  (    SV_ELEM_TEST26,  std::numeric_limits<int32_t> ::max ()     ),
-            SV_ADD_INT64  (    SV_ELEM_TEST29,   0                                        ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST32,  std::numeric_limits<float>   ::min ()     ),
-            SV_ADD_FLOAT  (    SV_ELEM_TEST35,  -37.81999                                 ),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST38,  std::numeric_limits<double>  ::min ()     ),
-            SV_ADD_DOUBLE (    SV_ELEM_TEST41,  -37.81999                                 ),
-            SV_ADD_BOOL   (    SV_ELEM_TEST44,   false                                    ),
-        }}
-
-        //////////////////////////////////////////////////////////////////////////////////
-    }
-};
-
-/********************************* TESTS **************************************/
+/*************************** VERIFYCONFIG TESTS *******************************/
 
 /* Group of tests verifying verifyConfig method. */
 TEST_GROUP (StateVector_verifyConfig)
@@ -381,6 +248,95 @@ TEST (StateVector_verifyConfig, Success)
     CHECK_SUCCESS (StateVector::createNew (config, pSv));
 }
 
+/**************************** CONSTRUCTOR TESTS *******************************/
+
+/**
+ * Comprehensive State Vector config to test constructing, reading from, and 
+ * writing to a State Vector.
+ */
+StateVector::StateVectorConfig_t gMultiElemConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST0,   std::numeric_limits<uint8_t> ::min ()     ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST5,   std::numeric_limits<uint16_t>::max ()     ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST7,    1                                        ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST9,   std::numeric_limits<uint64_t>::min ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST12,  std::numeric_limits<int8_t>  ::min ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST15,   1                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST18,  -1                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST21,  std::numeric_limits<int16_t> ::max ()     ),
+            SV_ADD_INT32  (    SV_ELEM_TEST24,   0                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST27,  std::numeric_limits<int64_t> ::min ()     ),
+            SV_ADD_INT64  (    SV_ELEM_TEST30,   1                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST33,   0                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST36,  std::numeric_limits<float>   ::max ()     ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST39,   0                                        ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST42,  std::numeric_limits<double>  ::max ()     ),
+            SV_ADD_BOOL   (    SV_ELEM_TEST45,   true                                     ),
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST1,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST1,    1                                        ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST4,    1                                        ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST8,   std::numeric_limits<uint32_t>::max ()     ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST10,   1                                        ),
+            SV_ADD_INT8   (    SV_ELEM_TEST13,  -1                                        ),
+            SV_ADD_INT8   (    SV_ELEM_TEST16,  std::numeric_limits<int8_t>  ::max ()     ),
+            SV_ADD_INT16  (    SV_ELEM_TEST19,   0                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST22,  std::numeric_limits<int32_t> ::min ()     ),
+            SV_ADD_INT32  (    SV_ELEM_TEST25,   1                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST28,  -1                                        ),
+            SV_ADD_INT64  (    SV_ELEM_TEST31,  std::numeric_limits<int64_t> ::max ()     ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST34,   37.81999                                 ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST37,  std::numeric_limits<float>   ::infinity ()),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST40,   37.81999                                 ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST43,  std::numeric_limits<double>  ::infinity ()),
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST2,
+
+        // Elements
+        //      TYPE               ELEM                   INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (    SV_ELEM_TEST2,   std::numeric_limits<uint8_t> ::max ()     ),
+            SV_ADD_UINT16 (    SV_ELEM_TEST3,   std::numeric_limits<uint16_t>::min ()     ),
+            SV_ADD_UINT32 (    SV_ELEM_TEST6,   std::numeric_limits<uint32_t>::min ()     ),
+            SV_ADD_UINT64 (    SV_ELEM_TEST11,  std::numeric_limits<uint64_t>::max ()     ),
+            SV_ADD_INT8   (    SV_ELEM_TEST14,   0                                        ),
+            SV_ADD_INT16  (    SV_ELEM_TEST17,  std::numeric_limits<int16_t> ::min ()     ),
+            SV_ADD_INT16  (    SV_ELEM_TEST20,   1                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST23,  -1                                        ),
+            SV_ADD_INT32  (    SV_ELEM_TEST26,  std::numeric_limits<int32_t> ::max ()     ),
+            SV_ADD_INT64  (    SV_ELEM_TEST29,   0                                        ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST32,  std::numeric_limits<float>   ::min ()     ),
+            SV_ADD_FLOAT  (    SV_ELEM_TEST35,  -37.81999                                 ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST38,  std::numeric_limits<double>  ::min ()     ),
+            SV_ADD_DOUBLE (    SV_ELEM_TEST41,  -37.81999                                 ),
+            SV_ADD_BOOL   (    SV_ELEM_TEST44,   false                                    ),
+        }}
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
 /* Group of tests to verify State Vector's underlying buffer. */
 TEST_GROUP (StateVector_Construct)
 {
@@ -477,8 +433,7 @@ TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
         config[0].elems[0].initialVal = testCase.initialVal;
 
         // Create SV
-        std::shared_ptr<StateVector> pSv; 
-        CHECK_SUCCESS (StateVector::createNew (config, pSv));
+        INIT_STATE_VECTOR (config);
 
         // Get State Vector info.
         StateVector::StateVectorInfo_t stateVectorInfo;
@@ -594,8 +549,7 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     };
 
     // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+    INIT_STATE_VECTOR (gMultiElemConfig);
 
     // Get State Vector info.
     StateVector::StateVectorInfo_t stateVectorInfo;
@@ -713,102 +667,118 @@ TEST (StateVector_getSizeFromBytes, Success)
     }
 }
 
+/*************************** GETREGIONINFO TESTS ******************************/
+
+/**
+ * Simple SV config for getRegionInfo tests.
+ */
+StateVector::StateVectorConfig_t gGetRegionConfig = { // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST1,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+        }}
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
 /* Group of tests to verify getRegionInfo error returns. Successful returns will
    be verified in the State Vector constructor test group. */
 TEST_GROUP (StateVector_getRegionInfo)
 {
-    void setup () 
-    {
-        CHECK_SUCCESS (StateVector::createNew (gGetRegionConfig, gPGetRegionSv));
-    }
-
-    void teardown ()
-    {
-        gPGetRegionSv.reset ();
-    }
 
 };
 
 /* Test getting invalid region enum. */
 TEST (StateVector_getRegionInfo, InvalidEnum)
 {
+    INIT_STATE_VECTOR (gGetRegionConfig);
     StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (gPGetRegionSv->getRegionInfo (SV_REG_LAST, regionInfo),
+    CHECK_ERROR (pSv->getRegionInfo (SV_REG_LAST, regionInfo),
                  E_INVALID_REGION);
 }
 
 /* Test getting region not in State Vector. */
 TEST (StateVector_getRegionInfo, NotInSV)
 {
+    INIT_STATE_VECTOR (gGetRegionConfig);
     StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (gPGetRegionSv->getRegionInfo (SV_REG_TEST2, regionInfo),
+    CHECK_ERROR (pSv->getRegionInfo (SV_REG_TEST2, regionInfo),
                  E_INVALID_REGION);
 }
 
 /* Test getting region not in State Vector. */
 TEST (StateVector_getRegionInfo, Success)
 {
+    INIT_STATE_VECTOR (gGetRegionConfig);
     StateVector::RegionInfo_t regionInfo;
-    CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST0, regionInfo));
-    CHECK_SUCCESS (gPGetRegionSv->getRegionInfo (SV_REG_TEST1, regionInfo));
+    CHECK_SUCCESS (pSv->getRegionInfo (SV_REG_TEST0, regionInfo));
+    CHECK_SUCCESS (pSv->getRegionInfo (SV_REG_TEST1, regionInfo));
 }
 
-/* Test State Vector read and write methods. */
-TEST_GROUP (StateVector_readWrite)
-{
+/***************************** READ/WRITE TESTS *******************************/
 
-};
-
-/* Test reading invalid elem. */
-TEST (StateVector_readWrite, InvalidReadElem)
-{
-    // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
-
-    bool value = false;
-    CHECK_ERROR (pSv->read (SV_ELEM_TEST46, value), E_INVALID_ELEM);
+/**
+ * Check if read is successful and verify value read. 
+ */
+#define CHECK_READ_SUCCESS(elem, actualVal, expectedVal, withLock)             \
+{                                                                              \
+    if (withLock == true)                                                      \
+    {                                                                          \
+        CHECK_SUCCESS (pSv->readWithLock (elem, actualVal));                   \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        CHECK_SUCCESS (pSv->read (elem, actualVal));                           \
+    }                                                                          \
+    CHECK_EQUAL (actualVal, expectedVal);                                      \
 }
 
-/* Test reading elem with incorrect type. */
-TEST (StateVector_readWrite, InvalidReadType)
-{
-    // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
-
-    bool value = false;
-    CHECK_ERROR (pSv->read (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+/**
+ * Check if write is successful and verify by reading the value. 
+ */
+#define CHECK_WRITE_SUCCESS(elem, readVar, writeVar, withLock)                 \
+{                                                                              \
+    if (withLock == true)                                                      \
+    {                                                                          \
+        CHECK_SUCCESS (pSv->writeWithLock (elem, writeVar));                   \
+    }                                                                          \
+    else                                                                       \
+    {                                                                          \
+        CHECK_SUCCESS (pSv->write (elem, writeVar));                           \
+    }                                                                          \
+    CHECK_READ_SUCCESS (elem, readVar, writeVar, withLock);                    \
 }
 
-/* Test writing invalid elem. */
-TEST (StateVector_readWrite, InvalidWriteElem)
+/**
+ * Helper function to test read method on each element in a State Vector 
+ * initialized with gMultiElemConfig,
+ *
+ * @param    withLock    If true, call readWithLock instead of read.
+ */
+static void checkMultiElemReadSuccess (bool withLock)
 {
     // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
-
-    bool value = false;
-    CHECK_ERROR (pSv->write (SV_ELEM_TEST46, value), E_INVALID_ELEM);
-}
-
-/* Test writing elem with incorrect type. */
-TEST (StateVector_readWrite, InvalidWriteType)
-{
-    // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
-
-    bool value = false;
-    CHECK_ERROR (pSv->write (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
-}
-
-/* Test reading each element after constructing. */
-TEST (StateVector_readWrite, SuccessfulRead)
-{
-    // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (gMultiElemConfig, pSv));
+    INIT_STATE_VECTOR (gMultiElemConfig);
 
     uint8_t  valU8     = 0;
     uint16_t valU16    = 0;
@@ -822,56 +792,59 @@ TEST (StateVector_readWrite, SuccessfulRead)
     double   valDouble = 0;
     bool     valBool   = 0;
 
-    CHECK_READ_SUCCESS (SV_ELEM_TEST0,  valU8,     std::numeric_limits<uint8_t> ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST1,  valU8,      1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST2,  valU8,     std::numeric_limits<uint8_t> ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST3,  valU16,    std::numeric_limits<uint16_t>::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST4,  valU16,     1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST5,  valU16,    std::numeric_limits<uint16_t>::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST6,  valU32,    std::numeric_limits<uint32_t>::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST7,  valU32,     1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST8,  valU32,    std::numeric_limits<uint32_t>::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST9,  valU64,    std::numeric_limits<uint64_t>::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST10, valU64,     1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST11, valU64,    std::numeric_limits<uint64_t>::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST12, val8,      std::numeric_limits<int8_t>  ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST13, val8,      -1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST14, val8,       0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST15, val8,       1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST16, val8,      std::numeric_limits<int8_t>  ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST17, val16,     std::numeric_limits<int16_t> ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST18, val16,     -1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST19, val16,      0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST20, val16,      1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST21, val16,     std::numeric_limits<int16_t> ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST22, val32,     std::numeric_limits<int32_t> ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST23, val32,     -1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST24, val32,      0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST25, val32,      1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST26, val32,     std::numeric_limits<int32_t> ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST27, val64,     std::numeric_limits<int64_t> ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST28, val64,     -1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST29, val64,      0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST30, val64,      1                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST31, val64,     std::numeric_limits<int64_t> ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST32, valFloat,  std::numeric_limits<float>   ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST33, valFloat,   0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST34, valFloat,  (float)  37.81999                         );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST35, valFloat,  (float) -37.81999                         );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST36, valFloat,  std::numeric_limits<float>   ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST37, valFloat,  std::numeric_limits<float>   ::infinity ());
-    CHECK_READ_SUCCESS (SV_ELEM_TEST38, valDouble, std::numeric_limits<double>  ::min ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST39, valDouble,  0                                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST40, valDouble, (double)  37.81999                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST41, valDouble, (double) -37.81999                        );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST42, valDouble, std::numeric_limits<double>  ::max ()     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST43, valDouble, std::numeric_limits<double>  ::infinity ());
-    CHECK_READ_SUCCESS (SV_ELEM_TEST44, valBool,   false                                     );
-    CHECK_READ_SUCCESS (SV_ELEM_TEST45, valBool,   true                                      );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST0,  valU8,     std::numeric_limits<uint8_t> ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST1,  valU8,      1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST2,  valU8,     std::numeric_limits<uint8_t> ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST3,  valU16,    std::numeric_limits<uint16_t>::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST4,  valU16,     1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST5,  valU16,    std::numeric_limits<uint16_t>::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST6,  valU32,    std::numeric_limits<uint32_t>::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST7,  valU32,     1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST8,  valU32,    std::numeric_limits<uint32_t>::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST9,  valU64,    std::numeric_limits<uint64_t>::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST10, valU64,     1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST11, valU64,    std::numeric_limits<uint64_t>::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST12, val8,      std::numeric_limits<int8_t>  ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST13, val8,      -1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST14, val8,       0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST15, val8,       1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST16, val8,      std::numeric_limits<int8_t>  ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST17, val16,     std::numeric_limits<int16_t> ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST18, val16,     -1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST19, val16,      0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST20, val16,      1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST21, val16,     std::numeric_limits<int16_t> ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST22, val32,     std::numeric_limits<int32_t> ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST23, val32,     -1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST24, val32,      0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST25, val32,      1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST26, val32,     std::numeric_limits<int32_t> ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST27, val64,     std::numeric_limits<int64_t> ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST28, val64,     -1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST29, val64,      0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST30, val64,      1,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST31, val64,     std::numeric_limits<int64_t> ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST32, valFloat,  std::numeric_limits<float>   ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST33, valFloat,   0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST34, valFloat,  (float)  37.81999,                          withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST35, valFloat,  (float) -37.81999,                          withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST36, valFloat,  std::numeric_limits<float>   ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST37, valFloat,  std::numeric_limits<float>   ::infinity (), withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST38, valDouble, std::numeric_limits<double>  ::min (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST39, valDouble,  0,                                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST40, valDouble, (double)  37.81999,                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST41, valDouble, (double) -37.81999,                         withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST42, valDouble, std::numeric_limits<double>  ::max (),      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST43, valDouble, std::numeric_limits<double>  ::infinity (), withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST44, valBool,   false,                                      withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST45, valBool,   true,                                       withLock);
 }
 
-/* Test writing each element after constructing with all elems set to 0. */
-TEST (StateVector_readWrite, SuccessfulWrite)
+/**
+ * Helper function to test writing to a State Vectory with all elements
+ * initialized to 0.
+ */
+static void checkMultiElemWriteSuccess (bool withLock)
 {
     StateVector::StateVectorConfig_t multiElemConfigEmpty = {
         // Regions
@@ -957,8 +930,7 @@ TEST (StateVector_readWrite, SuccessfulWrite)
     };
 
     // Create SV
-    std::shared_ptr<StateVector> pSv; 
-    CHECK_SUCCESS (StateVector::createNew (multiElemConfigEmpty, pSv));
+    INIT_STATE_VECTOR (multiElemConfigEmpty);
 
     uint8_t  readVarU8     = 0;
     uint16_t readVarU16    = 0;
@@ -972,50 +944,708 @@ TEST (StateVector_readWrite, SuccessfulWrite)
     double   readVarDouble = 0;
     bool     readVarBool   = 0;
 
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST0,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST1,  readVarU8,     (uint8_t)   1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST2,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST3,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST4,  readVarU16,    (uint16_t)  1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST5,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST6,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST7,  readVarU32,    (uint32_t)  1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST8,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST9,  readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST10, readVarU64,    (uint64_t)  1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST11, readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST12, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST13, readVar8,      (int8_t)   -1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST14, readVar8,      (int8_t)    0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST15, readVar8,      (int8_t)    1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST16, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST17, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST18, readVar16,     (int16_t)  -1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST19, readVar16,     (int16_t)   0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST20, readVar16,     (int16_t)   1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST21, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST22, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST23, readVar32,     (int32_t)  -1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST24, readVar32,     (int32_t)   0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST25, readVar32,     (int32_t)   1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST26, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST27, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST28, readVar64,     (int64_t)  -1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST29, readVar64,     (int64_t)   0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST30, readVar64,     (int64_t)   1                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST31, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST32, readVarFloat,  (float)    std::numeric_limits<float>   ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST33, readVarFloat,  (float)     0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST34, readVarFloat,  (float)     37.81999                                 );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST35, readVarFloat,  (float)    -37.81999                                 );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST36, readVarFloat,  (float)    std::numeric_limits<float>   ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST37, readVarFloat,  (float)    std::numeric_limits<float>   ::infinity ());
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST38, readVarDouble, (double)   std::numeric_limits<double>  ::min ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST39, readVarDouble, (double)    0                                        );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST40, readVarDouble, (double)    37.81999                                 );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST41, readVarDouble, (double)   -37.81999                                 );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST42, readVarDouble, (double)   std::numeric_limits<double>  ::max ()     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST43, readVarDouble, (double)   std::numeric_limits<double>  ::infinity ());
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST44, readVarBool,   (bool)     false                                     );
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST45, readVarBool,   (bool)     true                                      );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST0,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST1,  readVarU8,     (uint8_t)   1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST2,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST3,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST4,  readVarU16,    (uint16_t)  1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST5,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST6,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST7,  readVarU32,    (uint32_t)  1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST8,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST9,  readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST10, readVarU64,    (uint64_t)  1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST11, readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST12, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST13, readVar8,      (int8_t)   -1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST14, readVar8,      (int8_t)    0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST15, readVar8,      (int8_t)    1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST16, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST17, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST18, readVar16,     (int16_t)  -1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST19, readVar16,     (int16_t)   0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST20, readVar16,     (int16_t)   1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST21, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST22, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST23, readVar32,     (int32_t)  -1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST24, readVar32,     (int32_t)   0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST25, readVar32,     (int32_t)   1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST26, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST27, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST28, readVar64,     (int64_t)  -1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST29, readVar64,     (int64_t)   0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST30, readVar64,     (int64_t)   1,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST31, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST32, readVarFloat,  (float)    std::numeric_limits<float>   ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST33, readVarFloat,  (float)     0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST34, readVarFloat,  (float)     37.81999,                                  withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST35, readVarFloat,  (float)    -37.81999,                                  withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST36, readVarFloat,  (float)    std::numeric_limits<float>   ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST37, readVarFloat,  (float)    std::numeric_limits<float>   ::infinity (), withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST38, readVarDouble, (double)   std::numeric_limits<double>  ::min (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST39, readVarDouble, (double)    0,                                         withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST40, readVarDouble, (double)    37.81999,                                  withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST41, readVarDouble, (double)   -37.81999,                                  withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST42, readVarDouble, (double)   std::numeric_limits<double>  ::max (),      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST43, readVarDouble, (double)   std::numeric_limits<double>  ::infinity (), withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST44, readVarBool,   (bool)     false,                                      withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST45, readVarBool,   (bool)     true,                                       withLock);
+}
+
+/* Test State Vector read and write methods. */
+TEST_GROUP (StateVector_readWrite)
+{
+
+};
+
+/* Test reading invalid elem. */
+TEST (StateVector_readWrite, InvalidReadElem)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gMultiElemConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->read (SV_ELEM_TEST46, value), E_INVALID_ELEM);
+}
+
+/* Test reading elem with incorrect type. */
+TEST (StateVector_readWrite, InvalidReadType)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gMultiElemConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->read (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test writing invalid elem. */
+TEST (StateVector_readWrite, InvalidWriteElem)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gMultiElemConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->write (SV_ELEM_TEST46, value), E_INVALID_ELEM);
+}
+
+/* Test writing elem with incorrect type. */
+TEST (StateVector_readWrite, InvalidWriteType)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gMultiElemConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->write (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test reading each element after constructing. */
+TEST (StateVector_readWrite, SuccessfulRead)
+{
+    // Check reads without lock.
+    checkMultiElemReadSuccess (false);
+}
+
+/* Test writing each element after constructing with all elems set to 0. */
+TEST (StateVector_readWrite, SuccessfulWrite)
+{
+    // Check writes without lock.
+    checkMultiElemWriteSuccess (false);
+}
+
+/**************************** SYNCHRONIZATION TESTS ***************************/
+
+/**
+ * Params to pass log, State Vector, and thread ID to thread functions.
+ */
+struct ThreadFuncArgs 
+{
+    Log*                         testLog;
+    std::shared_ptr<StateVector> stateVector;
+    uint8_t                      threadId;
+};
+
+/**
+ * Lock used to synchronize between threads so that certain test conditions can 
+ * be achieved.
+ */
+pthread_mutex_t gTestLock;
+
+/**
+ * Config for synchronization tests.
+ */
+StateVector::StateVectorConfig_t gSynchronizationConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
+/**
+ * Thread that:
+ *   1) Acquires the State Vector lock
+ *   2) Logs its thread ID to the test log
+ *   3) Releases the State Vector lock
+ */
+static void* threadFuncLockAndLog (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
+    Log* log                         = pArgs->testLog;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+    uint8_t threadId                 = pArgs->threadId;
+
+    ret = pSv->acquireLock ();
+    if (ret == E_SUCCESS)
+    {
+        log->logEvent (Log::LogEvent_t::ACQUIRED_LOCK, threadId);
+        ret = pSv->releaseLock ();
+    }
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that: 
+ *   1) Acquires the State Vector lock
+ *   2) Logs its thread ID to the test log
+ *   3) Acquires the test lock
+ *   4) Releases the State Vector lock
+ *   5) Releases the test lock
+ *   6) Logs to the test log
+ */
+static void* threadFuncLockAndLogThenBlock (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
+    Log* log                         = pArgs->testLog;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+    uint8_t threadId                 = pArgs->threadId;
+
+    ret = pSv->acquireLock ();
+    if (ret == E_SUCCESS)
+    {
+        log->logEvent (Log::LogEvent_t::ACQUIRED_LOCK, threadId);
+
+        // Wait on test lock before releasing SV lock.
+        pthread_mutex_lock (&gTestLock);
+        ret = pSv->releaseLock ();
+        pthread_mutex_unlock (&gTestLock);
+
+        // Log again to indicate thread has reached this point.
+        log->logEvent (Log::LogEvent_t::RELEASED_LOCK, threadId);
+    }
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls readWithLock on SV_ELEM_TEST0 and logs the result to the 
+ * test log.
+ */
+static void* threadFuncReadWithLock (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
+    Log* log                         = pArgs->testLog;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+
+    // Read first element in SV.
+    uint8_t value = 0;
+    ret = pSv->readWithLock (SV_ELEM_TEST0, value);
+
+    // Log value read from SV.
+    log->logEvent (Log::LogEvent_t::READ_VALUE, value);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls writeWithLock to update SV_ELEM_TEST0.
+ */
+static void* threadFuncWriteWithLock (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+
+    // Write first element in SV.
+    uint8_t value = 2;
+    ret = pSv->writeWithLock (SV_ELEM_TEST0, value);
+
+    return (void *) ret;
+}
+
+/**
+ * Helper function to test the State Vector's lock acquire semantics.
+ *
+ * @param  t1Pri     Priority of first thread.
+ * @param  t2Pri     Priority of second thread.
+ * @param  t3Pri     Priority of third thread.
+ * @param  expected  Vector of tuples representing expected log state at
+ *                   the end of the function.
+ */
+static void testLockAcquireSemantics (
+            ThreadManager::Priority_t t1Pri, 
+            ThreadManager::Priority_t t2Pri, 
+            ThreadManager::Priority_t t3Pri, 
+            std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> &expected)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize threads.
+    pthread_t t1;
+    pthread_t t2;
+    pthread_t t3;
+
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    struct ThreadFuncArgs argsThread2 = {&testLog, pSv, 2}; 
+    struct ThreadFuncArgs argsThread3 = {&testLog, pSv, 3}; 
+
+    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLog = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLog;
+
+    // Acquire lock so that all other threads initially block on acquire.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create each thread and sleep so that they run until they are blocked
+    // by the acquireLock call. Sleeping between creations ensures the blocking
+    // occurs in the following order:
+    //
+    // 1) low pri thread
+    // 2) high pri thread
+    // 3) mid pri thread
+    //
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncLockAndLog,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t2, pThreadFuncLockAndLog,
+                                    &argsThread2, sizeof (argsThread2),
+                                    t2Pri,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t3, pThreadFuncLockAndLog,
+                                    &argsThread3, sizeof (argsThread3),
+                                    t3Pri,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Release lock.
+    CHECK_SUCCESS (pSv->releaseLock ());
+
+    // Sleep so that the three threads run to completion.
+    TestHelpers::sleepMs(100);
+   
+    // Wait for threads.
+    Error_t threadReturn;
+    ret = pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    ret = pThreadManager->waitForThread (t2, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    ret = pThreadManager->waitForThread (t3, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+
+    // Build expected log.
+    for (uint32_t i = 0; i < expected.size (); i++)
+    {
+        expectedLog.logEvent (std::get<0> (expected[i]), 
+                              std::get<1> (expected[i]));
+    }
+    
+    // Verify actual == expected.
+    VERIFY_LOGS;
+}
+
+/**
+ * Helper function to test the State Vector's lock release semantics.
+ *
+ * @param  t1Pri     Priority of first thread.
+ * @param  t2Pri     Priority of second thread.
+ * @param  expected  Vector of tuples representing expected log state at
+ *                   the end of the function.
+ */
+static void testLockReleaseSemantics (
+            ThreadManager::Priority_t t1Pri, 
+            ThreadManager::Priority_t t2Pri, 
+            std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> &expected)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize 2 threads.
+    pthread_t t1;
+    pthread_t t2;
+
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    struct ThreadFuncArgs argsThread2 = {&testLog, pSv, 2}; 
+
+    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLogThenBlock = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLogThenBlock;
+
+    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLog = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLog;
+
+    // Initialize test lock used to synchronize between cpputest thread and 
+    // t1.
+    pthread_mutex_init (&gTestLock, NULL);
+
+    // Acquire test lock so that t1 blocks before releasing the State Vector 
+    // lock.
+    pthread_mutex_lock (&gTestLock);
+
+    // Create t1 and sleep so that the thread acquires the SV lock, logs, and 
+    // then blocks on the test lock (which is currently held by the cpputest 
+    // thread).
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncLockAndLogThenBlock,
+                                    &argsThread1, sizeof (argsThread1),
+                                    t1Pri, ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Create t2 and sleep so that the thread blocks on attempting to acquire 
+    // the SV lock.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t2, pThreadFuncLockAndLog,
+                                    &argsThread2, sizeof (argsThread2),
+                                    t2Pri, ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Release test lock and sleep. This will unblock t1 and then t2 once t1
+    // releases the SV lock.
+    pthread_mutex_unlock (&gTestLock);
+    TestHelpers::sleepMs (100);
+   
+    // Wait for threads.
+    Error_t threadReturn;
+    pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    ret = pThreadManager->waitForThread (t2, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+
+    // Build expected log.
+    for (uint32_t i = 0; i < expected.size (); i++)
+    {
+        expectedLog.logEvent (std::get<0> (expected[i]), 
+                              std::get<1> (expected[i]));
+    }
+    
+    // Verify actual == expected.
+    VERIFY_LOGS;
+}
+
+/* Test State Vector read and write methods. */
+TEST_GROUP (StateVector_readWriteWithLock)
+{
+
+};
+
+/* Test reading invalid elem. */
+TEST (StateVector_readWriteWithLock, InvalidReadElem)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST1, value), E_INVALID_ELEM);
+}
+
+/* Test reading elem with incorrect type. */
+TEST (StateVector_readWriteWithLock, InvalidReadType)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test reading elem with lock already acquired. */
+TEST (StateVector_readWriteWithLock, FailToLockRead)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Acquire lock.
+    pSv->acquireLock ();
+
+    uint8_t value = 0;
+    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST0, value), E_FAILED_TO_LOCK);
+}
+
+/* Test writing invalid elem. */
+TEST (StateVector_readWriteWithLock, InvalidWriteElem)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST1, value), E_INVALID_ELEM);
+}
+
+/* Test writing elem with incorrect type. */
+TEST (StateVector_readWriteWithLock, InvalidWriteType)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    bool value = false;
+    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
+}
+
+/* Test writing to an elem with lock already acquired. */
+TEST (StateVector_readWriteWithLock, FailToLockWrite)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Acquire lock.
+    pSv->acquireLock ();
+
+    uint8_t value = 0;
+    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST0, value), E_FAILED_TO_LOCK);
+}
+
+/* Test reading each element after constructing. */
+TEST (StateVector_readWriteWithLock, SuccessfulRead)
+{
+    // Check reads with lock.
+    checkMultiElemReadSuccess (true);
+}
+
+/* Test writing each element after constructing with all elems set to 0. */
+TEST (StateVector_readWriteWithLock, SuccessfulWrite)
+{
+    // Check writes with lock.
+    checkMultiElemWriteSuccess (true);
+}
+
+/* Test State Vector read and write methods. */
+TEST_GROUP (StateVector_acquireReleaseLock)
+{
+
+};
+
+/* Test acquiring lock twice. */
+TEST (StateVector_acquireReleaseLock, AcquireTwice)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    CHECK_SUCCESS (pSv->acquireLock ());
+    CHECK_ERROR (pSv->acquireLock (), E_FAILED_TO_LOCK);
+}
+
+/* Test releasing lock twice. */
+TEST (StateVector_acquireReleaseLock, ReleaseTwice)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Fail to release lock since don't have lock.
+    CHECK_ERROR (pSv->releaseLock (), E_FAILED_TO_UNLOCK);
+
+    // Acquire lock.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Release successfully.
+    CHECK_SUCCESS (pSv->releaseLock ());
+
+    // Fail to release a second time.
+    CHECK_ERROR (pSv->releaseLock (), E_FAILED_TO_UNLOCK);
+}
+
+/* Test State Vector lock synchronization between threads. */
+TEST_GROUP (StateVector_threadSynchronization)
+{
+
+};
+
+
+/* Verify acquireLock will dequeue highest priority waiting thread. */
+TEST (StateVector_threadSynchronization, AcquireByPriority)
+{
+    std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> expected =
+    {
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 2),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 3),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 1),
+    };
+
+    testLockAcquireSemantics (ThreadManager::MIN_NEW_THREAD_PRIORITY, 
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY + 2,
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY + 1,
+                              expected);
+}
+
+/* Verify acquireLock will dequeue in FIFO order when threads have the same
+ * priority. */
+TEST (StateVector_threadSynchronization, AcquireByFIFOWithSamePriority)
+{
+    std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> expected =
+    {
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 2),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 3),
+    };
+
+    testLockAcquireSemantics (ThreadManager::MIN_NEW_THREAD_PRIORITY, 
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                              expected);
+}
+
+/* Verify low pri thread not blocked on lockRelease when a lower pri thread is
+ * waiting on the lock. */
+TEST (StateVector_threadSynchronization, ReleaseNoBlock_LowPriWaiter)
+{
+    std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> expected =
+    {
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::RELEASED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 2),
+    };
+
+    testLockReleaseSemantics (ThreadManager::MIN_NEW_THREAD_PRIORITY + 1, 
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                              expected);
+}
+
+/* Verify low pri thread not blocked on lockRelease when a thread with the
+ * same priority is waiting for the lock. */
+TEST (StateVector_threadSynchronization, ReleaseNoBlock_SamePriWaiter)
+{
+    std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> expected =
+    {
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::RELEASED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 2),
+    };
+
+    testLockReleaseSemantics (ThreadManager::MIN_NEW_THREAD_PRIORITY, 
+                              ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                              expected);
+}
+
+/* Verify low pri thread blocked on lockRelease when a higher pri thread 
+ * is waiting for the lock. */
+TEST (StateVector_threadSynchronization, ReleaseNoBlock_HighPriWaiter)
+{
+    std::vector<std::tuple<Log::LogEvent_t, Log::LogInfo_t>> expected =
+    {
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 1),
+        std::make_tuple (Log::LogEvent_t::ACQUIRED_LOCK, 2),
+        std::make_tuple (Log::LogEvent_t::RELEASED_LOCK, 1),
+    };
+
+    testLockReleaseSemantics (ThreadManager::MIN_NEW_THREAD_PRIORITY, 
+                              ThreadManager::MAX_NEW_THREAD_PRIORITY,
+                              expected);
+}
+
+/* Verify readWithLock will block until lock is available. */
+TEST (StateVector_threadSynchronization, ReadBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncReadWithLock = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncReadWithLock;
+
+    // Write initial value to SV.
+    pSv->write (SV_ELEM_TEST0, (uint8_t) 1);
+
+    // Acquire lock so that thread blocks on read attempt.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on read.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncReadWithLock,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Write new value to SV.
+    pSv->write (SV_ELEM_TEST0, (uint8_t) 2);
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // reading the updated value.
+    pSv->releaseLock ();
+    TestHelpers::sleepMs (100);
+
+    // Build expected log.
+    expectedLog.logEvent (Log::LogEvent_t::READ_VALUE, 2);
+    
+    // Verify expected == actual.
+    VERIFY_LOGS;
+}
+
+/* Verify writeWithLock will block until lock is available. */
+TEST (StateVector_threadSynchronization, WriteBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncWriteWithLock = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncWriteWithLock;
+
+    // Acquire lock so that thread blocks on write attempt.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on read.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncWriteWithLock,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Verify value is still 0.
+    uint8_t value = 0;
+    pSv->read (SV_ELEM_TEST0, value);
+    CHECK_EQUAL (0, value);
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // updating the value.
+    pSv->releaseLock ();
+    TestHelpers::sleepMs (100);
+   
+    // Wait for thread.
+    Error_t threadReturn;
+    pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    
+    // Verify value is now 2.
+    pSv->read (SV_ELEM_TEST0, value);
+    CHECK_EQUAL (2, value);
 }

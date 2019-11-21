@@ -11,6 +11,17 @@
  * nodes (e.g. tx'ing a region from a RIO to the FC using the Network
  * Interface). 
  *
+ * If using the State Vector in a multi-threaded environment, use the 
+ * readWithLock and writeWithLock methods. Otherwise, use the read and write
+ * methods. The lock uses the following semantics:
+ *         
+ *     acquireLock: Thread blocks if lock not available and is added to the
+ *                  lock's wait list in priority and then FIFO order.
+ *     releaseLock: If there is a thread waiting on the lock that has a higher 
+ *                  priority than the thread releasing the lock, a context
+ *                  switch to the higher priority thread will occur.
+ *
+ *
  *                   ------ Using the State Vector --------
  *
  *     1) Define a StateVector::StateVectorConfig_t (see StateVectorTest.cpp 
@@ -29,14 +40,14 @@
  *                    SV_T_UINT32).
  *
  *     2) Call StateVector::createNew (yourConfig).
- *     3) Use the read and write methods to interact with elements in the
- *        State Vector. Note, elements cannot be added to the State Vector after
- *        it has been constructed.
+ *     3) Use the read and write (or readWithLock and writeWithLock) methods 
+ *        to interact with elements in the State Vector. Note, elements cannot 
+ *        be added to the State Vector after it has been constructed.
+ *
  *    
  * Assumptions: 
  *   #1  Little endian architecture.
- *   #2  The State Vector is only called from one thread.
- *   #3  Only 1 State Vector is created per compute node. This object is not a 
+ *   #2  Only 1 State Vector is created per compute node. This object is not a 
  *       singleton in order to facilitate testing.
  *
  */
@@ -48,6 +59,7 @@
 #include <memory>
 #include <vector>
 #include <unordered_map>
+#include <pthread.h>
 
 #include "Errors.h"
 #include "StateVectorEnums.hpp"
@@ -265,6 +277,27 @@ public:
                                          uint8_t& kSizeBytesRet);
 
     /**
+     * Returns a copy of the State Vector's info struct.
+     *
+     * @param    kStateVectorInfoRet   Struct to store State Vector info in.
+     *
+     * @ret      E_SUCCESS             Info returned successfully.
+     */
+    Error_t getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet);
+
+    /**
+     * Returns a copy of a region's info struct.
+     *
+     * @param    kRegion           Region to get info for.
+     * @param    kRegionInfoRet    Struct to store region info in.    
+     *
+     * @ret      E_SUCCESS         Region info returned successfully.
+     *           E_INVALID_REGION  Region enum invalid or not in State Vector.
+     */
+    Error_t getRegionInfo (StateVectorRegion_t kRegion,
+                           RegionInfo_t& kRegionInfoRet);
+
+    /**
      * Read an element from the State Vector.  Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      *
@@ -321,25 +354,147 @@ public:
     }
 
     /**
-     * Returns a copy of the State Vector's info struct.
+     * Acquire the State Vector lock, read an element from the State Vector, 
+     * and release the lock. Defined in the header so that the templatized 
+     * functions do not need to each be instantiated explicitly.
      *
-     * @param    kStateVectorInfoRet   Struct to store State Vector info in.
+     * NOTE: Calling this method can result in the current thread blocking.
      *
-     * @ret      E_SUCCESS             Info returned successfully.
+     * @param   kElem                         Element to read.
+     * @param   kValueRet                     Variable to store element's value.
+     *
+     * @ret     E_SUCCESS                     Element read successfully.
+     *          E_FAILED_TO_LOCK              Failed to lock.
+     *          E_INVALID_ELEM                Element not in State Vector.
+     *          E_INVALID_TYPE                Elem_t does not match expected 
+     *                                        element type or type not 
+     *                                        supported.
+     *          E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
+     *                                        unlock.
+     *          E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                        unlock.
+     *
      */
-    Error_t getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet);
+    template<class Elem_T>
+    Error_t readWithLock (StateVectorElement_t kElem, Elem_T& kValueRet)
+    {
+        Error_t ret = E_SUCCESS;
+        
+        // Acquire lock.
+        ret = this->acquireLock ();
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Attempt to read the element.
+        ret = this->read (kElem, kValueRet);
+        if (ret != E_SUCCESS)
+        {
+            // If read fails, attempt to release lock.
+            Error_t unlockRet = this->releaseLock ();
+
+            // If release fails, return updated error.
+            if (unlockRet != E_SUCCESS)
+            {
+                return E_FAILED_TO_READ_AND_UNLOCK;
+            } 
+
+            // Otherwise, return error from read.
+            else 
+            {
+                return ret;
+            }
+        }
+
+        // Release lock. 
+        ret = this->releaseLock ();
+
+        return ret;
+    }
 
     /**
-     * Returns a copy of a region's info struct.
+     * Acquire the State Vector lock, write a value to the State Vector, and
+     * release the lock. Defined in the header so that the templatized functions 
+     * do not need to each be instantiated explicitly.
      *
-     * @param    kRegion           Region to get info for.
-     * @param    kRegionInfoRet    Struct to store region info in.    
+     * NOTE: Calling this method can result in the current thread blocking.
      *
-     * @ret      E_SUCCESS         Region info returned successfully.
-     *           E_INVALID_REGION  Region enum invalid or not in State Vector.
+     * @param   kElem                         Element to write to.
+     * @param   kValue                        Value to write.
+     *
+     * @ret     E_SUCCESS                     Element written to successfully.
+     *          E_FAILED_TO_LOCK              Failed to lock.
+     *          E_INVALID_ELEM                Element not in State Vector.
+     *          E_INVALID_TYPE                Elem_t does not match expected 
+     *                                        element type or type not 
+     *                                        supported.
+     *          E_FAILED_TO_WRITE_AND_UNLOCK  Error on write and failed to 
+     *                                        unlock.
+     *          E_FAILED_TO_UNLOCK            Write succeeded but failed to 
+     *                                        unlock.
      */
-    Error_t getRegionInfo (StateVectorRegion_t kRegion,
-                           RegionInfo_t& kRegionInfoRet);
+    template<class Elem_T>
+    Error_t writeWithLock (StateVectorElement_t kElem, Elem_T kValue)
+    {
+        Error_t ret = E_SUCCESS;
+        
+        // Acquire lock.
+        ret = this->acquireLock ();
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Attempt to write element.
+        ret = this->write (kElem, kValue);
+        if (ret != E_SUCCESS)
+        {
+            // If write fails, attempt to release lock.
+            Error_t unlockRet = this->releaseLock ();
+
+            // If release fails, return updated error.
+            if (unlockRet != E_SUCCESS)
+            {
+                return E_FAILED_TO_WRITE_AND_UNLOCK;
+            } 
+
+            // Otherwise, return error from read.
+            else 
+            {
+                return ret;
+            }
+        }
+
+        // Release lock.
+        ret = this->releaseLock ();
+
+        return ret;
+    }
+
+    /**
+     * Acquire the State Vector lock. This method is public so that the lock
+     * can be held while tx/rx'ing a region of or the entire State Vector using
+     * the Network Interface. 
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @ret     E_SUCCESS        Element written to successfully.
+     *          E_FAILED_TO_LOCK Failed to lock.
+    */
+    Error_t acquireLock ();
+
+    /**
+     * Release the State Vector lock. This method is public so that the lock
+     * can be held while tx/rx'ing a region of or the entire State Vector using
+     * the Network Interface.
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @ret     E_SUCCESS           Element written to successfully.
+     *          E_FAILED_TO_UNLOCK  Failed to unlock.           
+    */
+    Error_t releaseLock ();
 
 private:
 
@@ -395,6 +550,12 @@ private:
                        EnumClassHash> mElementToElementInfo;
 
     /**
+     * Lock for synchronizing access to the State Vector in a multi-threaded 
+     * environment.
+     */
+    pthread_mutex_t mLock;
+
+    /**
      * Constructor. Given a config, builds mBuffer, mStateVectorInfo, and
      * mRegionToRegionInfo. Because StateVector::getSizeBytesFromType is called
      * while building the State Vector's underlying data structures, the 
@@ -402,9 +563,12 @@ private:
      * parameter.
      *
      * @param    kConfig    State Vector config.
-     * @param    kRet       Returns E_INVALID_ENUM if an element type in the 
-     *                      config is not supported by getSizeBytesFromType.
-     *                      Returns E_SUCCESS otherwise.
+     * @param    kRet       E_SUCCESS                Successfully created State
+     *                                               Vector.
+     *                      E_INVALID_ENUM           Element type in config not 
+     *                                               supported by 
+     *                                               getSizeBytesFromType.
+     *                      E_FAILED_TO_INIT_LOCK    Failed to initialize lock.
      */        
     StateVector (StateVectorConfig_t& kConfig, Error_t& kRet);
 
@@ -493,6 +657,16 @@ private:
 
         return E_SUCCESS;
     }
-};
 
+    /**
+     * Initialize the lock as PTHREAD_MUTEX_ERRORCHECK type. This ensures that 
+     * if a thread tries to lock a mutex twice, it does not deadlock and instead
+     * returns an error.
+     *
+     * @ret     E_SUCCESS                Lock successfully initialized.
+     *          E_FAILED_TO_INIT_LOCK    Lock initialization failed.
+     */
+    Error_t initLock ();
+
+};
 #endif

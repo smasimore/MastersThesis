@@ -34,6 +34,11 @@ public:
         CONTROLLER_RAN_ENABLED,
         CONTROLLER_RAN_SAFED,
 
+        /* State Vector */
+        ACQUIRED_LOCK,
+        RELEASED_LOCK,
+        READ_VALUE,
+
         LAST
     };
 
@@ -103,6 +108,11 @@ private:
 
     /* Lock to protect access to log. */
     pthread_mutex_t lock;
+
+    /**
+     * Print log.
+     */
+    void printLog ();
 };
 
 #endif

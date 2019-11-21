@@ -1,43 +1,14 @@
 /* All #include statements should come before the CppUTest include */
 #include <sched.h>
 #include <signal.h>
-#include <time.h>
 #include <iostream>
 
 #include "Errors.h"
 #include "Log.hpp"
+#include "TestHelpers.hpp"
 #include "ThreadManager.hpp"
 
 #include "CppUTest/TestHarness.h"
-
-/******************************** MACROS **************************************/
-
-#define INIT_THREAD_MANAGER_AND_LOGS                                           \
-    Error_t ret = E_SUCCESS;                                                   \
-    ThreadManager *pThreadManager = nullptr;                                   \
-    ret = ThreadManager::getInstance (&pThreadManager);                        \
-    CHECK_EQUAL(E_SUCCESS, ret);                                               \
-    Log expectedLog = Log (ret);                                               \
-    Log testLog = Log (ret);
-
-
-#define VERIFY_LOGS(logsEqual)                                                 \
-{                                                                              \
-    logsEqual = false;                                                         \
-    ret = Log::verify (expectedLog, testLog, logsEqual);                       \
-    CHECK_EQUAL (E_SUCCESS, ret);                                              \
-    CHECK_TRUE (logsEqual);                                                    \
-}
-
-/**************************** HELPER FUNCTIONS ********************************/
-void sleepMs (uint32_t Ms)
-{
-    static const uint32_t NS_IN_MS = 1000000;
-    timespec timeToSleep;
-    timeToSleep.tv_sec = 0;
-    timeToSleep.tv_nsec = Ms * NS_IN_MS;
-    nanosleep (&timeToSleep, nullptr);
-}
 
 /**************************** THREAD FUNCTIONS ********************************/
 
@@ -76,7 +47,7 @@ void *threadFuncNoArgs (void *rawArgs)
  */
 void *threadFuncSpin (void *rawArgs)
 {
-    // Set cancellation type to be asynchronous so cpputest thread can cancle
+    // Set cancellation type to be asynchronous so cpputest thread can cancel
     // thread.
     pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
 
@@ -264,8 +235,7 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
     CHECK_EQUAL (E_INVALID_ARGS_LENGTH, ret);
 
     // Expect both logs to be empty.
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 }
 
 /* Test creating and running a thread with no arguments. */
@@ -320,8 +290,7 @@ TEST (ThreadManagerCreate, CreateThreadArgsAndWait)
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);
     expectedLog.logEvent (Log::LogEvent_t::THREAD_WAITED, 0);
 
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 }
 
 /* Test setting thread priorities by creating 3 threads with different 
@@ -363,8 +332,7 @@ TEST (ThreadManagerCreate, Priorities)
 
     // Since newly created threads have lower priority than the cpputest thread,
     // neither should have run at this point. Verify the test log is empty.
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 
     // Wait for lowest pri thread.
     Error_t lowPriThreadReturn;
@@ -376,7 +344,7 @@ TEST (ThreadManagerCreate, Priorities)
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2);
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 3);
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 
     // Clean up threads.
     pThreadManager->waitForThread (highPriThread1, ret); 
@@ -419,15 +387,14 @@ TEST (ThreadManagerCreate, AffinityCore0)
 
     // Since newly created threads have lower priority than the cpputest thread,
     // neither should have run at this point. Verify the test log is empty.
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 
     // Block for 100ms to allow high pri thread to run.
-    sleepMs (100);
+    TestHelpers::sleepMs (100);
 
     // At this point only the high priority thread should have run.
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 
     // Cancel the high pri thread and wait for the low pri thread to finish.
     pthread_cancel (highPriThread1);
@@ -435,7 +402,7 @@ TEST (ThreadManagerCreate, AffinityCore0)
 
     // Now low pri thread should have run as well.
     expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2);
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 
     // Clean up threads.
     pThreadManager->waitForThread (highPriThread1, ret); 
@@ -501,8 +468,7 @@ TEST (ThreadManagerCreatePeriodic, CreateThreadInvalidParams)
     CHECK_EQUAL (E_INVALID_ARGS_LENGTH, ret);
 
     // Expect both logs to be empty.
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 }
 
 /* Test creating and running a periodic thread with no arguments. */
@@ -553,7 +519,7 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
                                         THREAD_PERIOD_MS);
 
     // Block for 100ms to allow high pri thread to run 10 times.
-    sleepMs (TIME_TO_SLEEP_MS);
+    TestHelpers::sleepMs (TIME_TO_SLEEP_MS);
 
     // Build expected log.
     for (uint32_t i = 0; i < TIME_TO_SLEEP_MS; i += THREAD_PERIOD_MS)
@@ -570,7 +536,6 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
     CHECK_EQUAL (-1, ret);
 
     // Verify.
-    bool logsEqual;
-    VERIFY_LOGS (logsEqual);
+    VERIFY_LOGS;
 }
 

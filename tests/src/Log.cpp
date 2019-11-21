@@ -72,7 +72,10 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     if (pLogOneVec->size () != pLogTwoVec->size ())
     {
         areEqual = false;
-        std::cout << "\nLog sizes not equal: " << pLogOneVec->size () << std::endl;
+        std::cout << "\nLog sizes not equal: " << pLogOneVec->size () << 
+            " vs. " << pLogTwoVec->size () << std::endl;
+        logOne.printLog ();
+        logTwo.printLog ();
     }
 
     // If they are the same size, check if any of their rows are different.
@@ -90,18 +93,8 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
         // Print logs for debugging.
         if (areEqual == false)
         {
-            std::cout << "\nLog One   |   Log Two" << std::endl;
-            for (uint32_t i = 0; i < pLogOneVec->size (); i++)
-            {
-                std::cout << (int32_t) pLogOneVec->at (i).event 
-                    << ", "
-                    << (int32_t) pLogOneVec->at (i).info 
-                    << "       |   "
-                    << (int32_t) pLogTwoVec->at (i).event 
-                    << ", "
-                    << (int32_t) pLogTwoVec->at (i).info 
-                    << std::endl;
-            }
+            logOne.printLog ();
+            logTwo.printLog ();
         }
     }
 
@@ -113,4 +106,18 @@ Error_t Log::verify (Log &logOne, Log &logTwo, bool &areEqual)
     }
 
     return E_SUCCESS;
+}
+
+void Log::printLog ()
+{
+    std::vector<Log::LogRow>* pLogVec = &this->log;
+
+    std::cout << "\n Log" << std::endl;
+    std::cout << "-------" << std::endl;
+    for (uint32_t i = 0; i < pLogVec->size (); i++)
+    {
+        std::cout << (int32_t) pLogVec->at (i).event << ", "
+            << (int32_t) pLogVec->at (i).info << std::endl;
+    }
+    std::cout << "-------" << std::endl;
 }

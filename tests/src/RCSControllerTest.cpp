@@ -4,7 +4,7 @@
 #include <iostream>
 #include <utility>
 
-#include "AvSWTestMacros.hpp"
+#include "TestHelpers.hpp"
 #include "Math.hpp"
 #include "RCSController.hpp"
 
