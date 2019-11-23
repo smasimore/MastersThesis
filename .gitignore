@@ -8,6 +8,8 @@ build/
 /Debug_x86/
 /Test_x86/
 /Test_minGW/
+/Profile_copyBuffer/
+/Profile_copyBuffer_x86/
 
 .settings/language.settings.xml
 
