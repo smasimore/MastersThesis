@@ -740,42 +740,26 @@ TEST (StateVector_getRegionInfo, Success)
 /**
  * Check if read is successful and verify value read. 
  */
-#define CHECK_READ_SUCCESS(elem, actualVal, expectedVal, withLock)             \
+#define CHECK_READ_SUCCESS(elem, actualVal, expectedVal)                       \
 {                                                                              \
-    if (withLock == true)                                                      \
-    {                                                                          \
-        CHECK_SUCCESS (pSv->readWithLock (elem, actualVal));                   \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        CHECK_SUCCESS (pSv->read (elem, actualVal));                           \
-    }                                                                          \
+    CHECK_SUCCESS (pSv->read (elem, actualVal));                               \
     CHECK_EQUAL (actualVal, expectedVal);                                      \
 }
 
 /**
  * Check if write is successful and verify by reading the value. 
  */
-#define CHECK_WRITE_SUCCESS(elem, readVar, writeVar, withLock)                 \
+#define CHECK_WRITE_SUCCESS(elem, readVar, writeVar)                           \
 {                                                                              \
-    if (withLock == true)                                                      \
-    {                                                                          \
-        CHECK_SUCCESS (pSv->writeWithLock (elem, writeVar));                   \
-    }                                                                          \
-    else                                                                       \
-    {                                                                          \
-        CHECK_SUCCESS (pSv->write (elem, writeVar));                           \
-    }                                                                          \
-    CHECK_READ_SUCCESS (elem, readVar, writeVar, withLock);                    \
+    CHECK_SUCCESS (pSv->write (elem, writeVar));                               \
+    CHECK_READ_SUCCESS (elem, readVar, writeVar);                              \
 }
 
 /**
  * Helper function to test read method on each element in a State Vector 
  * initialized with gMultiElemConfig,
- *
- * @param    withLock    If true, call readWithLock instead of read.
  */
-static void checkMultiElemReadSuccess (bool withLock)
+static void checkMultiElemReadSuccess ()
 {
     // Create SV
     INIT_STATE_VECTOR (gMultiElemConfig);
@@ -792,59 +776,59 @@ static void checkMultiElemReadSuccess (bool withLock)
     double   valDouble = 0;
     bool     valBool   = 0;
 
-    CHECK_READ_SUCCESS (SV_ELEM_TEST0,  valU8,     std::numeric_limits<uint8_t> ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST1,  valU8,      1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST2,  valU8,     std::numeric_limits<uint8_t> ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST3,  valU16,    std::numeric_limits<uint16_t>::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST4,  valU16,     1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST5,  valU16,    std::numeric_limits<uint16_t>::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST6,  valU32,    std::numeric_limits<uint32_t>::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST7,  valU32,     1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST8,  valU32,    std::numeric_limits<uint32_t>::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST9,  valU64,    std::numeric_limits<uint64_t>::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST10, valU64,     1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST11, valU64,    std::numeric_limits<uint64_t>::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST12, val8,      std::numeric_limits<int8_t>  ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST13, val8,      -1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST14, val8,       0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST15, val8,       1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST16, val8,      std::numeric_limits<int8_t>  ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST17, val16,     std::numeric_limits<int16_t> ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST18, val16,     -1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST19, val16,      0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST20, val16,      1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST21, val16,     std::numeric_limits<int16_t> ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST22, val32,     std::numeric_limits<int32_t> ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST23, val32,     -1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST24, val32,      0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST25, val32,      1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST26, val32,     std::numeric_limits<int32_t> ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST27, val64,     std::numeric_limits<int64_t> ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST28, val64,     -1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST29, val64,      0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST30, val64,      1,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST31, val64,     std::numeric_limits<int64_t> ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST32, valFloat,  std::numeric_limits<float>   ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST33, valFloat,   0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST34, valFloat,  (float)  37.81999,                          withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST35, valFloat,  (float) -37.81999,                          withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST36, valFloat,  std::numeric_limits<float>   ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST37, valFloat,  std::numeric_limits<float>   ::infinity (), withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST38, valDouble, std::numeric_limits<double>  ::min (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST39, valDouble,  0,                                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST40, valDouble, (double)  37.81999,                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST41, valDouble, (double) -37.81999,                         withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST42, valDouble, std::numeric_limits<double>  ::max (),      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST43, valDouble, std::numeric_limits<double>  ::infinity (), withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST44, valBool,   false,                                      withLock);
-    CHECK_READ_SUCCESS (SV_ELEM_TEST45, valBool,   true,                                       withLock);
+    CHECK_READ_SUCCESS (SV_ELEM_TEST0,  valU8,     std::numeric_limits<uint8_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST1,  valU8,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST2,  valU8,     std::numeric_limits<uint8_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST3,  valU16,    std::numeric_limits<uint16_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST4,  valU16,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST5,  valU16,    std::numeric_limits<uint16_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST6,  valU32,    std::numeric_limits<uint32_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST7,  valU32,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST8,  valU32,    std::numeric_limits<uint32_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST9,  valU64,    std::numeric_limits<uint64_t>::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST10, valU64,     1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST11, valU64,    std::numeric_limits<uint64_t>::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST12, val8,      std::numeric_limits<int8_t>  ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST13, val8,      -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST14, val8,       0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST15, val8,       1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST16, val8,      std::numeric_limits<int8_t>  ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST17, val16,     std::numeric_limits<int16_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST18, val16,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST19, val16,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST20, val16,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST21, val16,     std::numeric_limits<int16_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST22, val32,     std::numeric_limits<int32_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST23, val32,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST24, val32,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST25, val32,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST26, val32,     std::numeric_limits<int32_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST27, val64,     std::numeric_limits<int64_t> ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST28, val64,     -1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST29, val64,      0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST30, val64,      1                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST31, val64,     std::numeric_limits<int64_t> ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST32, valFloat,  std::numeric_limits<float>   ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST33, valFloat,   0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST34, valFloat,  (float)  37.81999                         );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST35, valFloat,  (float) -37.81999                         );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST36, valFloat,  std::numeric_limits<float>   ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST37, valFloat,  std::numeric_limits<float>   ::infinity ());
+    CHECK_READ_SUCCESS (SV_ELEM_TEST38, valDouble, std::numeric_limits<double>  ::min ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST39, valDouble,  0                                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST40, valDouble, (double)  37.81999                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST41, valDouble, (double) -37.81999                        );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST42, valDouble, std::numeric_limits<double>  ::max ()     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST43, valDouble, std::numeric_limits<double>  ::infinity ());
+    CHECK_READ_SUCCESS (SV_ELEM_TEST44, valBool,   false                                     );
+    CHECK_READ_SUCCESS (SV_ELEM_TEST45, valBool,   true                                      );
 }
 
 /**
- * Helper function to test writing to a State Vectory with all elements
+ * Helper function to test writing to a State Vector with all elements
  * initialized to 0.
  */
-static void checkMultiElemWriteSuccess (bool withLock)
+static void checkMultiElemWriteSuccess ()
 {
     StateVector::StateVectorConfig_t multiElemConfigEmpty = {
         // Regions
@@ -944,52 +928,52 @@ static void checkMultiElemWriteSuccess (bool withLock)
     double   readVarDouble = 0;
     bool     readVarBool   = 0;
 
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST0,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST1,  readVarU8,     (uint8_t)   1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST2,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST3,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST4,  readVarU16,    (uint16_t)  1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST5,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST6,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST7,  readVarU32,    (uint32_t)  1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST8,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST9,  readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST10, readVarU64,    (uint64_t)  1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST11, readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST12, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST13, readVar8,      (int8_t)   -1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST14, readVar8,      (int8_t)    0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST15, readVar8,      (int8_t)    1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST16, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST17, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST18, readVar16,     (int16_t)  -1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST19, readVar16,     (int16_t)   0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST20, readVar16,     (int16_t)   1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST21, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST22, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST23, readVar32,     (int32_t)  -1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST24, readVar32,     (int32_t)   0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST25, readVar32,     (int32_t)   1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST26, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST27, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST28, readVar64,     (int64_t)  -1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST29, readVar64,     (int64_t)   0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST30, readVar64,     (int64_t)   1,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST31, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST32, readVarFloat,  (float)    std::numeric_limits<float>   ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST33, readVarFloat,  (float)     0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST34, readVarFloat,  (float)     37.81999,                                  withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST35, readVarFloat,  (float)    -37.81999,                                  withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST36, readVarFloat,  (float)    std::numeric_limits<float>   ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST37, readVarFloat,  (float)    std::numeric_limits<float>   ::infinity (), withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST38, readVarDouble, (double)   std::numeric_limits<double>  ::min (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST39, readVarDouble, (double)    0,                                         withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST40, readVarDouble, (double)    37.81999,                                  withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST41, readVarDouble, (double)   -37.81999,                                  withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST42, readVarDouble, (double)   std::numeric_limits<double>  ::max (),      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST43, readVarDouble, (double)   std::numeric_limits<double>  ::infinity (), withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST44, readVarBool,   (bool)     false,                                      withLock);
-    CHECK_WRITE_SUCCESS (SV_ELEM_TEST45, readVarBool,   (bool)     true,                                       withLock);
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST0,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST1,  readVarU8,     (uint8_t)   1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST2,  readVarU8,     (uint8_t)  std::numeric_limits<uint8_t> ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST3,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST4,  readVarU16,    (uint16_t)  1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST5,  readVarU16,    (uint16_t) std::numeric_limits<uint16_t>::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST6,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST7,  readVarU32,    (uint32_t)  1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST8,  readVarU32,    (uint32_t) std::numeric_limits<uint32_t>::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST9,  readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST10, readVarU64,    (uint64_t)  1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST11, readVarU64,    (uint64_t) std::numeric_limits<uint64_t>::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST12, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST13, readVar8,      (int8_t)   -1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST14, readVar8,      (int8_t)    0                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST15, readVar8,      (int8_t)    1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST16, readVar8,      (int8_t)   std::numeric_limits<int8_t>  ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST17, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST18, readVar16,     (int16_t)  -1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST19, readVar16,     (int16_t)   0                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST20, readVar16,     (int16_t)   1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST21, readVar16,     (int16_t)  std::numeric_limits<int16_t> ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST22, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST23, readVar32,     (int32_t)  -1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST24, readVar32,     (int32_t)   0                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST25, readVar32,     (int32_t)   1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST26, readVar32,     (int32_t)  std::numeric_limits<int32_t> ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST27, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST28, readVar64,     (int64_t)  -1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST29, readVar64,     (int64_t)   0                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST30, readVar64,     (int64_t)   1                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST31, readVar64,     (int64_t)  std::numeric_limits<int64_t> ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST32, readVarFloat,  (float)    std::numeric_limits<float>   ::min ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST33, readVarFloat,  (float)     0                                       );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST34, readVarFloat,  (float)     37.81999                                );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST35, readVarFloat,  (float)    -37.81999                                );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST36, readVarFloat,  (float)    std::numeric_limits<float>   ::max ()    );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST37, readVarFloat,  (float)    std::numeric_limits<float>   ::infinity ());
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST38, readVarDouble, (double)   std::numeric_limits<double>  ::min ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST39, readVarDouble, (double)    0                                        );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST40, readVarDouble, (double)    37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST41, readVarDouble, (double)   -37.81999                                 );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST42, readVarDouble, (double)   std::numeric_limits<double>  ::max ()     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST43, readVarDouble, (double)   std::numeric_limits<double>  ::infinity ());
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST44, readVarBool,   (bool)     false                                     );
+    CHECK_WRITE_SUCCESS (SV_ELEM_TEST45, readVarBool,   (bool)     true                                      );
 }
 
 /* Test State Vector read and write methods. */
@@ -1042,14 +1026,14 @@ TEST (StateVector_readWrite, InvalidWriteType)
 TEST (StateVector_readWrite, SuccessfulRead)
 {
     // Check reads without lock.
-    checkMultiElemReadSuccess (false);
+    checkMultiElemReadSuccess ();
 }
 
 /* Test writing each element after constructing with all elems set to 0. */
 TEST (StateVector_readWrite, SuccessfulWrite)
 {
     // Check writes without lock.
-    checkMultiElemWriteSuccess (false);
+    checkMultiElemWriteSuccess ();
 }
 
 /**************************** SYNCHRONIZATION TESTS ***************************/
@@ -1154,10 +1138,9 @@ static void* threadFuncLockAndLogThenBlock (void *rawArgs)
 }
 
 /**
- * Thread that calls readWithLock on SV_ELEM_TEST0 and logs the result to the 
- * test log.
+ * Thread that calls read on SV_ELEM_TEST0 and logs the result to the test log.
  */
-static void* threadFuncReadWithLock (void *rawArgs)
+static void* threadFuncRead (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1168,7 +1151,7 @@ static void* threadFuncReadWithLock (void *rawArgs)
 
     // Read first element in SV.
     uint8_t value = 0;
-    ret = pSv->readWithLock (SV_ELEM_TEST0, value);
+    ret = pSv->read (SV_ELEM_TEST0, value);
 
     // Log value read from SV.
     log->logEvent (Log::LogEvent_t::READ_VALUE, value);
@@ -1177,7 +1160,7 @@ static void* threadFuncReadWithLock (void *rawArgs)
 }
 
 /**
- * Thread that calls writeWithLock to update SV_ELEM_TEST0.
+ * Thread that calls write to update SV_ELEM_TEST0.
  */
 static void* threadFuncWriteWithLock (void *rawArgs)
 {
@@ -1189,7 +1172,7 @@ static void* threadFuncWriteWithLock (void *rawArgs)
 
     // Write first element in SV.
     uint8_t value = 2;
-    ret = pSv->writeWithLock (SV_ELEM_TEST0, value);
+    ret = pSv->write (SV_ELEM_TEST0, value);
 
     return (void *) ret;
 }
@@ -1358,92 +1341,6 @@ static void testLockReleaseSemantics (
 }
 
 /* Test State Vector read and write methods. */
-TEST_GROUP (StateVector_readWriteWithLock)
-{
-
-};
-
-/* Test reading invalid elem. */
-TEST (StateVector_readWriteWithLock, InvalidReadElem)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    bool value = false;
-    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST1, value), E_INVALID_ELEM);
-}
-
-/* Test reading elem with incorrect type. */
-TEST (StateVector_readWriteWithLock, InvalidReadType)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    bool value = false;
-    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
-}
-
-/* Test reading elem with lock already acquired. */
-TEST (StateVector_readWriteWithLock, FailToLockRead)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    // Acquire lock.
-    pSv->acquireLock ();
-
-    uint8_t value = 0;
-    CHECK_ERROR (pSv->readWithLock (SV_ELEM_TEST0, value), E_FAILED_TO_LOCK);
-}
-
-/* Test writing invalid elem. */
-TEST (StateVector_readWriteWithLock, InvalidWriteElem)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    bool value = false;
-    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST1, value), E_INVALID_ELEM);
-}
-
-/* Test writing elem with incorrect type. */
-TEST (StateVector_readWriteWithLock, InvalidWriteType)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    bool value = false;
-    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST0, value), E_INCORRECT_TYPE);
-}
-
-/* Test writing to an elem with lock already acquired. */
-TEST (StateVector_readWriteWithLock, FailToLockWrite)
-{
-    // Create SV
-    INIT_STATE_VECTOR (gSynchronizationConfig);
-
-    // Acquire lock.
-    pSv->acquireLock ();
-
-    uint8_t value = 0;
-    CHECK_ERROR (pSv->writeWithLock (SV_ELEM_TEST0, value), E_FAILED_TO_LOCK);
-}
-
-/* Test reading each element after constructing. */
-TEST (StateVector_readWriteWithLock, SuccessfulRead)
-{
-    // Check reads with lock.
-    checkMultiElemReadSuccess (true);
-}
-
-/* Test writing each element after constructing with all elems set to 0. */
-TEST (StateVector_readWriteWithLock, SuccessfulWrite)
-{
-    // Check writes with lock.
-    checkMultiElemWriteSuccess (true);
-}
-
-/* Test State Vector read and write methods. */
 TEST_GROUP (StateVector_acquireReleaseLock)
 {
 
@@ -1566,7 +1463,7 @@ TEST (StateVector_threadSynchronization, ReleaseNoBlock_HighPriWaiter)
                               expected);
 }
 
-/* Verify readWithLock will block until lock is available. */
+/* Verify read will block until lock is available. */
 TEST (StateVector_threadSynchronization, ReadBlocked)
 {
     INIT_THREAD_MANAGER_AND_LOGS;
@@ -1575,8 +1472,8 @@ TEST (StateVector_threadSynchronization, ReadBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncReadWithLock = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncReadWithLock;
+    ThreadManager::ThreadFunc_t *pThreadFuncRead = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncRead;
 
     // Write initial value to SV.
     pSv->write (SV_ELEM_TEST0, (uint8_t) 1);
@@ -1586,14 +1483,14 @@ TEST (StateVector_threadSynchronization, ReadBlocked)
 
     // Create thread and sleep so that thread blocks on read.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncReadWithLock,
+                                    t1, pThreadFuncRead,
                                     &argsThread1, sizeof (argsThread1),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Write new value to SV.
-    pSv->write (SV_ELEM_TEST0, (uint8_t) 2);
+    CHECK_SUCCESS (pSv->writeImpl (SV_ELEM_TEST0, (uint8_t) 2));
 
     // Release lock and sleep. Expect this to unblock t1, resulting in t1
     // reading the updated value.
@@ -1607,7 +1504,7 @@ TEST (StateVector_threadSynchronization, ReadBlocked)
     VERIFY_LOGS;
 }
 
-/* Verify writeWithLock will block until lock is available. */
+/* Verify write will block until lock is available. */
 TEST (StateVector_threadSynchronization, WriteBlocked)
 {
     INIT_THREAD_MANAGER_AND_LOGS;
@@ -1632,7 +1529,7 @@ TEST (StateVector_threadSynchronization, WriteBlocked)
 
     // Verify value is still 0.
     uint8_t value = 0;
-    pSv->read (SV_ELEM_TEST0, value);
+    CHECK_SUCCESS (pSv->readImpl (SV_ELEM_TEST0, value));
     CHECK_EQUAL (0, value);
 
     // Release lock and sleep. Expect this to unblock t1, resulting in t1

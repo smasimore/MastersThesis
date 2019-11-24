@@ -10,6 +10,7 @@ build/
 /Test_minGW/
 /Profile_copyBuffer/
 /Profile_copyBuffer_x86/
+/Profile_lock/
 
 .settings/language.settings.xml
 

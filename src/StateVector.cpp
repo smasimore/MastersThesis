@@ -124,7 +124,7 @@ Error_t StateVector::releaseLock ()
 /**************************** PRIVATE FUNCTIONS *******************************/
 
 StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig, 
-                          Error_t& kRet) 
+                          Error_t& kRet)
 {
     // 1) Set kReturn value to success.
     kRet = E_SUCCESS;

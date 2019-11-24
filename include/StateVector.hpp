@@ -11,9 +11,9 @@
  * nodes (e.g. tx'ing a region from a RIO to the FC using the Network
  * Interface). 
  *
- * If using the State Vector in a multi-threaded environment, use the 
- * readWithLock and writeWithLock methods. Otherwise, use the read and write
- * methods. The lock uses the following semantics:
+ * A lock is used for thread synchronization to ensure only 1 thread is 
+ * accessing the State Vector at once. The underlying lock semantics are as 
+ * follows:
  *         
  *     acquireLock: Thread blocks if lock not available and is added to the
  *                  lock's wait list in priority and then FIFO order.
@@ -40,9 +40,9 @@
  *                    SV_T_UINT32).
  *
  *     2) Call StateVector::createNew (yourConfig).
- *     3) Use the read and write (or readWithLock and writeWithLock) methods 
- *        to interact with elements in the State Vector. Note, elements cannot 
- *        be added to the State Vector after it has been constructed.
+ *     3) Use the read and write methods to interact with elements in the State 
+ *        Vector. Note, elements cannot be added to the State Vector after it 
+ *        has been constructed.
  *
  *    
  * Assumptions: 
@@ -261,7 +261,7 @@ public:
      * @ret     E_SUCCESS           State Vector successfully created.
      *          E_EMPTY_CONFIG      Config empty.
     */
-    static Error_t createNew (StateVectorConfig_t& kConfig,
+    static Error_t createNew (StateVectorConfig_t& kConfig, 
                               std::shared_ptr<StateVector>& kPStateVectorRet);
 
     /**
@@ -299,65 +299,8 @@ public:
                            RegionInfo_t& kRegionInfoRet);
 
     /**
-     * Read an element from the State Vector.  Defined in the header so that the
+     * Read an element from the State Vector. Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
-     *
-     * @param   kElem             Element to read.
-     * @param   kValueRet         Variable to store element's value.
-     *
-     * @ret     E_SUCCESS         Element read successfully.
-     *          E_INVALID_ELEM    Element not in State Vector.
-     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
-     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
-     */
-    template<class Elem_T>
-    Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
-    {
-        Error_t ret = this->verifyElement (kElem, kValueRet); 
-        if (ret != E_SUCCESS)
-        {
-            return ret;
-        }
-
-        // Store element's value in kValueRet.
-        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
-        std::memcpy (&kValueRet, pElementInfo->pStart, sizeof (kValueRet));
-
-        return E_SUCCESS;
-    }
-
-    /**
-     * Write a value to the State Vector.  Defined in the header so that the
-     * templatized functions do not need to each be instantiated explicitly.
-     *
-     * @param   kElem             Element to write to.
-     * @param   kValue            Value to write.
-     *
-     * @ret     E_SUCCESS         Element written to successfully.
-     *          E_INVALID_ELEM    Element not in State Vector.
-     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
-     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
-    */
-    template<class Elem_T>
-    Error_t write (StateVectorElement_t kElem, Elem_T kValue)
-    {
-        Error_t ret = this->verifyElement (kElem, kValue); 
-        if (ret != E_SUCCESS)
-        {
-            return ret;
-        }
-
-        // Store value in mBuffer.
-        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
-        std::memcpy (pElementInfo->pStart, &kValue, sizeof (kValue));
-
-        return E_SUCCESS;
-    }
-
-    /**
-     * Acquire the State Vector lock, read an element from the State Vector, 
-     * and release the lock. Defined in the header so that the templatized 
-     * functions do not need to each be instantiated explicitly.
      *
      * NOTE: Calling this method can result in the current thread blocking.
      *
@@ -365,19 +308,17 @@ public:
      * @param   kValueRet                     Variable to store element's value.
      *
      * @ret     E_SUCCESS                     Element read successfully.
-     *          E_FAILED_TO_LOCK              Failed to lock.
      *          E_INVALID_ELEM                Element not in State Vector.
-     *          E_INVALID_TYPE                Elem_t does not match expected 
-     *                                        element type or type not 
-     *                                        supported.
+     *          E_INVALID_TYPE                Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE              Elem_t does not match expected element type.
+     *          E_FAILED_TO_LOCK              Failed to lock.
      *          E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
      *                                        unlock.
      *          E_FAILED_TO_UNLOCK            Read succeeded but failed to 
      *                                        unlock.
-     *
      */
     template<class Elem_T>
-    Error_t readWithLock (StateVectorElement_t kElem, Elem_T& kValueRet)
+    Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
     {
         Error_t ret = E_SUCCESS;
         
@@ -389,7 +330,7 @@ public:
         }
 
         // Attempt to read the element.
-        ret = this->read (kElem, kValueRet);
+        ret = this->readImpl (kElem, kValueRet);
         if (ret != E_SUCCESS)
         {
             // If read fails, attempt to release lock.
@@ -415,9 +356,8 @@ public:
     }
 
     /**
-     * Acquire the State Vector lock, write a value to the State Vector, and
-     * release the lock. Defined in the header so that the templatized functions 
-     * do not need to each be instantiated explicitly.
+     * Write a value to the State Vector.  Defined in the header so that the
+     * templatized functions do not need to each be instantiated explicitly.
      *
      * NOTE: Calling this method can result in the current thread blocking.
      *
@@ -425,18 +365,19 @@ public:
      * @param   kValue                        Value to write.
      *
      * @ret     E_SUCCESS                     Element written to successfully.
-     *          E_FAILED_TO_LOCK              Failed to lock.
      *          E_INVALID_ELEM                Element not in State Vector.
-     *          E_INVALID_TYPE                Elem_t does not match expected 
-     *                                        element type or type not 
-     *                                        supported.
+     *          E_INVALID_TYPE                Elem_t not supported by State 
+     *                                        Vector.
+     *          E_INCORRECT_TYPE              Elem_t does not match expected 
+     *                                        element type.
+     *          E_FAILED_TO_LOCK              Failed to lock.
      *          E_FAILED_TO_WRITE_AND_UNLOCK  Error on write and failed to 
      *                                        unlock.
      *          E_FAILED_TO_UNLOCK            Write succeeded but failed to 
      *                                        unlock.
-     */
+    */
     template<class Elem_T>
-    Error_t writeWithLock (StateVectorElement_t kElem, Elem_T kValue)
+    Error_t write (StateVectorElement_t kElem, Elem_T kValue)
     {
         Error_t ret = E_SUCCESS;
         
@@ -448,7 +389,7 @@ public:
         }
 
         // Attempt to write element.
-        ret = this->write (kElem, kValue);
+        ret = this->writeImpl (kElem, kValue);
         if (ret != E_SUCCESS)
         {
             // If write fails, attempt to release lock.
@@ -474,6 +415,8 @@ public:
     }
 
     /**
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     *
      * Acquire the State Vector lock. This method is public so that the lock
      * can be held while tx/rx'ing a region of or the entire State Vector using
      * the Network Interface. 
@@ -486,6 +429,8 @@ public:
     Error_t acquireLock ();
 
     /**
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     *
      * Release the State Vector lock. This method is public so that the lock
      * can be held while tx/rx'ing a region of or the entire State Vector using
      * the Network Interface.
@@ -496,6 +441,66 @@ public:
      *          E_FAILED_TO_UNLOCK  Failed to unlock.           
     */
     Error_t releaseLock ();
+
+    /**
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     *
+     * Implementation of read. Defined in the header so that the templatized 
+     * functions do not need to each be instantiated explicitly.
+     *
+     * @param   kElem             Element to read.
+     * @param   kValueRet         Variable to store element's value.
+     *
+     * @ret     E_SUCCESS         Element read successfully.
+     *          E_INVALID_ELEM    Element not in State Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
+     */
+    template<class Elem_T>
+    Error_t readImpl (StateVectorElement_t kElem, Elem_T& kValueRet)
+    {
+        Error_t ret = this->verifyElement (kElem, kValueRet); 
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Store element's value in kValueRet.
+        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
+        std::memcpy (&kValueRet, pElementInfo->pStart, sizeof (kValueRet));
+
+        return E_SUCCESS;
+    }
+
+    /**
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     *
+     * Implementation of Write.  Defined in the header so that the templatized 
+     * functions do not need to each be instantiated explicitly.
+     *
+     * @param   kElem             Element to write to.
+     * @param   kValue            Value to write.
+     *
+     * @ret     E_SUCCESS         Element written to successfully.
+     *          E_INVALID_ELEM    Element not in State Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
+    */
+    template<class Elem_T>
+    Error_t writeImpl (StateVectorElement_t kElem, Elem_T kValue)
+    {
+        Error_t ret = this->verifyElement (kElem, kValue); 
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+
+        // Store value in mBuffer.
+        ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
+        std::memcpy (pElementInfo->pStart, &kValue, sizeof (kValue));
+
+        return E_SUCCESS;
+    }
 
 private:
 
@@ -563,13 +568,14 @@ private:
      * constructor can fail. If this happens, return an error code in the ret
      * parameter.
      *
-     * @param    kConfig    State Vector config.
-     * @param    kRet       E_SUCCESS                Successfully created State
-     *                                               Vector.
-     *                      E_INVALID_ENUM           Element type in config not 
-     *                                               supported by 
-     *                                               getSizeBytesFromType.
-     *                      E_FAILED_TO_INIT_LOCK    Failed to initialize lock.
+     * @param    kConfig      State Vector config.
+     * @param    kRet         E_SUCCESS                Successfully created 
+     *                                                 State Vector.
+     *                        E_INVALID_ENUM           Element type in config 
+     *                                                 not supported by 
+     *                                                 getSizeBytesFromType.
+     *                        E_FAILED_TO_INIT_LOCK    Failed to initialize 
+     *                                                 lock.
      */        
     StateVector (StateVectorConfig_t& kConfig, Error_t& kRet);
 
