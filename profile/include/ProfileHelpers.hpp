@@ -22,6 +22,11 @@ namespace ProfileHelpers
     uint64_t getTimeNs ();
 
     /**
+     * Returns baseline time elapsed. This is overhead of calling clock_gettime.
+     */
+    uint64_t measureBaseline ();
+
+    /**
      * Print /proc/<pid>/status file for process. This is used to debug spikes in
      * elapsed time.
      */

@@ -56,10 +56,11 @@
 # define STATE_VECTOR_HPP
 
 #include <stdint.h>
+#include <pthread.h>
 #include <memory>
 #include <vector>
 #include <unordered_map>
-#include <pthread.h>
+#include <cstring>
 
 #include "Errors.h"
 #include "StateVectorEnums.hpp"

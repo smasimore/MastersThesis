@@ -39,30 +39,6 @@ static const uint8_t  BUF_FILL = 0xff;
 static const uint32_t BUF_SIZE = 2000;
 
 /**
- * Baseline.
- */
-uint64_t measureCopyTime_Baseline (std::vector<uint8_t>& buf, uint16_t runIdx)
-{
-    // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
-
-    // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
-
-    // Calculate elapsed.
-    uint64_t elapsedNs = abs (endNs - startNs);
-
-    // Print results.
-    if (gDebugPrint == true)
-    {
-        std::cout << "BASELINE " << runIdx << ": " << elapsedNs << std::endl;
-        ProfileHelpers::printProcessStats ();
-    }
-
-    return elapsedNs;
-}
-
-/**
  * Measure time to copy buf to a vector initialized with buf size.
  */
 uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf, 
@@ -167,7 +143,7 @@ int main ()
     // Do in 2 separate for loops so that individual run prints are grouped.
     for (uint16_t i = 0; i < NUM_TIMES_TO_RUN; i++)
     {
-        results_Baseline[i] = measureCopyTime_Baseline (buf, i);
+        results_Baseline[i] = ProfileHelpers::measureBaseline ();
     }
 
     for (uint16_t i = 0; i < NUM_TIMES_TO_RUN; i++)

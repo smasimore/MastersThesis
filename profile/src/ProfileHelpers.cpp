@@ -43,6 +43,18 @@ uint64_t ProfileHelpers::getTimeNs ()
     return (((uint64_t) ts.tv_sec) * NS_IN_S) + ts.tv_nsec;
 }
 
+uint64_t ProfileHelpers::measureBaseline ()
+{
+    // Start time.
+    uint64_t startNs = ProfileHelpers::getTimeNs ();    
+
+    // End time.
+    uint64_t endNs = ProfileHelpers::getTimeNs ();
+
+    // Calculate elapsed.
+    return abs (endNs - startNs);
+}
+
 void ProfileHelpers::printProcessStats ()
 {
     static pid_t pid = getpid ();
