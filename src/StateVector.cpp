@@ -1,5 +1,6 @@
 #include <set>
 #include <cstring>
+#include <algorithm>
 
 #include "StateVector.hpp"
 
@@ -75,30 +76,118 @@ Error_t StateVector::getSizeBytesFromType (StateVectorElementType_t kType,
     return E_SUCCESS;
 }
 
-Error_t StateVector::getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet)
+Error_t StateVector::getStateVectorSizeBytes (uint32_t& kSizeBytesRet)
 {
-    // Store State Vector info in return param.
-    kStateVectorInfoRet.pStart = mStateVectorInfo.pStart;
-    kStateVectorInfoRet.sizeBytes = mStateVectorInfo.sizeBytes;
-
+    kSizeBytesRet = mBuffer.size ();
     return E_SUCCESS;
 }
 
-Error_t StateVector::getRegionInfo (StateVectorRegion_t kRegion,
-                                    RegionInfo_t& kRegionInfoRet)
+Error_t StateVector::getRegionSizeBytes (StateVectorRegion_t kRegion,
+                                         uint32_t& kSizeBytesRet)
 {
-    // Get kRegion info. If kRegion not in State Vector, return error.
+    // Get region's info. If region not in State Vector, return error.
     if (mRegionToRegionInfo.find (kRegion) == mRegionToRegionInfo.end ())
     {
         return E_INVALID_REGION;
     }
 
-    // Store kRegion info in return param.
+    // Store region's size in return param.
     RegionInfo_t* pRegionInfo = &mRegionToRegionInfo[kRegion];
-    kRegionInfoRet.pStart = pRegionInfo->pStart;
-    kRegionInfoRet.sizeBytes = pRegionInfo->sizeBytes;
+    kSizeBytesRet = pRegionInfo->sizeBytes;
 
     return E_SUCCESS;
+}
+
+Error_t StateVector::readRegion (StateVectorRegion_t kRegion, 
+                                 std::vector<uint8_t>& kRegionBufRet)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Get kRegion info. If kRegion not in State Vector, return error.
+    if (mRegionToRegionInfo.find (kRegion) == mRegionToRegionInfo.end ())
+    {
+        return E_INVALID_REGION;
+    }
+    RegionInfo_t* pRegionInfo = &mRegionToRegionInfo[kRegion];
+
+    // Verify vector is same size as region's underlying buffer.
+    if (kRegionBufRet.size () != pRegionInfo->sizeBytes)
+    {
+        return E_INCORRECT_SIZE;
+    }
+
+    // Acquire lock.
+    ret = this->acquireLock (); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // Copy buffer.
+    std::vector<uint8_t>::iterator startIter = mBuffer.begin () + 
+                                                   pRegionInfo->startIdx;
+    std::copy_n (startIter, pRegionInfo->sizeBytes, kRegionBufRet.begin ());
+
+    // Release lock. 
+    return this->releaseLock ();
+}
+
+Error_t StateVector::writeRegion (StateVectorRegion_t kRegion, 
+                                  std::vector<uint8_t>& kRegionBuf)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Get kRegion info. If kRegion not in State Vector, return error.
+    if (mRegionToRegionInfo.find (kRegion) == mRegionToRegionInfo.end ())
+    {
+        return E_INVALID_REGION;
+    }
+    RegionInfo_t* pRegionInfo = &mRegionToRegionInfo[kRegion];
+
+    // Verify vector is same size as region's underlying buffer.
+    if (kRegionBuf.size () != pRegionInfo->sizeBytes)
+    {
+        return E_INCORRECT_SIZE;
+    }
+
+    // Acquire lock.
+    ret = this->acquireLock (); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // Copy buffer.
+    std::vector<uint8_t>::iterator startIter = mBuffer.begin () + 
+                                                   pRegionInfo->startIdx;
+    std::copy_n (kRegionBuf.begin (), pRegionInfo->sizeBytes, startIter);
+
+    // Release lock. 
+    return this->releaseLock ();
+}
+
+Error_t StateVector::readStateVector (std::vector<uint8_t>& kStateVectorBufRet)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Verify vector is same size as mBuffer.
+    if (kStateVectorBufRet.size () != mBuffer.size ())
+    {
+        return E_INCORRECT_SIZE;
+    }
+
+    // Acquire lock.
+    ret = this->acquireLock (); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // Copy buffer.
+    kStateVectorBufRet = mBuffer;
+
+    // Release lock. 
+    return this->releaseLock ();
 }
 
 Error_t StateVector::acquireLock ()
@@ -136,39 +225,27 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
         return;
     }
 
-    // 3) Initialize region/element maps from region/element to the starting
-    //    index in mBuffer. This will be used at the end of the constructor to 
-    //    get the region/element starting pointers. This temporary mapping is
-    //    necessary since resizing a vector invalidates previously defined 
-    //    pointers to the vector's elements. 
-    std::unordered_map<StateVectorRegion_t, 
-                       uint32_t, 
-                       EnumClassHash> regionToStartIdx;
-    std::unordered_map<StateVectorElement_t, 
-                       uint32_t, 
-                       EnumClassHash> elementToStartIdx;
-
-    // 4) Loop over each region, adding the region's element data to mBuffer
-    //    and partially building mRegionToRegionInfo.
-    uint32_t stateVectorSizeBytes = 0;
+    // 3) Loop over each region, adding the region's element data to mBuffer
+    //    and build supporting datastructures mRegionToRegionInfo and
+    //    mElementToElementInfo.
     for (uint32_t regionIdx = 0; regionIdx < kConfig.size (); regionIdx++)
     {
         RegionConfig_t* pRegionConfig = &(kConfig[regionIdx]);
         std::vector<ElementConfig_t>* pElemConfigs = &(pRegionConfig->elems);
         StateVectorRegion_t region = pRegionConfig->region;
 
-        // 4a) Store current size of mBuffer as the starting index of the 
+        // 3a) Store current size of mBuffer as the starting index of the 
         //     current region.
-        regionToStartIdx[region] = mBuffer.size ();
+        uint32_t regionStartIdx = mBuffer.size ();
 
-        // 4b) Loop over the region's elements.
+        // 3b) Loop over the region's elements.
         uint32_t regionSizeBytes = 0;
         for (uint32_t elemIdx = 0; elemIdx < pElemConfigs->size (); elemIdx++)
         {
-            // 4b i) Get pointer to element kConfig.
+            // 3b i) Get pointer to element kConfig.
             ElementConfig_t* pElemConfig = &(pElemConfigs->at (elemIdx));
 
-            // 4b ii) Get size of element.
+            // 3b ii) Get size of element.
             uint8_t elemSizeBytes;
             kRet = StateVector::getSizeBytesFromType (pElemConfig->type, 
                                                      elemSizeBytes);
@@ -177,65 +254,36 @@ StateVector::StateVector (StateVector::StateVectorConfig_t& kConfig,
                 return;
             }
 
-            // 4b iii) Get element's starting index into mBuffer (always 
+            // 3b iii) Get element's starting index into mBuffer (always 
             //         append).
             uint32_t elemStartIdx = mBuffer.size ();
 
-            // 4b iv) Increase the size of mBuffer to make room for the new 
+            // 3b iv) Increase the size of mBuffer to make room for the new 
             //         element.
             mBuffer.resize (elemStartIdx + elemSizeBytes);
 
-            // 4b v) Copy the element's initial value to mBuffer. This step
+            // 3b v) Copy the element's initial value to mBuffer. This step
             //       assumes the CPU uses little endian byte ordering.
             uint8_t* pElemStart = &mBuffer[elemStartIdx];
             std::memcpy (pElemStart, &pElemConfig->initialVal, elemSizeBytes);
 
-            // 4b vi) Update the running count of the region's size.
+            // 3b vi) Update the running count of the region's size.
             regionSizeBytes += elemSizeBytes;
 
-            // 4b vii) Create the element's info struct and add it to the global
-            //         map. pStart is temporarily null and will be updated
-            //         after mBuffer has been completely filled.
+            // 3b vii) Create the element's info struct and add it to the global
+            //         map. 
             ElementInfo_t elementInfo;
-            elementInfo.pStart = nullptr;
+            elementInfo.startIdx = elemStartIdx;
             elementInfo.type = pElemConfig->type;
             mElementToElementInfo[pElemConfig->elem] = elementInfo;
-
-            // 4b viii) Store element's start idx.
-            elementToStartIdx[pElemConfig->elem] = elemStartIdx;
         }
         
-        // 4c) Create the region's info struct and add it to the global map.
-        //     pStart is temporarily null. This will be updated outside of
-        //     the region for loop.
+        // 3c) Create the region's info struct and add it to the global map.
         RegionInfo_t regionInfo;
-        regionInfo.pStart = nullptr;
+        regionInfo.startIdx = regionStartIdx;
         regionInfo.sizeBytes = regionSizeBytes;
         mRegionToRegionInfo[region] = regionInfo;
-
-        // 4d) Update State Vector size.
-        stateVectorSizeBytes += regionSizeBytes;
     }
-
-    // 5) Update each region's pStart value.
-    for (std::pair<StateVectorRegion_t, uint32_t> pair : regionToStartIdx) 
-    {
-        StateVectorRegion_t region = pair.first;
-        uint32_t startIdx = pair.second;
-        mRegionToRegionInfo[region].pStart = &mBuffer[startIdx];
-    }
-
-    // 6) Update each element's pStart value.
-    for (std::pair<StateVectorElement_t, uint32_t> pair : elementToStartIdx) 
-    {
-        StateVectorElement_t element = pair.first;
-        uint32_t startIdx = pair.second;
-        mElementToElementInfo[element].pStart = &mBuffer[startIdx];
-    }
-
-    // 7) Set State Vector info struct.
-    mStateVectorInfo.pStart = &mBuffer[0];
-    mStateVectorInfo.sizeBytes = stateVectorSizeBytes;
 }
 
 Error_t StateVector::verifyConfig (StateVector::StateVectorConfig_t& kConfig)

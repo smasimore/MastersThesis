@@ -212,24 +212,6 @@ public:
      */
     typedef std::vector<RegionConfig_t> StateVectorConfig_t;
 
-    /** 
-     * Struct containing the State Vector's start pointer and size in bytes.
-     */
-    typedef struct StateVectorInfo
-    {   
-        uint8_t* pStart;
-        uint32_t sizeBytes;
-    } StateVectorInfo_t;
-
-    /** 
-     * Struct containing a region's start pointer and size in bytes.
-     */
-    typedef struct RegionInfo
-    {   
-        uint8_t* pStart;
-        uint32_t sizeBytes;
-    } RegionInfo_t;
-
     /**
      * Function to cast various types to a uint64_t bitwise. This is used in 
      * defining the initial values in the State Vector config. In order to 
@@ -258,9 +240,16 @@ public:
      * @param   kConfig             State Vector's config data.
      * @param   kPStateVectorRet    Pointer to return State Vector.
      *
-     * @ret     E_SUCCESS           State Vector successfully created.
-     *          E_EMPTY_CONFIG      Config empty.
-    */
+     * @ret     E_SUCCESS             State Vector successfully created.
+     *          E_EMPTY_CONFIG        Config empty.
+     *          E_EMPTY_ELEMS         Region's element list empty.
+     *          E_DUPLICATE_REGION    Duplicate region.
+     *          E_DUPLICATE_ELEM      Duplicate element.
+     *          E_INVALID_ENUM        Invalid enumeration.
+     *          E_INVALID_ENUM        Element type in config not supported by 
+     *                                getSizeBytesFromType.
+     *          E_FAILED_TO_INIT_LOCK Failed to initialize lock.
+     */
     static Error_t createNew (StateVectorConfig_t& kConfig, 
                               std::shared_ptr<StateVector>& kPStateVectorRet);
 
@@ -271,39 +260,39 @@ public:
      * @param   kType               Type to get size of.
      * @param   kSizeBytesRet       Param to store element's size in.
      *
-     * @ret     E_SUCCESS           Size stored in sizeBytesRet successfully.
+     * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
      *          E_INVALID_ENUM      Type not supported.
      */
     static Error_t getSizeBytesFromType (StateVectorElementType_t kType,
                                          uint8_t& kSizeBytesRet);
 
     /**
-     * Returns a copy of the State Vector's info struct.
+     * Returns number of bytes in the region's underlying byte buffer.
      *
-     * @param    kStateVectorInfoRet   Struct to store State Vector info in.
+     * @param   kRegion             Region to get size of.
+     * @param   kSizeBytesRet       Param to store region's size in (bytes).
      *
-     * @ret      E_SUCCESS             Info returned successfully.
+     * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
+     *          E_INVALID_REGION    Region enum invalid or not in State Vector.
      */
-    Error_t getStateVectorInfo (StateVectorInfo_t& kStateVectorInfoRet);
+    Error_t getRegionSizeBytes (StateVectorRegion_t kRegion, 
+                                uint32_t& kSizeBytesRet);
 
     /**
-     * Returns a copy of a region's info struct.
+     * Returns number of bytes in the underlying State Vector buffer.
      *
-     * @param    kRegion           Region to get info for.
-     * @param    kRegionInfoRet    Struct to store region info in.    
+     * @param   kSizeBytesRet       Param to store State Vector's size in (bytes).
      *
-     * @ret      E_SUCCESS         Region info returned successfully.
-     *           E_INVALID_REGION  Region enum invalid or not in State Vector.
+     * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
      */
-    Error_t getRegionInfo (StateVectorRegion_t kRegion,
-                           RegionInfo_t& kRegionInfoRet);
+    Error_t getStateVectorSizeBytes (uint32_t& kSizeBytesRet);
 
     /**
      * Read an element from the State Vector. Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
-     *
+     * 
      * NOTE: Calling this method can result in the current thread blocking.
-     *
+     * 
      * @param   kElem                         Element to read.
      * @param   kValueRet                     Variable to store element's value.
      *
@@ -320,10 +309,8 @@ public:
     template<class Elem_T>
     Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
     {
-        Error_t ret = E_SUCCESS;
-        
         // Acquire lock.
-        ret = this->acquireLock ();
+        Error_t ret = this->acquireLock ();
         if (ret != E_SUCCESS)
         {
             return ret;
@@ -350,16 +337,16 @@ public:
         }
 
         // Release lock. 
-        ret = this->releaseLock ();
-
-        return ret;
+        return this->releaseLock ();
     }
 
     /**
-     * Write a value to the State Vector.  Defined in the header so that the
-     * templatized functions do not need to each be instantiated explicitly.
+     * Write an element value to the State Vector.  Defined in the header so 
+     * that the templatized functions do not need to each be instantiated 
+     * explicitly.
      *
-     * NOTE: Calling this method can result in the current thread blocking.
+     * Implementation of Write.  Defined in the header so that the templatized 
+     * functions do not need to each be instantiated explicitly.
      *
      * @param   kElem                         Element to write to.
      * @param   kValue                        Value to write.
@@ -379,10 +366,8 @@ public:
     template<class Elem_T>
     Error_t write (StateVectorElement_t kElem, Elem_T kValue)
     {
-        Error_t ret = E_SUCCESS;
-        
         // Acquire lock.
-        ret = this->acquireLock ();
+        Error_t ret = this->acquireLock ();
         if (ret != E_SUCCESS)
         {
             return ret;
@@ -409,10 +394,71 @@ public:
         }
 
         // Release lock.
-        ret = this->releaseLock ();
-
-        return ret;
+        return this->releaseLock ();
     }
+
+    /**
+     * Returns a copy the specified region's underlying byte buffer. The vector
+     * passed in to copy the underlying buffer to must already have a size
+     * equal to the size of the region for copy efficiency purposes.
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @param    kRegion                       Region to get underlying 
+     *                                         byte buffer of.
+     * @param    kRegionBufRet                 Vector to store region's 
+     *                                         underlying byte buffer in.
+     *
+     * @ret      E_SUCCESS                     Buffer copied successfully.
+     *           E_INVALID_REGION              Region enum not in State Vector.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as region.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t readRegion (StateVectorRegion_t kRegion, 
+                        std::vector<uint8_t>& kRegionBufRet);
+
+    /**
+     * Write the provided buffer to the specified region's underlying byte 
+     * buffer. 
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @param    kRegion                       Region to write byte buffer to.
+     * @param    kRegionBuf                    Vector containing byte buffer
+     *                                         to write to region.
+     *
+     * @ret      E_SUCCESS                     Buffer copied successfully.
+     *           E_INVALID_REGION              Region enum not in State Vector.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as region.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t writeRegion (StateVectorRegion_t kRegion, 
+                         std::vector<uint8_t>& kRegionBuf);
+
+    /**
+     * Returns a copy the State Vector's underlying byte buffer. The vector
+     * passed in to copy the underlying buffer to must already have a size
+     * equal to the size of the State Vector for copy efficiency purposes.
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @param    kStateVectorBufRet            Vector to store copy of State 
+     *                                         Vector's underlying buffer in.
+     *
+     * @ret      E_SUCCESS                     Buffer copied successfully.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as mBuffer.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t readStateVector (std::vector<uint8_t>& kStateVectorBufRet);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
@@ -467,7 +513,8 @@ public:
 
         // Store element's value in kValueRet.
         ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
-        std::memcpy (&kValueRet, pElementInfo->pStart, sizeof (kValueRet));
+        std::memcpy (&kValueRet, &mBuffer[pElementInfo->startIdx], 
+                     sizeof (kValueRet));
 
         return E_SUCCESS;
     }
@@ -497,7 +544,8 @@ public:
 
         // Store value in mBuffer.
         ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
-        std::memcpy (pElementInfo->pStart, &kValue, sizeof (kValue));
+        std::memcpy (&mBuffer[pElementInfo->startIdx], &kValue, 
+                     sizeof (kValue));
 
         return E_SUCCESS;
     }
@@ -505,13 +553,22 @@ public:
 private:
 
     /** 
-     * Struct containing an element's start pointer and type.
+     * Struct containing an element's start index in mBuffer and type.
      */
     typedef struct ElementInfo
     {   
-        uint8_t* pStart;
+        uint32_t startIdx;
         StateVectorElementType_t type;
     } ElementInfo_t;
+
+    /** 
+     * Struct containing a region's start index into mBuffer and size in bytes.
+     */
+    typedef struct RegionInfo
+    {   
+        uint32_t startIdx;
+        uint32_t sizeBytes;
+    } RegionInfo_t;
 
     /**
      * In order to use any enum classes we've defined as the key for an 
@@ -532,12 +589,6 @@ private:
      * Buffer containing State Vector element data.
      */
     std::vector<uint8_t> mBuffer;
-
-    /**
-     * Struct containing State Vector info (starting address and size in 
-     * bytes).
-     */
-    StateVectorInfo_t mStateVectorInfo;
 
     /**
      * Map from region to region's info, which contains the region's starting
@@ -562,11 +613,9 @@ private:
     pthread_mutex_t mLock;
 
     /**
-     * Constructor. Given a config, builds mBuffer, mStateVectorInfo, and
-     * mRegionToRegionInfo. Because StateVector::getSizeBytesFromType is called
-     * while building the State Vector's underlying data structures, the 
-     * constructor can fail. If this happens, return an error code in the ret
-     * parameter.
+     * Constructor. Given a config, builds mBuffer, mRegionToRegionInfo, and
+     * mElementToElementInfo. Because the construuctor can fail, an error code 
+     * is returned in the ret parameter.
      *
      * @param    kConfig      State Vector config.
      * @param    kRet         E_SUCCESS                Successfully created 

@@ -427,6 +427,7 @@ TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
     for (uint8_t i = 0; i < testCases.size (); i++)
     {
         ConstructTestCase_t testCase = testCases[i];
+        uint32_t expectedSizeBytes = testCase.expectedBuf.size ();
 
         // Modify config for test case.
         config[0].elems[0].type       = testCase.type;
@@ -435,21 +436,21 @@ TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
         // Create SV
         INIT_STATE_VECTOR (config);
 
-        // Get State Vector info.
-        StateVector::StateVectorInfo_t stateVectorInfo;
-        pSv->getStateVectorInfo (stateVectorInfo);
+        // Get SV size and copy.
+        uint32_t actualStateVectorSizeBytes = 0;
+        CHECK_SUCCESS (pSv->getStateVectorSizeBytes (
+                    actualStateVectorSizeBytes));
+        std::vector<uint8_t> stateVectorBufCopy (actualStateVectorSizeBytes);
+        CHECK_SUCCESS (pSv->readStateVector (stateVectorBufCopy));
 
         // Get region info.
-        StateVector::RegionInfo_t regionInfo;
-        pSv->getRegionInfo (SV_REG_TEST0, regionInfo);
+        uint32_t actualRegionSizeBytes;
+        CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST0, 
+                                                actualRegionSizeBytes));
+        std::vector<uint8_t> regionBufCopy (actualRegionSizeBytes);
+        CHECK_SUCCESS (pSv-> readRegion (SV_REG_TEST0, regionBufCopy));
 
-        // Verify SV pStart is the same as region's pStart.
-        CHECK (regionInfo.pStart == stateVectorInfo.pStart);
-
-        // Verify SV and Region size matches expected size.
-        uint32_t actualStateVectorSizeBytes = stateVectorInfo.sizeBytes;
-        uint32_t actualRegionSizeBytes = regionInfo.sizeBytes;
-        uint32_t expectedSizeBytes = testCase.expectedBuf.size ();
+        // Verify sizes.
         if (actualStateVectorSizeBytes != expectedSizeBytes ||
             actualRegionSizeBytes != expectedSizeBytes)
         {
@@ -467,23 +468,30 @@ TEST (StateVector_Construct, 1Elem_TypesAndBoundaryVals)
         }
 
         // Verify SV's underlying buffer matches expected data.
-        int cmpRet = std::memcmp (regionInfo.pStart, 
-                                  testCase.expectedBuf.data (),
-                                  actualStateVectorSizeBytes);
-        if (cmpRet != 0)
+        int cmpSvRet = std::memcmp (stateVectorBufCopy.data (), 
+                                    testCase.expectedBuf.data (),
+                                    actualStateVectorSizeBytes);
+        int cmpRegRet = std::memcmp (regionBufCopy.data (), 
+                                     testCase.expectedBuf.data (),
+                                     actualStateVectorSizeBytes);
+        if (cmpSvRet != 0 || cmpRegRet != 0)
         {
             uint64_t expected = 0;
-            uint64_t actual = 0;
+            uint64_t actualSv = 0;
+            uint64_t actualReg = 0;
             std::memcpy (&expected, testCase.expectedBuf.data (), 
                          expectedSizeBytes);
-            std::memcpy (&actual, regionInfo.pStart, expectedSizeBytes);
+            std::memcpy (&actualSv, stateVectorBufCopy.data (), expectedSizeBytes);
+            std::memcpy (&actualReg, regionBufCopy.data (), expectedSizeBytes);
   
             std::stringstream stream;
             stream << "-- Sub-test " << static_cast<int> (i) << " failed --" << 
                 std::endl;
             stream << "Expected Buffer: " << "0x" << std::hex << expected <<
                 std::endl;
-            stream << "Actual Buffer:   " << "0x" << std::hex << actual 
+            stream << "Actual SV Buffer:   " << "0x" << std::hex << actualSv 
+                << std::endl;
+            stream << "Actual Reg Buffer:   " << "0x" << std::hex << actualReg
                 << std::endl;
 
             FAIL (stream.str ().c_str ());
@@ -551,21 +559,33 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     // Create SV
     INIT_STATE_VECTOR (gMultiElemConfig);
 
-    // Get State Vector info.
-    StateVector::StateVectorInfo_t stateVectorInfo;
-    pSv->getStateVectorInfo (stateVectorInfo);
+    // Get SV size and copy.
+    uint32_t actualStateVectorSizeBytes = 0;
+    CHECK_SUCCESS (pSv->getStateVectorSizeBytes (
+                   actualStateVectorSizeBytes));
+    std::vector<uint8_t> stateVectorBufCopy (actualStateVectorSizeBytes);
+    CHECK_SUCCESS (pSv->readStateVector (stateVectorBufCopy));
 
     // Get Region0 info.
-    StateVector::RegionInfo_t region0Info;
-    pSv->getRegionInfo (SV_REG_TEST0, region0Info);
+    uint32_t region0ActualSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST0, 
+                                            region0ActualSizeBytes));
+    std::vector<uint8_t> region0BufCopy (region0ActualSizeBytes);
+    CHECK_SUCCESS (pSv-> readRegion (SV_REG_TEST0, region0BufCopy));
 
     // Get Region1 info.
-    StateVector::RegionInfo_t region1Info;
-    pSv->getRegionInfo (SV_REG_TEST1, region1Info);
+    uint32_t region1ActualSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST1, 
+                                            region1ActualSizeBytes));
+    std::vector<uint8_t> region1BufCopy (region1ActualSizeBytes);
+    CHECK_SUCCESS (pSv-> readRegion (SV_REG_TEST1, region1BufCopy));
 
     // Get Region2 info.
-    StateVector::RegionInfo_t region2Info;
-    pSv->getRegionInfo (SV_REG_TEST2, region2Info);
+    uint32_t region2ActualSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST2, 
+                                            region2ActualSizeBytes));
+    std::vector<uint8_t> region2BufCopy (region2ActualSizeBytes);
+    CHECK_SUCCESS (pSv-> readRegion (SV_REG_TEST2, region2BufCopy));
 
     // Verify State Vector and region sizes matches expected size.
     uint32_t region0ExpectedSizeBytes = region0ExpectedBuffer.size ();
@@ -574,21 +594,21 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     uint32_t stateVectorExpectedSizeBytes = region0ExpectedSizeBytes +
                                             region1ExpectedSizeBytes +
                                             region2ExpectedSizeBytes;
-    CHECK (stateVectorInfo.sizeBytes == stateVectorExpectedSizeBytes);
-    CHECK (region0Info.sizeBytes == region0ExpectedSizeBytes);
-    CHECK (region1Info.sizeBytes == region1ExpectedSizeBytes);
-    CHECK (region2Info.sizeBytes == region2ExpectedSizeBytes);
+    CHECK (actualStateVectorSizeBytes == stateVectorExpectedSizeBytes);
+    CHECK (region0ActualSizeBytes == region0ExpectedSizeBytes);
+    CHECK (region1ActualSizeBytes == region1ExpectedSizeBytes);
+    CHECK (region2ActualSizeBytes == region2ExpectedSizeBytes);
 
     // Verify each region's data matches expected.
-    int cmpRet = std::memcmp (region0Info.pStart, 
+    int cmpRet = std::memcmp (region0BufCopy.data (), 
                               region0ExpectedBuffer.data (),
                               region0ExpectedSizeBytes);
     CHECK (cmpRet == 0);
-    cmpRet = std::memcmp (region1Info.pStart, 
+    cmpRet = std::memcmp (region1BufCopy.data (), 
                           region1ExpectedBuffer.data (),
                           region1ExpectedSizeBytes);
     CHECK (cmpRet == 0);
-    cmpRet = std::memcmp (region2Info.pStart, 
+    cmpRet = std::memcmp (region2BufCopy.data (), 
                           region2ExpectedBuffer.data (),
                           region2ExpectedSizeBytes);
     CHECK (cmpRet == 0);
@@ -605,7 +625,7 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     stateVectorExpectedBuffer.insert (stateVectorExpectedBuffer.end (), 
                                       region2ExpectedBuffer.begin (),
                                       region2ExpectedBuffer.end ());
-    cmpRet = std::memcmp (stateVectorInfo.pStart, 
+    cmpRet = std::memcmp (stateVectorBufCopy.data (), 
                           stateVectorExpectedBuffer.data (),
                           stateVectorExpectedSizeBytes);
     CHECK (cmpRet == 0);
@@ -665,74 +685,6 @@ TEST (StateVector_getSizeFromBytes, Success)
                                                           sizeBytes));
         CHECK (sizeBytes == testCase.second); 
     }
-}
-
-/*************************** GETREGIONINFO TESTS ******************************/
-
-/**
- * Simple SV config for getRegionInfo tests.
- */
-StateVector::StateVectorConfig_t gGetRegionConfig = { // Regions
-    {
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST0,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
-            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
-        }},
-
-        //////////////////////////////////////////////////////////////////////////////////
-
-        // Region
-        {SV_REG_TEST1,
-
-        // Elements
-        //      TYPE                      ELEM            INITIAL_VALUE
-        {
-            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
-        }}
-
-        //////////////////////////////////////////////////////////////////////////////////
-    }
-};
-
-/* Group of tests to verify getRegionInfo error returns. Successful returns will
-   be verified in the State Vector constructor test group. */
-TEST_GROUP (StateVector_getRegionInfo)
-{
-
-};
-
-/* Test getting invalid region enum. */
-TEST (StateVector_getRegionInfo, InvalidEnum)
-{
-    INIT_STATE_VECTOR (gGetRegionConfig);
-    StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (pSv->getRegionInfo (SV_REG_LAST, regionInfo),
-                 E_INVALID_REGION);
-}
-
-/* Test getting region not in State Vector. */
-TEST (StateVector_getRegionInfo, NotInSV)
-{
-    INIT_STATE_VECTOR (gGetRegionConfig);
-    StateVector::RegionInfo_t regionInfo;
-    CHECK_ERROR (pSv->getRegionInfo (SV_REG_TEST2, regionInfo),
-                 E_INVALID_REGION);
-}
-
-/* Test getting region not in State Vector. */
-TEST (StateVector_getRegionInfo, Success)
-{
-    INIT_STATE_VECTOR (gGetRegionConfig);
-    StateVector::RegionInfo_t regionInfo;
-    CHECK_SUCCESS (pSv->getRegionInfo (SV_REG_TEST0, regionInfo));
-    CHECK_SUCCESS (pSv->getRegionInfo (SV_REG_TEST1, regionInfo));
 }
 
 /***************************** READ/WRITE TESTS *******************************/
@@ -1036,6 +988,146 @@ TEST (StateVector_readWrite, SuccessfulWrite)
     checkMultiElemWriteSuccess ();
 }
 
+/*********************** READREGION/WRITEREGION TESTS *************************/
+StateVector::StateVectorConfig_t gReadRegionWriteRegionConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST0,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+            SV_ADD_BOOL   (           SV_ELEM_TEST1,            1            )
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {SV_REG_TEST1,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            SV_ADD_FLOAT  (           SV_ELEM_TEST2,            1.23         )
+        }}
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
+/* Test State Vector readRegion and writeRegion methods. */
+TEST_GROUP (StateVector_readRegionWriteRegion)
+{
+
+};
+
+/* Test reading region not in SV. */
+TEST (StateVector_readRegionWriteRegion, ReadRegionNotInSV)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gReadRegionWriteRegionConfig);
+
+    std::vector<uint8_t> regionBufCopy;
+    CHECK_ERROR (pSv->readRegion (SV_REG_TEST2, regionBufCopy), 
+                 E_INVALID_REGION);
+}
+
+/* Test reading region with incorrect vector size. */
+TEST (StateVector_readRegionWriteRegion, ReadIncorrectRegionSize)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gReadRegionWriteRegionConfig);
+
+    uint32_t regionSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST0, regionSizeBytes));
+
+    std::vector<uint8_t> regionBufCopy (regionSizeBytes + 1);
+    CHECK_ERROR (pSv->readRegion (SV_REG_TEST0, regionBufCopy), 
+                 E_INCORRECT_SIZE);
+}
+
+/* Test writing region not in SV. */
+TEST (StateVector_readRegionWriteRegion, WriteRegionNotInSV)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gReadRegionWriteRegionConfig);
+
+    std::vector<uint8_t> regionBuf;
+    CHECK_ERROR (pSv->writeRegion (SV_REG_TEST2, regionBuf), 
+                 E_INVALID_REGION);
+}
+
+/* Test writing region with incorrect vector size. */
+TEST (StateVector_readRegionWriteRegion, WriteIncorrectRegionSize)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gReadRegionWriteRegionConfig);
+
+    uint32_t regionSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST0, regionSizeBytes));
+
+    std::vector<uint8_t> regionBuf (regionSizeBytes + 1);
+    CHECK_ERROR (pSv->writeRegion (SV_REG_TEST0, regionBuf), 
+                 E_INCORRECT_SIZE);
+}
+
+/* Test writing region with correct vector size. */
+TEST (StateVector_readRegionWriteRegion, Success)
+{
+    // Create SV
+    INIT_STATE_VECTOR (gReadRegionWriteRegionConfig);
+
+    uint32_t region0SizeBytes;
+    uint32_t region1SizeBytes;
+    uint32_t sVSizeBytes;
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST0, region0SizeBytes));
+    CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST1, region1SizeBytes));
+    CHECK_SUCCESS (pSv->getStateVectorSizeBytes (sVSizeBytes));
+
+    // Verify sizes match expected.
+    CHECK_EQUAL (region0SizeBytes, 2);
+    CHECK_EQUAL (region1SizeBytes, 4);
+    CHECK_EQUAL (sVSizeBytes, 6);
+
+    // Get copy of region and sv buffers.
+    std::vector<uint8_t> reg0Buf (region0SizeBytes);
+    std::vector<uint8_t> reg1Buf (region1SizeBytes);
+    std::vector<uint8_t> sVBuf (sVSizeBytes);
+    CHECK_SUCCESS (pSv->readRegion (SV_REG_TEST0, reg0Buf));
+    CHECK_SUCCESS (pSv->readRegion (SV_REG_TEST1, reg1Buf));
+    CHECK_SUCCESS (pSv->readStateVector (sVBuf));
+
+    // Verify buffers match expected.
+    std::vector<uint8_t> reg0ExpBuf = {0x0, 0x1};
+    std::vector<uint8_t> reg1ExpBuf = {0xa4, 0x70, 0x9d, 0x3f};
+    std::vector<uint8_t> sVExpBuf = {0x0, 0x1, 0xa4, 0x70, 0x9d, 0x3f};
+    CHECK (reg0Buf == reg0ExpBuf);
+    CHECK (reg1Buf == reg1ExpBuf);
+    CHECK (sVBuf   == sVExpBuf);
+    
+    // Write region 0 and verify State Vector updated.
+    std::vector<uint8_t> reg0WriteBuf = {0xff, 0x0};
+    CHECK_SUCCESS (pSv->writeRegion (SV_REG_TEST0, reg0WriteBuf));
+    CHECK_SUCCESS (pSv->readRegion (SV_REG_TEST0, reg0Buf));
+    CHECK (reg0Buf == reg0WriteBuf);
+    
+    // Write region 1 and verify State Vector updated.
+    std::vector<uint8_t> reg1WriteBuf = {0x00, 0xff, 0x00, 0xff};
+    CHECK_SUCCESS (pSv->writeRegion (SV_REG_TEST1, reg1WriteBuf));
+    CHECK_SUCCESS (pSv->readRegion (SV_REG_TEST1, reg1Buf));
+    CHECK (reg1Buf == reg1WriteBuf);
+    
+    // Verify entire SV matches expected.
+    std::vector<uint8_t> sVExpBufAfterWrites = 
+        {0xff, 0x0, 0x0, 0xff, 0x0, 0xff};
+    CHECK_SUCCESS (pSv->readStateVector (sVBuf));
+    CHECK (sVBuf == sVExpBufAfterWrites);
+}
+
 /**************************** SYNCHRONIZATION TESTS ***************************/
 
 /**
@@ -1162,7 +1254,7 @@ static void* threadFuncRead (void *rawArgs)
 /**
  * Thread that calls write to update SV_ELEM_TEST0.
  */
-static void* threadFuncWriteWithLock (void *rawArgs)
+static void* threadFuncWrite (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1173,6 +1265,75 @@ static void* threadFuncWriteWithLock (void *rawArgs)
     // Write first element in SV.
     uint8_t value = 2;
     ret = pSv->write (SV_ELEM_TEST0, value);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls readRegion on SV_REG_TEST0 and logs the result to the test 
+ * log.
+ */
+static void* threadFuncReadRegion (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
+    Log* log                         = pArgs->testLog;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+
+    // Read first region in SV.
+    uint32_t regionSizeBytes;
+    pSv->getRegionSizeBytes (SV_REG_TEST0, regionSizeBytes);
+    std::vector<uint8_t> regBufCopy (regionSizeBytes);
+    ret = pSv->readRegion (SV_REG_TEST0, regBufCopy);
+
+    // There's only 1, 1-byte element in region0. Log value.
+    log->logEvent (Log::LogEvent_t::READ_VALUE, regBufCopy[0]);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls writeRegion to update SV_REG_TEST0.
+ */
+static void* threadFuncWriteRegion (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+
+    // Write first region in SV.
+    uint32_t regionSizeBytes;
+    pSv->getRegionSizeBytes (SV_REG_TEST0, regionSizeBytes);
+    std::vector<uint8_t> regBufWrite = {0x2};
+    ret = pSv->writeRegion (SV_REG_TEST0, regBufWrite);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls readStateVector logs the result to the test log.
+ */
+static void* threadFuncReadStateVector (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
+    Log* log                         = pArgs->testLog;
+    std::shared_ptr<StateVector> pSv = pArgs->stateVector;
+
+    // Read SV.
+    uint32_t sVSizeBytes;
+    pSv->getStateVectorSizeBytes (sVSizeBytes);
+    std::vector<uint8_t> sVBufCopy (sVSizeBytes);
+    ret = pSv->readStateVector (sVBufCopy);
+
+    // There's only 1, 1-byte element in SV. Log value.
+    log->logEvent (Log::LogEvent_t::READ_VALUE, sVBufCopy[0]);
 
     return (void *) ret;
 }
@@ -1513,15 +1674,15 @@ TEST (StateVector_threadSynchronization, WriteBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncWriteWithLock = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncWriteWithLock;
+    ThreadManager::ThreadFunc_t *pThreadFuncWrite = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncWrite;
 
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pSv->acquireLock ());
 
     // Create thread and sleep so that thread blocks on read.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncWriteWithLock,
+                                    t1, pThreadFuncWrite,
                                     &argsThread1, sizeof (argsThread1),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
@@ -1545,4 +1706,129 @@ TEST (StateVector_threadSynchronization, WriteBlocked)
     // Verify value is now 2.
     pSv->read (SV_ELEM_TEST0, value);
     CHECK_EQUAL (2, value);
+}
+
+/* Verify readRegion will block until lock is available. */
+TEST (StateVector_threadSynchronization, ReadRegionBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncReadRegion = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncReadRegion;
+
+    // Write initial value to SV.
+    pSv->write (SV_ELEM_TEST0, (uint8_t) 1);
+
+    // Acquire lock so that thread blocks on read attempt.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on read.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncReadRegion,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Write new value to SV.
+    CHECK_SUCCESS (pSv->writeImpl (SV_ELEM_TEST0, (uint8_t) 2));
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // reading the updated value.
+    pSv->releaseLock ();
+    TestHelpers::sleepMs (100);
+
+    // Build expected log.
+    expectedLog.logEvent (Log::LogEvent_t::READ_VALUE, 2);
+    
+    // Verify expected == actual.
+    VERIFY_LOGS;
+}
+
+/* Verify writeRegion will block until lock is available. */
+TEST (StateVector_threadSynchronization, WriteRegionBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncWriteRegion = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncWriteRegion;
+
+    // Acquire lock so that thread blocks on write attempt.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on read.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncWriteRegion,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Verify value is still 0.
+    uint8_t value = 0;
+    CHECK_SUCCESS (pSv->readImpl (SV_ELEM_TEST0, value));
+    CHECK_EQUAL (0, value);
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // updating the value.
+    pSv->releaseLock ();
+    TestHelpers::sleepMs (100);
+   
+    // Wait for thread.
+    Error_t threadReturn;
+    pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    
+    // Verify value is now 2.
+    pSv->read (SV_ELEM_TEST0, value);
+    CHECK_EQUAL (2, value);
+}
+
+/* Verify readStateVector will block until lock is available. */
+TEST (StateVector_threadSynchronization, ReadStateVectorBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_STATE_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pSv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncReadStateVector = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncReadStateVector;
+
+    // Write initial value to SV.
+    pSv->write (SV_ELEM_TEST0, (uint8_t) 1);
+
+    // Acquire lock so that thread blocks on read attempt.
+    CHECK_SUCCESS (pSv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on read.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncReadStateVector,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Write new value to SV.
+    CHECK_SUCCESS (pSv->writeImpl (SV_ELEM_TEST0, (uint8_t) 2));
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // reading the updated value.
+    pSv->releaseLock ();
+    TestHelpers::sleepMs (100);
+
+    // Build expected log.
+    expectedLog.logEvent (Log::LogEvent_t::READ_VALUE, 2);
+    
+    // Verify expected == actual.
+    VERIFY_LOGS;
 }
