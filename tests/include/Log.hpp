@@ -39,6 +39,11 @@ public:
         RELEASED_LOCK,
         READ_VALUE,
 
+        /* Network Manager */
+        CALLED_RECV,
+        CALLED_SEND,
+        RECEIVED,
+
         LAST
     };
 

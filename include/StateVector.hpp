@@ -64,6 +64,7 @@
 
 #include "Errors.h"
 #include "StateVectorEnums.hpp"
+#include "EnumClassHash.hpp"
 
 /*********************** HELPER MACROS FOR SV CONFIG *************************/
 
@@ -569,21 +570,6 @@ private:
         uint32_t startIdx;
         uint32_t sizeBytes;
     } RegionInfo_t;
-
-    /**
-     * In order to use any enum classes we've defined as the key for an 
-     * unordered_map, we need to define a hash function that maps the key
-     * type to size_t. Hash function copied from:
-     * https://stackoverflow.com/questions/18837857/cant-use-enum-class-as-unordered-map-key
-     */
-    struct EnumClassHash
-    {
-        template <typename T>
-        std::size_t operator()(T t) const
-        {
-            return static_cast<std::size_t>(t);
-        }
-    };
 
     /**
      * Buffer containing State Vector element data.
