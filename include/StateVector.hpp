@@ -299,8 +299,10 @@ public:
      *
      * @ret     E_SUCCESS                     Element read successfully.
      *          E_INVALID_ELEM                Element not in State Vector.
-     *          E_INVALID_TYPE                Elem_t not supported by State Vector.
-     *          E_INCORRECT_TYPE              Elem_t does not match expected element type.
+     *          E_INVALID_TYPE                Elem_t not supported by State 
+     *                                        Vector.
+     *          E_INCORRECT_TYPE              Elem_t does not match expected 
+     *                                        element type.
      *          E_FAILED_TO_LOCK              Failed to lock.
      *          E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
      *                                        unlock.
@@ -462,6 +464,62 @@ public:
     Error_t readStateVector (std::vector<uint8_t>& kStateVectorBufRet);
 
     /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Print the State Vector in a human-readable form.
+     * 
+     * @ret      E_SUCCESS                     State Vector successfully 
+     *                                         printed.
+     *           E_INVALID_ELEM                Element not found in SV.
+     *           E_INVALID_TYPE                Type not supported by print.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as mBuffer.
+     *           E_INVALID_ELEM                Element not in State Vector.
+     *           E_INVALID_TYPE                Elem_t not supported by State 
+     *                                         Vector.
+     *           E_INCORRECT_TYPE              Elem_t does not match expected 
+     *                                         element type.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
+     *                                         unlock.
+     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t printPretty ();
+
+    /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Print the State Vector CSV header (region and element names).
+     * 
+     * @ret      E_SUCCESS                     Header successfully printed.
+     */
+    Error_t printCsvHeader ();
+
+    /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Print the State Vector CSV row (element values).
+     * 
+     * @ret      E_SUCCESS                     Row successfully printed.
+     *           E_INVALID_ELEM                Element not found in SV.
+     *           E_INVALID_TYPE                Type not supported by print.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as mBuffer.
+     *           E_INVALID_ELEM                Element not in State Vector.
+     *           E_INVALID_TYPE                Elem_t not supported by State 
+     *                                         Vector.
+     *           E_INCORRECT_TYPE              Elem_t does not match expected 
+     *                                         element type.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
+     *                                         unlock.
+     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t printCsvRow ();
+
+    /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
      *
      * Acquire the State Vector lock. This method is public so that the lock
@@ -564,11 +622,14 @@ private:
 
     /** 
      * Struct containing a region's start index into mBuffer and size in bytes.
+     * The elements vector is stored to enable printing of the State Vector for
+     * debugging purposes.
      */
     typedef struct RegionInfo
     {   
         uint32_t startIdx;
         uint32_t sizeBytes;
+        std::vector<StateVectorElement_t> elements;
     } RegionInfo_t;
 
     /**
@@ -709,6 +770,64 @@ private:
      *          E_FAILED_TO_INIT_LOCK    Lock initialization failed.
      */
     Error_t initLock ();
+
+    /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Convert a region enum to the corresponding string. Used for printing the
+     * State Vector.
+     *
+     * @param kRegionEnum                Region to convert.
+     * @param kRegionStrRet              Param to store string in.
+     *
+     * @ret     E_SUCCESS                Successfully converted to string.
+     *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
+     */
+    Error_t regionEnumToString (StateVectorRegion_t kRegionEnum, 
+                                std::string& kRegionStrRet);
+
+    /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Convert an element enum to the corresponding string. Used for printing 
+     * the State Vector.
+     *
+     * @param kElementEnum               Element to convert.
+     * @param kElementStrRet             Param to store string in.
+     *
+     * @ret     E_SUCCESS                Successfully converted to string.
+     *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
+     */
+    Error_t elementEnumToString (StateVectorElement_t kElementEnum, 
+                                 std::string& kElementStrRet);
+
+    /**
+     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
+     *
+     * Read element from SV and append to string.
+     *
+     * @param kElem                         Element to append value of.
+     * @param kStr                          String to append to.
+     *
+     * @ret   E_SUCCESS                     Successfully appended element 
+     *                                      value.
+     *        E_INVALID_ELEM                Element not found in SV.
+     *        E_INVALID_TYPE                Type not supported by print.
+     *        E_INCORRECT_SIZE              Vector provided does not have
+     *                                      same size as mBuffer.
+     *        E_INVALID_ELEM                Element not in State Vector.
+     *        E_INVALID_TYPE                Elem_t not supported by State 
+     *                                      Vector.
+     *        E_INCORRECT_TYPE              Elem_t does not match expected 
+     *                                      element type.
+     *        E_FAILED_TO_LOCK              Failed to lock.
+     *        E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
+     *                                      unlock.
+     *        E_FAILED_TO_UNLOCK            Read succeeded but failed to 
+     *                                      unlock.
+     */
+    Error_t appendElementValue (StateVectorElement_t kElem,
+                                std::string& kStr);
 
 };
 #endif

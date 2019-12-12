@@ -585,7 +585,7 @@ TEST (StateVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     CHECK_SUCCESS (pSv->getRegionSizeBytes (SV_REG_TEST2, 
                                             region2ActualSizeBytes));
     std::vector<uint8_t> region2BufCopy (region2ActualSizeBytes);
-    CHECK_SUCCESS (pSv-> readRegion (SV_REG_TEST2, region2BufCopy));
+    CHECK_SUCCESS (pSv->readRegion (SV_REG_TEST2, region2BufCopy));
 
     // Verify State Vector and region sizes matches expected size.
     uint32_t region0ExpectedSizeBytes = region0ExpectedBuffer.size ();

@@ -98,6 +98,7 @@ typedef enum Error
     E_FAILED_TO_UNLOCK,
     E_FAILED_TO_READ_AND_UNLOCK,
     E_FAILED_TO_WRITE_AND_UNLOCK,
+    E_ENUM_STRING_UNDEFINED,
 
     E_LAST
 } Error_t;
