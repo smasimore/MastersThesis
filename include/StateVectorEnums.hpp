@@ -4,8 +4,8 @@
  * software.
  */
 
-# ifndef STATE_VECTOR_ENUMS_HPP
-# define STATE_VECTOR_ENUMS_HPP
+#ifndef STATE_VECTOR_ENUMS_HPP
+#define STATE_VECTOR_ENUMS_HPP
 
 #include <stdint.h>
 
@@ -95,6 +95,10 @@ enum StateVectorElement_t : uint32_t
     SV_ELEM_TEST44,
     SV_ELEM_TEST45,
     SV_ELEM_TEST46,
+
+    /* Platform LED Test */
+    SV_ELEM_LED_CONTROL_VAL,
+    SV_ELEM_LED_FEEDBACK_VAL,
 
     SV_ELEM_LAST
 };

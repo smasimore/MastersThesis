@@ -1,5 +1,8 @@
 /**
  * Macros and functions used across test files.
+ *
+ * Note: Because this includes the cpputest header, this must be included last
+ *       in tests.
  */
 
 # ifndef TEST_HELPERS_HPP
@@ -96,12 +99,12 @@
 
 namespace TestHelpers
 {
-	/**
-	 * Sleep for the specified number of milliseconds.
-	 *
-	 * @param     ms    Milliseconds to sleep.
-	 */
-	void sleepMs (uint32_t ms);
+    /**
+     * Sleep for the specified number of milliseconds.
+     *
+     * @param     ms    Milliseconds to sleep.
+     */
+    void sleepMs (uint32_t ms);
 
 }
 

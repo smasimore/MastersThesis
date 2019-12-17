@@ -11,9 +11,12 @@ build/
 /Profile_copyBuffer/
 /Profile_copyBuffer_x86/
 /Profile_lock/
+RemoteSystemsTempFiles/
 
 .settings/language.settings.xml
 .settings/org.eclipse.cdt.core.prefs
+.metadata
+.ycm_extra_conf.py
 
 *.aliases
 

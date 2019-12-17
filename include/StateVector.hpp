@@ -52,8 +52,8 @@
  *
  */
 
-# ifndef STATE_VECTOR_HPP
-# define STATE_VECTOR_HPP
+#ifndef STATE_VECTOR_HPP
+#define STATE_VECTOR_HPP
 
 #include <stdint.h>
 #include <pthread.h>

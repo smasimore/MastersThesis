@@ -100,6 +100,13 @@ typedef enum Error
     E_FAILED_TO_WRITE_AND_UNLOCK,
     E_ENUM_STRING_UNDEFINED,
 
+    /* Devices */
+    E_FPGA_READ = 125,
+    E_FPGA_WRITE,
+    E_STATE_VECTOR_NULL,
+    E_STATE_VECTOR_READ,
+    E_STATE_VECTOR_WRITE,
+
     E_LAST
 } Error_t;
 
