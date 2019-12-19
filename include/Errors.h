@@ -107,6 +107,11 @@ typedef enum Error
     E_STATE_VECTOR_READ,
     E_STATE_VECTOR_WRITE,
 
+    /* Time */
+    E_FAILED_TO_GET_TIME = 150,
+    E_FAILED_TO_INIT_TIME,
+    E_OVERFLOW_IMMINENT,
+
     E_LAST
 } Error_t;
 
