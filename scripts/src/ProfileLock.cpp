@@ -2,7 +2,7 @@
  * Measure time it takes to lock and unlock the State Vector.
  *
  * The purpose of this profiling script is to better understand cost of locking
- * and unlocking the State Vector. If cheap, the SV implementation would be 
+ * and unlocking the State Vector. If cheap, the SV implementation would be
  * simplifying by always locking/unlocking instead of branching depending on
  * the context.
  */
@@ -14,6 +14,7 @@
 
 #include "StateVector.hpp"
 #include "ProfileHelpers.hpp"
+#include "ProfileLock.hpp"
 
 /**
  * # of times to run.
@@ -26,7 +27,7 @@ static const uint32_t NUM_TIMES_TO_RUN = 10000;
 uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<StateVector>& pSv)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
+    uint64_t startNs = ProfileHelpers::getTimeNs ();
 
     // Acquire lock.
     pSv->acquireLock ();
@@ -39,7 +40,7 @@ uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<StateVector>& pSv)
     return abs (endNs - startNs);
 }
 
-int main ()
+void ProfileLock::main (int ac, char** av)
 {
     ProfileHelpers::setThreadPriAndAffinity ();
 
@@ -48,19 +49,19 @@ int main ()
     std::shared_ptr<StateVector> pSv;
     StateVector::StateVectorConfig_t config = {
         // Regions
-        {    
-            //////////////////////////////////////////////////////////////////////////////////
-        
+        {
+            ////////////////////////////////////////////////////////////////////
+
             // Region
             {SV_REG_TEST0,
-        
+
             // Elements
-            //      TYPE                      ELEM            INITIAL_VALUE
+            //      TYPE           ELEM            INITIAL_VALUE
             {
-                   SV_ADD_UINT8  (           SV_ELEM_TEST0,            0            ),
+                   SV_ADD_UINT8  ( SV_ELEM_TEST0,  0                          ),
             }},
-            //////////////////////////////////////////////////////////////////////////////////
-        }    
+            ////////////////////////////////////////////////////////////////////
+        }
     };
     StateVector::createNew (config, pSv);
     if (ret != E_SUCCESS)
@@ -84,8 +85,8 @@ int main ()
     std::cout << "------ Results ------" << std::endl;
     std::cout << "# of runs: " << NUM_TIMES_TO_RUN << std::endl;
 
-    ProfileHelpers::printVectorStats (results_Baseline,      
+    ProfileHelpers::printVectorStats (results_Baseline,
                                       "\nBASELINE");
-    ProfileHelpers::printVectorStats (results_Lock,   
+    ProfileHelpers::printVectorStats (results_Lock,
                                       "\nLOCK");
 }

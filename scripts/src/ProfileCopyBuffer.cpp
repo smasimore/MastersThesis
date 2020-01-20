@@ -16,6 +16,7 @@
 #include <iostream>
 #include <vector>
 
+#include "ProfileCopyBuffer.hpp"
 #include "ProfileHelpers.hpp"
 
 /**
@@ -41,13 +42,13 @@ static const uint32_t BUF_SIZE = 2000;
 /**
  * Measure time to copy buf to a vector initialized with buf size.
  */
-uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf, 
+uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
                                       uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
-    
-    // Create another vector with size initialized and copy the buffer to it. 
+    uint64_t startNs = ProfileHelpers::getTimeNs ();
+
+    // Create another vector with size initialized and copy the buffer to it.
     std::vector<uint8_t> bufCopy (BUF_SIZE);
     bufCopy = buf;
 
@@ -60,7 +61,7 @@ uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
     // Print results.
     if (gDebugPrint == true)
     {
-        std::cout << "RUN " << runIdx << " INIT_VEC_SIZE NS: " << elapsedNs 
+        std::cout << "RUN " << runIdx << " INIT_VEC_SIZE NS: " << elapsedNs
             << std::endl;
         ProfileHelpers::printProcessStats ();
     }
@@ -71,14 +72,14 @@ uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
 /**
  * Measure time to copy buf to a vector without an initial size.
  */
-uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf, 
+uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
                                         uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
-    
-    // Create another vector without initializing it size, and copy the buffer 
-    // to it. 
+    uint64_t startNs = ProfileHelpers::getTimeNs ();
+
+    // Create another vector without initializing it size, and copy the buffer
+    // to it.
     std::vector<uint8_t> bufCopy;
     bufCopy = buf;
 
@@ -91,7 +92,7 @@ uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
     // Print results.
     if (gDebugPrint == true)
     {
-        std::cout << "RUN " << runIdx << " NO_INIT_VEC_SIZE NS: " << elapsedNs 
+        std::cout << "RUN " << runIdx << " NO_INIT_VEC_SIZE NS: " << elapsedNs
             << std::endl;
         ProfileHelpers::printProcessStats ();
     }
@@ -105,9 +106,9 @@ uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
 uint64_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
-    
-    // Create another vector with size initialized and copy the buffer to it. 
+    uint64_t startNs = ProfileHelpers::getTimeNs ();
+
+    // Create another vector with size initialized and copy the buffer to it.
     static std::vector<uint8_t> bufCopy (BUF_SIZE);
     bufCopy = buf;
 
@@ -120,7 +121,7 @@ uint64_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, uint16_t runIdx)
     // Print results.
     if (gDebugPrint == true)
     {
-        std::cout << "RUN " << runIdx << " STATIC_VEC NS: " << elapsedNs 
+        std::cout << "RUN " << runIdx << " STATIC_VEC NS: " << elapsedNs
             << std::endl;
         ProfileHelpers::printProcessStats ();
     }
@@ -128,7 +129,7 @@ uint64_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, uint16_t runIdx)
     return elapsedNs;
 }
 
-int main ()
+void ProfileCopyBuffer::main (int ac, char** av)
 {
     // Set thread to be SCHED_FIFO.
     ProfileHelpers::setThreadPriAndAffinity ();
@@ -164,12 +165,12 @@ int main ()
     std::cout << "------ Results ------" << std::endl;
     std::cout << "# of runs: " << NUM_TIMES_TO_RUN << std::endl;
 
-    ProfileHelpers::printVectorStats (results_Baseline,      
+    ProfileHelpers::printVectorStats (results_Baseline,
                                       "\nBASELINE");
-    ProfileHelpers::printVectorStats (results_InitVecSize,   
+    ProfileHelpers::printVectorStats (results_InitVecSize,
                                       "\nINIT_VEC_SIZE");
-    ProfileHelpers::printVectorStats (results_NoInitVecSize, 
+    ProfileHelpers::printVectorStats (results_NoInitVecSize,
                                       "\nNO_INIT_VEC_SIZE");
-    ProfileHelpers::printVectorStats (results_StaticVec,     
+    ProfileHelpers::printVectorStats (results_StaticVec,
                                       "\nSTATIC_VEC");
 }

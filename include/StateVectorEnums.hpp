@@ -1,6 +1,6 @@
 /**
- * Enumerations for StateVector. Defined in the global namespace so the enums 
- * names can be shorter (i.e. w/o namespace) throughout configs and flight 
+ * Enumerations for StateVector. Defined in the global namespace so the enums
+ * names can be shorter (i.e. w/o namespace) throughout configs and flight
  * software.
  */
 
@@ -99,6 +99,10 @@ enum StateVectorElement_t : uint32_t
     /* Platform LED Test */
     SV_ELEM_LED_CONTROL_VAL,
     SV_ELEM_LED_FEEDBACK_VAL,
+
+    /* Igniter test script */
+    SV_ELEM_IGNTEST_CONTROL_VAL,
+    SV_ELEM_IGNTEST_FEEDBACK_VAL,
 
     SV_ELEM_LAST
 };
