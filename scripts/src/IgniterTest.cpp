@@ -3,11 +3,74 @@
  * BLACK POWDER. IGNITION TEST OPERATORS SHOULD BE TRAINED BY A MEMBER OF THE
  * RECOVERY AVIONICS TEAM BEFORE USE.
  *
+ *
+ * SUMMARY:
+ *
  * Script for pyro ignition tests conducted by the deployment team. The program
  * accepts a countdown length in seconds from the command line, counts down,
  * raises the igniter circuit DIO line for a brief moment, and then exits.
  * Pressing ENTER or CTRL + C prior to or during ignition will lower the DIO
  * line and abort the test.
+ *
+ *
+ * TESTING PROCEDURES:
+ *
+ * The following manual test procedures should be performed to test the script
+ * following major changes.
+ *
+ * These test procedures require an LED be wired to the sbRIO via breakout
+ * board, on the DIO pin specified by IGNITER_DIO_PIN_NUM.
+ *
+ * Test 01 - Early abort
+ *   Procedure:
+ *     * Run the script with any ignition delay in the valid range.
+ *     * Press ENTER on the keyboard before the countdown hits 0.
+ *   Expected Behavior:
+ *     * Program exits immediately on abort with "TEST ABORTED BY USER".
+ *     * LED does not light up at any point during the test.
+ *
+ * Test 02 - Early interrupt
+ *   Procedure:
+ *     * Run the script with any ignition delay in the valid range.
+ *     * Issue a CTRL + C interrupt before the countdown hits 0.
+ *   Expected Behavior:
+ *     * Program exits immediately on interrupt with "TEST INTERRUPTED BY USER".
+ *     * LED does not light up at any point during the test.
+ *
+ * Test 03 - Mid-raise abort
+ *   Procedure:
+ *     * Change LINE_RAISE_DURATION_MS to 5000 and recompile. This increases
+ *       the duration of the line raise to 5 seconds, making the LED flash
+ *       easier to interrupt.
+ *     * Run the script with any ignition delay in the valid range.
+ *     * When the LED lights up, quickly abort the script by pressing ENTER.
+ *     * Revert the change to LINE_RAISE_DURATION_MS.
+ *   Expected Behavior:
+ *     * Program exits immediately on abort with "TEST ABORTED BY USER".
+ *     * LED turns on when the countdown hits 0 and then off the moment of
+ *       abort. It is not on for anywhere near 5 seconds.
+ *
+ * Test 04 - Mid-raise interrupt
+ *   Procedure:
+ *     * Change LINE_RAISE_DURATION_MS to 5000 and recompile. This increases
+ *       the duration of the line raise to 5 seconds, making the LED flash
+ *       easier to interrupt.
+ *     * Run the script with any ignition delay in the valid range.
+ *     * When the LED lights up, quickly interrupt the script with CTRL + C.
+ *     * Revert the change to LINE_RAISE_DURATION_MS.
+ *   Expected Behavior:
+ *     * Program exits immediately on interrupt with "TEST INTERRUPTED BY USER".
+ *     * LED turns on when the countdown hits 0 and then off the moment of
+ *       interrupt. It is not on for anywhere near 5 seconds.
+ *
+ * Test 05 - Full duration test
+ *   Procedure:
+ *     * Run the script to completion with any ignition delay and without
+ *       aborting or interrupting.
+ *   Expected Behavior:
+ *     * Program exits with "TEST CONCLUDED" when the countdown hits 0.
+ *     * LED flashes briefly the moment the countdown hits 0.
+ *     * Test concludes with LED off.
  */
 
 #include <csignal>
@@ -84,7 +147,7 @@ std::shared_ptr<StateVector> gPSv;
 
 /**
  * Function run by the abort thread. Thread blocks while waiting for a line of
- * input from stdin and kills the test if any is received.
+ * input from stdin and kills the test if received.
  *
  * @param   kUnused Unused.
  *
@@ -202,8 +265,8 @@ void initLine ()
         {
             {SV_REG_TEST0,
             {
-                SV_ADD_BOOL( SV_ELEM_IGNTEST_CONTROL_VAL,  false ),
-                SV_ADD_BOOL( SV_ELEM_IGNTEST_FEEDBACK_VAL, false ),
+                SV_ADD_BOOL(SV_ELEM_IGNTEST_CONTROL_VAL,  false),
+                SV_ADD_BOOL(SV_ELEM_IGNTEST_FEEDBACK_VAL, false)
             }}
         }
     };
@@ -280,7 +343,8 @@ void IgniterTest::main (int ac, char** av)
         ERROR ("Usage: %s [IGNITION DELAY IN SECONDS]", av[0]);
     }
 
-    // Validate the user-specified ignition delay.
+    // Validate the user-specified ignition delay. Generates an exception on
+    // non-numeric input.
     gIgnitionDelayS = std::stof (av[1]);
     if (gIgnitionDelayS < IGNITION_DELAY_LOWER_S ||
         gIgnitionDelayS > IGNITION_DELAY_UPPER_S)
