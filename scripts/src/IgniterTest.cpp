@@ -16,10 +16,19 @@
  * TESTING PROCEDURES:
  *
  * The following manual test procedures should be performed to test the script
- * following major changes.
+ * following any changes.
  *
  * These test procedures require an LED be wired to the sbRIO via breakout
- * board, on the DIO pin specified by IGNITER_DIO_PIN_NUM.
+ * board, on the DIO pin specified by IGNITER_DIO_PIN_NUM. The script should
+ * NOT be tested with the actual igniter circuit.
+ *
+ * Test 00 - Invalid ignition delay
+ *   Procedure:
+ *     * Run the script with no ignition delay, non-numeric ignition delay, and
+ *       out-of-range ignition delay.
+ *   Expected Behavior:
+ *     * Program exits immediately and reports the error.
+ *     * LED does not light up at any point during the test.
  *
  * Test 01 - Early abort
  *   Procedure:
