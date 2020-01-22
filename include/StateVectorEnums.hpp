@@ -96,7 +96,14 @@ enum StateVectorElement_t : uint32_t
     SV_ELEM_TEST45,
     SV_ELEM_TEST46,
 
-    /* Platform LED Test */
+    /* Test Controller */
+    SV_ELEM_TEST_CONTROLLER_MODE,
+
+    /* RCS Controller */
+    SV_ELEM_RCS_CONTROLLER_MODE,
+
+    /* LED Controller */
+    SV_ELEM_LED_CONTROLLER_MODE,
     SV_ELEM_LED_CONTROL_VAL,
     SV_ELEM_LED_FEEDBACK_VAL,
 

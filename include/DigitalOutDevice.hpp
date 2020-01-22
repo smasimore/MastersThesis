@@ -92,7 +92,7 @@ class DigitalOutDevice final : public Device
          * SV element to read to determine digital output value to set in run
          * method.
          */
-        StateVectorElement_t mSvElemOutputVal;
+        StateVectorElement_t mSvElemControlVal;
 
         /**
          * SV element to write digital pin feedback value to.

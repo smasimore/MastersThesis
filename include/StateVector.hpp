@@ -464,6 +464,16 @@ public:
     Error_t readStateVector (std::vector<uint8_t>& kStateVectorBufRet);
 
     /**
+     * Check if element exists in State Vector.
+     *
+     * @param  kElem          Element to check.
+     *
+     * @ret    E_SUCCESS      Element in SV.
+     *         E_INVALID_ELEM Element not in SV.
+     */
+    Error_t elementExists (StateVectorElement_t kElem);
+
+    /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
      * Print the State Vector in a human-readable form.
@@ -705,10 +715,11 @@ private:
     Error_t verifyElement (StateVectorElement_t kElem, Elem_T& kValue)
     {
         // Check if element in State Vector.
-        if (mElementToElementInfo.find (kElem) == mElementToElementInfo.end ()) 
-        {   
-            return E_INVALID_ELEM;
-        }   
+        Error_t ret = this->elementExists (kElem);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
 
         ElementInfo_t* pElementInfo = &mElementToElementInfo[kElem];
 

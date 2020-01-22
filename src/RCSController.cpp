@@ -7,7 +7,11 @@
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
-RCSController::RCSController (const RCSController::Config& kConfig) :
+RCSController::RCSController (const RCSController::Config& kConfig,
+                              std::shared_ptr<StateVector> kPStateVector,
+                              StateVectorElement_t kSvModeElem) :
+    Controller (kPStateVector, kSvModeElem),
+
     // Adopt phase channel configuration
     mCONFIG(kConfig),
 
@@ -171,15 +175,15 @@ Error_t RCSController::computeResponse ()
     if (mCurrentResponse == RCSController::Response_t::NO_FIRE)
     {
         // Conditions for firing in the negative direction:
-    	if (
+        if (
             // Moving too fast in positive direction
             (mAngleRads <= 0 &&
              mRateRadsPerSec >= mUPPER_RL_RADS_PSEC) ||
             // Recovering too slowly from positive error
-    	    (mAngleRads >= mGRADIENT_ANGLE_LIMIT &&
+            (mAngleRads >= mGRADIENT_ANGLE_LIMIT &&
              mRateRadsPerSec >= -mLOWER_RL_RADS_PSEC) ||
             // Another indication of slow recovery from positive error
-    		(mAngleRads >= 0 &&
+            (mAngleRads >= 0 &&
              mAngleRads <= mGRADIENT_ANGLE_LIMIT &&
              mRateRadsPerSec >= mGradientLimitHigh))
         {

@@ -6,17 +6,9 @@
 
 #include "Errors.h"
 #include "StateVector.hpp"
-#include "TestHelpers.hpp"
 #include "Log.hpp"
 
-#include "CppUTest/TestHarness.h"
-
-/**
- * Initialize State Vector (pSv) given a config.
- */
-#define INIT_STATE_VECTOR(config)                                              \
-    std::shared_ptr<StateVector> pSv;                                          \
-    CHECK_SUCCESS (StateVector::createNew (config, pSv));
+#include "TestHelpers.hpp"
 
 /*************************** VERIFYCONFIG TESTS *******************************/
 
@@ -685,6 +677,34 @@ TEST (StateVector_getSizeFromBytes, Success)
                                                           sizeBytes));
         CHECK (sizeBytes == testCase.second); 
     }
+}
+
+StateVector::StateVectorConfig_t gSimpleConfig = 
+{
+    {SV_REG_TEST0,
+    {
+        SV_ADD_BOOL (SV_ELEM_TEST0, true),
+    }},
+}; 
+
+/* Group of tests to verify elementExists. */
+TEST_GROUP (StateVector_elementExists)
+{
+
+};
+
+/* Test nonexistent elem. */
+TEST (StateVector_elementExists, DNE)
+{
+    INIT_STATE_VECTOR (gSimpleConfig);
+    CHECK_ERROR (pSv->elementExists (SV_ELEM_TEST1), E_INVALID_ELEM);
+}
+
+/* Test existent elem. */
+TEST (StateVector_elementExists, Exists)
+{
+    INIT_STATE_VECTOR (gSimpleConfig);
+    CHECK_SUCCESS (pSv->elementExists (SV_ELEM_TEST0));
 }
 
 /***************************** READ/WRITE TESTS *******************************/

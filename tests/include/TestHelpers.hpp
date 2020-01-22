@@ -12,6 +12,7 @@
 
 #include "Errors.h"
 #include "ThreadManager.hpp"
+#include "StateVector.hpp"
 #include "Log.hpp"
 
 #include "CppUTest/TestHarness.h"
@@ -65,6 +66,13 @@
     CHECK_EQUAL(E_SUCCESS, ret);                                               \
     Log expectedLog = Log (ret);                                               \
     Log testLog = Log (ret);
+
+/**
+ * Initializes State Vector as local variable pSv.
+ */
+#define INIT_STATE_VECTOR(config)                                             \
+    std::shared_ptr<StateVector> pSv = nullptr;                               \
+    CHECK_SUCCESS (StateVector::createNew (config, pSv));                     \
 
 /**
  * Verifies local variables expectedLog == actualLog.

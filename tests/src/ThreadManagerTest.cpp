@@ -5,10 +5,9 @@
 
 #include "Errors.h"
 #include "Log.hpp"
-#include "TestHelpers.hpp"
 #include "ThreadManager.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
 /**************************** THREAD FUNCTIONS ********************************/
 

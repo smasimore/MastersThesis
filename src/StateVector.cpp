@@ -211,6 +211,16 @@ Error_t StateVector::releaseLock ()
     return E_SUCCESS;
 }
 
+Error_t StateVector::elementExists (StateVectorElement_t kElem)
+{
+    if (mElementToElementInfo.find (kElem) == mElementToElementInfo.end ())
+    {
+        return E_INVALID_ELEM;
+    }
+
+    return E_SUCCESS;
+}
+
 Error_t StateVector::printPretty ()
 {
     Error_t ret = E_SUCCESS;
@@ -676,11 +686,11 @@ Error_t StateVector::elementEnumToString (StateVectorElement_t kElementEnum,
 Error_t StateVector::appendElementValue (StateVectorElement_t kElem,
                                          std::string& kStr)
 {
-    // Verify kElem in SV.
-    if (mElementToElementInfo.find (kElem) == 
-        mElementToElementInfo.end ())
+    // Check if element in State Vector.
+    Error_t ret = E_SUCCESS;
+    if (this->elementExists (kElem) != E_SUCCESS)
     {
-        return E_INVALID_ELEM;
+        return ret;
     }
 
     // Since kElems have different types, get the type of this kElem
@@ -700,7 +710,6 @@ Error_t StateVector::appendElementValue (StateVectorElement_t kElem,
     double valDouble = 0;
     bool valBool = false;
 
-    Error_t ret = E_SUCCESS;
     switch (type)
     {
         case SV_T_UINT8:

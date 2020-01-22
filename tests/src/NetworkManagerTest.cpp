@@ -4,10 +4,9 @@
 
 #include "Errors.h"
 #include "NetworkManager.hpp"
-#include "TestHelpers.hpp"
 #include "EnumClassHash.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
 /*************************** VERIFY CONFIG TESTS ******************************/
 

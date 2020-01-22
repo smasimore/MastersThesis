@@ -74,7 +74,7 @@ DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession,
     }
 
     // Store config data in class globals.
-    mSvElemOutputVal = kConfig.svElemControlVal;
+    mSvElemControlVal = kConfig.svElemControlVal;
     mSvElemFeedbackVal = kConfig.svElemFeedbackVal;
     switch (kConfig.pinNumber)
     {
@@ -202,7 +202,7 @@ Error_t DigitalOutDevice::updateFpgaControlValue ()
 {
     // Read output value from SV.
     bool outputVal = false;
-    if (mPStateVector->read (mSvElemOutputVal, outputVal) != E_SUCCESS)
+    if (mPStateVector->read (mSvElemControlVal, outputVal) != E_SUCCESS)
     {
         return E_STATE_VECTOR_READ;
     }

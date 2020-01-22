@@ -11,7 +11,6 @@
 #include "DigitalOutDevice.hpp"
 
 #include "TestHelpers.hpp"
-#include "CppUTest/TestHarness.h"
 
 /**
  * Path to bit file on sbRIO.

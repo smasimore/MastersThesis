@@ -4,15 +4,25 @@
 #include <iostream>
 #include <utility>
 
-#include "TestHelpers.hpp"
 #include "Math.hpp"
 #include "RCSController.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
 #define RCS_FIRE_NEG RCSController::Response_t::FIRE_NEGATIVE
 #define RCS_NO_FIRE  RCSController::Response_t::NO_FIRE
 #define RCS_FIRE_POS RCSController::Response_t::FIRE_POSITIVE
+
+/**
+ * State Vector config for RCS Controller.
+ */
+static StateVector::StateVectorConfig_t RCS_SV_CONFIG =
+{
+    {SV_REG_TEST0,
+    {
+        SV_ADD_UINT8 (SV_ELEM_RCS_CONTROLLER_MODE, Controller::Mode_t::SAFED),
+    }},
+};
 
 /**
  * Phase channel configuration used in tests. It is a known valid configuration,
@@ -122,7 +132,7 @@ typedef std::pair<float, float> RCSInputs_t;
  * Used in the final test to visualize the phase channel.
  */
 static const std::map<RCSController::Response_t, std::string>
-	gRESPONSE_SYMBOLS
+    gRESPONSE_SYMBOLS
 {
     { RCS_FIRE_NEG, "- " },
     { RCS_NO_FIRE,  "0 " },
@@ -212,15 +222,17 @@ TEST_GROUP (RCSController)
  */
 TEST (RCSController, OverflowDetection)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     std::unique_ptr<RCSController> rcs;
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
 
     // A config value is finite and within bounds but causes a channel boundary
     // calculation to overflow
     badConfig.deadband = std::numeric_limits<float>::max ();
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL (E_OVERFLOW, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OVERFLOW);
 
     // Create a new controller with a technically correct config that will
     // cause critical point calculations to overflow given a sufficiently large
@@ -233,10 +245,10 @@ TEST (RCSController, OverflowDetection)
         0.5,
         2.0
     };
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL (E_SUCCESS, err);
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Elicit a nonzero response
     CHECK_SUCCESS (rcs->setAngle (0));
@@ -262,11 +274,14 @@ TEST (RCSController, OverflowDetection)
  */
 TEST (RCSController, NoFireOnDisableOrSafe)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                       SV_ELEM_RCS_CONTROLLER_MODE, rcs));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -275,12 +290,14 @@ TEST (RCSController, NoFireOnDisableOrSafe)
     CHECK_TRUE (response != RCS_NO_FIRE);
 
     // Place controller in SAFED mode
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::SAFED));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::SAFED));
     CHECK_SUCCESS (rcs->getResponse (response));
     CHECK_EQUAL (RCS_NO_FIRE, response);
 
     // Reenable
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -293,20 +310,22 @@ TEST (RCSController, NoFireOnDisableOrSafe)
  */
 TEST (RCSController, ConfigBadRateLimit)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
     badConfig.rateLimitRadsPerSec = NAN;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_NONFINITE_VALUE, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_NONFINITE_VALUE);
 
     // Finite, but outside allowed range
     badConfig.rateLimitRadsPerSec = -1.5;
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OUT_OF_BOUNDS);
 }
 
 /**
@@ -314,20 +333,22 @@ TEST (RCSController, ConfigBadRateLimit)
  */
 TEST (RCSController, ConfigBadDeadband)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
     badConfig.deadband = NAN;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_NONFINITE_VALUE, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_NONFINITE_VALUE);
 
     // Finite, but outside allowed range
     badConfig.deadband = -1.5;
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OUT_OF_BOUNDS);
 }
 
 /**
@@ -335,20 +356,22 @@ TEST (RCSController, ConfigBadDeadband)
  */
 TEST (RCSController, ConfigBadRateLimitRatio)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
     badConfig.rateLimitsRatio = NAN;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_NONFINITE_VALUE, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_NONFINITE_VALUE);
 
     // Finite, but outside allowed range
     badConfig.rateLimitsRatio = 1.5;
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OUT_OF_BOUNDS);
 }
 
 /**
@@ -356,20 +379,22 @@ TEST (RCSController, ConfigBadRateLimitRatio)
  */
 TEST (RCSController, ConfigBadHysteresisGradientRatio)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
     badConfig.hysteresisGradientRatio = NAN;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_NONFINITE_VALUE, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_NONFINITE_VALUE);
 
     // Finite, but outside allowed range
     badConfig.hysteresisGradientRatio = 1.5;
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OUT_OF_BOUNDS);
 }
 
 /**
@@ -377,20 +402,22 @@ TEST (RCSController, ConfigBadHysteresisGradientRatio)
  */
 TEST (RCSController, ConfigBadHysteresisRateLimitRatio)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     RCSController::Config badConfig = PHASE_CHANNEL_TEST_CONFIG;
     std::unique_ptr<RCSController> rcs;
 
     // Nonfinite
     badConfig.hysteresisRateLimitRatio = NAN;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_NONFINITE_VALUE, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_NONFINITE_VALUE);
 
     // Finite, but outside allowed range
     badConfig.hysteresisRateLimitRatio = 0.5;
-    err = Controller::createNew<RCSController, RCSController::Config> (
-        badConfig, rcs);
-    CHECK_EQUAL(E_OUT_OF_BOUNDS, err);
+    CHECK_ERROR (Controller::createNew<RCSController> (
+                     badConfig, pSv, SV_ELEM_RCS_CONTROLLER_MODE, rcs),
+                 E_OUT_OF_BOUNDS);
 }
 
 /**
@@ -398,11 +425,13 @@ TEST (RCSController, ConfigBadHysteresisRateLimitRatio)
  */
 TEST (RCSController, SetAngle)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     // Configure a new controller
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                       SV_ELEM_RCS_CONTROLLER_MODE, rcs));
 
     // Finite
     CHECK_SUCCESS (rcs->setAngle (0.5));
@@ -420,11 +449,13 @@ TEST (RCSController, SetAngle)
  */
 TEST (RCSController, SetRate)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     // Configure a new controller
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                       SV_ELEM_RCS_CONTROLLER_MODE, rcs));
 
     // Finite
     CHECK_SUCCESS (rcs->setRate (10.0));
@@ -440,12 +471,15 @@ TEST (RCSController, SetRate)
  */
 TEST (RCSController, NoFireFailsafes)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     // Configure and enable a new controller
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                     PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                     SV_ELEM_RCS_CONTROLLER_MODE, rcs));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -480,12 +514,15 @@ TEST (RCSController, NoFireFailsafes)
  */
 TEST (RCSController, PlaneResponses)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     // Configure and enable a new controller
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                       SV_ELEM_RCS_CONTROLLER_MODE, rcs));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Mapping of RCS inputs -> correct responses
     std::map<RCSInputs_t, RCSController::Response_t> noHysteresisTests =
@@ -577,6 +614,8 @@ TEST (RCSController, PlaneResponses)
  */
 TEST (RCSController, PhaseChannelShape)
 {
+    INIT_STATE_VECTOR (RCS_SV_CONFIG);
+
     // Generated planes are 30 responses x 30 responses
     const int PLANE_DIMENSIONS = 30;
     // Angle and rate bounds of the plane being visualized. These bounds were
@@ -595,10 +634,11 @@ TEST (RCSController, PhaseChannelShape)
 
     // Configure and enable a new controller
     std::unique_ptr<RCSController> rcs;
-    Error_t err = Controller::createNew<RCSController, RCSController::Config> (
-        PHASE_CHANNEL_TEST_CONFIG, rcs);
-    CHECK_EQUAL(E_SUCCESS, err);
-    CHECK_SUCCESS (rcs->setMode (Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (Controller::createNew<RCSController> (
+                       PHASE_CHANNEL_TEST_CONFIG, pSv, 
+                       SV_ELEM_RCS_CONTROLLER_MODE, rcs));
+    CHECK_SUCCESS (pSv->write (SV_ELEM_RCS_CONTROLLER_MODE,
+                               (uint8_t) Controller::Mode_t::ENABLED));
 
     // Visualization strings to be built
     std::string planeNoHysteresis;

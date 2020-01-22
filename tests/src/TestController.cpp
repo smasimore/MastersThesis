@@ -4,21 +4,23 @@
 
 Error_t TestController::runEnabled ()
 {
-    PTestLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_ENABLED, 0);
+    gPTestLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_ENABLED, 0);
     return E_SUCCESS;
 }
 
 Error_t TestController::runSafed ()
 {
-    PTestLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
+    gPTestLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
     return E_SUCCESS;
 }
 
 Error_t TestController::verifyConfig ()
 {
-    return this->Config.valid ? E_SUCCESS : E_OUT_OF_BOUNDS;
+    return this->mConfig.valid ? E_SUCCESS : E_OUT_OF_BOUNDS;
 }
 
-TestController::TestController (struct TestController::TestConfig config) :
-    Controller (),
-    Config (config) {}
+TestController::TestController (TestController::Config_t kConfig,
+                                std::shared_ptr<StateVector> kPStateVector,
+                                StateVectorElement_t kSvModeElem) :
+    Controller (kPStateVector, kSvModeElem),
+    mConfig (kConfig) {}

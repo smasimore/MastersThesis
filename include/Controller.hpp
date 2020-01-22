@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <memory>
 
+#include "StateVector.hpp"
 #include "Errors.h"
 
 /**
@@ -13,21 +14,18 @@
  * IMPLEMENTING A CONTROLLER
  *
  * 1. Extend the Controller base class to create YourController.
- * 2. Define struct YourConfig, which will contain any controller-specific
- *    configuration (e.g. calibration values) and will be passed to
+ * 2. Define YourController::Config_t, which will contain any controller-
+ *    specific configuration (e.g. calibration values) and will be passed to
  *    YourController on initialization.
- * 3. Implement the constructor (YourController(struct YourConfig)), runEnabled,
- *    runSafed, and verifyConfig methods.
+ * 3. Implement the constructor,  runEnabled, runSafed, and verifyConfig 
+ *    methods.
  *
  * See TestController in the tests directory for an example.
  *
  *
  * USING A CONTROLLER
  *
- * 1. Call Controller::createNew<YourController,
- *                               struct YourController::YourConfig> with the
- *    relevant controller config data and a unique_ptr to store the
- *    initialized controller pointer in.
+ * 1. Call Controller::createNew<YourController> (...).
  *
  *       Note: Controllers should not be initialized directly, but instead
  *       through the createNew function below. This ensures a controller's
@@ -49,8 +47,9 @@ class Controller
          */
         enum Mode_t : uint8_t
         {
-            ENABLED,
             SAFED,
+            ENABLED,
+
             LAST
         };
 
@@ -64,41 +63,62 @@ class Controller
          * passed in controller config. Defined in the header so that the
          * templatized functions do not need to each be instantiated explicitly.
          *
-         * @param   config              Controller's config data.
-         * @param   pControllerRet      Pointer to return controller.
+         * @param   kConfig             Controller's config data.
+         * @param   kPStateVector       Ptr to initialized State Vector for this
+         *                              node.
+         * @param   kSvModeElem         State Vector element to read to 
+         *                              determine controller's mode.
+         * @param   kPControllerRet     Pointer to return controller.
          *
          * @ret    E_SUCCESS            Controller successfully created.
+         *         E_STATE_VECTOR_NULL  State Vector ptr null.
+         *         E_INVALID_ELEM       Invalid SV mode elem.
          *         [other]              Validation error returned by controller.
         */
         template <class T_Controller, class T_Config>
-        static Error_t createNew (T_Config config,
-                                  std::unique_ptr<T_Controller>& pControllerRet)
+        static Error_t createNew (T_Config kConfig,
+                                  std::shared_ptr<StateVector> kPStateVector,
+                                  StateVectorElement_t kSvModeElem,
+                                  std::unique_ptr<T_Controller>& kPControllerRet)
         {
             Error_t ret = E_SUCCESS;
 
-            // Create controller.
-            pControllerRet.reset (new T_Controller (config));
+            if (kPStateVector == nullptr)
+            {
+                return E_STATE_VECTOR_NULL;
+            }
 
-            // Verify config.
-            ret = pControllerRet->verifyConfig ();
+            if (kPStateVector->elementExists (kSvModeElem) != E_SUCCESS)
+            {
+                return E_INVALID_ELEM;
+            }
+
+            // Create controller.
+            kPControllerRet.reset (new T_Controller (kConfig, kPStateVector, 
+                                                     kSvModeElem));
+
+            // Verify kConfig.
+            ret = kPControllerRet->verifyConfig ();
             if (ret != E_SUCCESS)
             {
                 // Free controller.
-                pControllerRet.reset (nullptr);
+                kPControllerRet.reset (nullptr);
                 return ret;
             }
 
             return E_SUCCESS;
         }
 
-
         /**
          * Run controller logic once.
          *
-         * @ret     E_SUCCESS   Controller ran successfully.
-         *          [other]     Error returned by controller.
+         * @ret     E_SUCCESS           Controller ran successfully.
+         *          E_STATE_VECTOR_READ Failed to read controller's mode from 
+         *                              State Vector.
+         *          E_INVALID_ENUM      Invalid mode.
+         *          [other]             Error returned by controller.
          */
-        Error_t run();
+        Error_t run ();
 
         /**
          * Get a copy of the controller's mode.
@@ -106,19 +126,11 @@ class Controller
          * @param    modeRet    Copy of controller's mode returned in this
          *                      param.
          *
-         * @return   E_SUCCESS  Mode returned successfully.
+         * @return   E_SUCCESS           Mode returned successfully.
+         *           E_STATE_VECTOR_READ Failed to read controller's mode from 
+         *                               State Vector.
          */
         Error_t getMode (Mode_t& modeRet);
-
-        /**
-         * Set the controller's mode.
-         *
-         * @param    newMode        New mode to set.
-         *
-         * @return   E_SUCCESS      Mode set successfully.
-         *           E_INVALID_ENUM Invalid mode.
-         */
-        Error_t setMode (Mode_t newMode);
 
         /**
          * Verify config.
@@ -134,17 +146,28 @@ class Controller
     protected:
 
         /**
+         * State Vector.
+         */
+        std::shared_ptr<StateVector> mPStateVector;
+
+        /**
          * Constructor. Should only be called by derived controller
          * constructors.
+         *
+         * @param kPStateVector        Ptr to initialized State Vector for this 
+         *                             node.
+         * @param kSvModeElem          State Vector element to read to determine
+         *                             controller's mode.
          */
-        Controller ();
+        Controller (std::shared_ptr<StateVector> kPStateVector, 
+                    StateVectorElement_t kSvModeElem);
 
     private:
 
         /**
-         * Controller's current mode.
+         * State Vector element storing controller's mode.
          */
-        Mode_t Mode;
+        StateVectorElement_t mSvModeElem;
 
         /**
          * Method that is called by run when controller is ENABLED.
