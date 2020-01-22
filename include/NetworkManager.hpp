@@ -17,13 +17,11 @@
  *                         ------- CONFIG -------
  *
  * The config represents the network as a graph, where each computer is a node
- * and each edge is a communication channel (e.g. FC <--> RIO0 channel). 
- * Additionally, "broadcast" is represented as a node, and an edge should be 
- * added between each computer that will broadcast or listen to broadcasts to 
- * the broadcast node. On initialization, a socket will be created per channel.
- * Only 1 channel is permitted per node pair based on the current design, but if
- * needed the Network Manager can be refactored to support multiple channels per
- * node pair.
+ * and each edge is a communication channel (e.g. FC <--> RIO0 channel).  On 
+ * initialization, a socket will be created per channel. Only 1 channel is 
+ * permitted per node pair based on the current design, but if needed the 
+ * Network Manager can be refactored to support multiple channels per node pair.
+ * Broadcast is NOT currently supported.
  *
  * Choose ports between 2200-2299. These are unused on the sbRIO's and on Ubuntu
  * 16.4. To see what ports are in use, run "cat /etc/services".
@@ -65,7 +63,6 @@ public:
         REMOTE_IO_0,
         REMOTE_IO_1,
         REMOTE_IO_2,
-        BROADCAST,
         GROUND,
 
         LAST

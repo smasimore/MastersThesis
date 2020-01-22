@@ -751,5 +751,5 @@ Error_t StateVector::appendElementValue (StateVectorElement_t kElem,
             return E_INVALID_TYPE;
     }
 
-    return E_SUCCESS;
+    return ret;
 }
