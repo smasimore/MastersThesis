@@ -1,8 +1,8 @@
 /**
  * Device to control a digital output pin. Constructor configures FPGA pin to 
- * be output. Run method first reads control value State Vector element 
+ * be output. Run method first reads control value Data Vector element 
  * (configured in  Config_t) to determine value to set on pin and second reads 
- * FPGA pin value and stores in feedback value State Vector element (configured 
+ * FPGA pin value and stores in feedback value Data Vector element (configured 
  * in Config_t).
  *
  * WARNINGS:
@@ -38,8 +38,8 @@ class DigitalOutDevice final : public Device
          */
         typedef struct Config
         {
-            StateVectorElement_t svElemControlVal;
-            StateVectorElement_t svElemFeedbackVal;
+            DataVectorElement_t dvElemControlVal;
+            DataVectorElement_t dvElemFeedbackVal;
             uint8_t pinNumber;
         } Config_t;
 
@@ -47,8 +47,8 @@ class DigitalOutDevice final : public Device
          * Sets digital output value and reads current pin value.
          *
          * @ret   E_SUCCESS             Device ran successfully.
-         *        E_STATE_VECTOR_READ   Failed to read from SV.
-         *        E_STATE_VECTOR_WRITE  Failed to write to SV.
+         *        E_DATA_VECTOR_READ   Failed to read from DV.
+         *        E_DATA_VECTOR_WRITE  Failed to write to DV.
          *        E_FPGA_READ           Failed to read from FPGA.
          *        E_FPGA_WRITE          Failed to write to FPGA.
          */
@@ -61,8 +61,8 @@ class DigitalOutDevice final : public Device
          *
          * @ret   E_SUCCESS             Config valid.
          *        E_OUT_OF_BOUNDS       pinNumber out of bounds.
-         *        E_INVALID_ELEM        svElemControlVal or svElemFeedbackVal 
-         *                              not in SV.
+         *        E_INVALID_ELEM        dvElemControlVal or dvElemFeedbackVal 
+         *                              not in DV.
          */
         Error_t verifyConfig (Config_t& kConfig);
 
@@ -71,34 +71,34 @@ class DigitalOutDevice final : public Device
          * to Device::createNew.
          *
          * @param  kSession      Initialized and open FPGA session.
-         * @param  kStateVector  Node's State Vector.
+         * @param  kDataVector   Node's Data Vector.
          * @param  kConfig       Device config.
-         * @param  kRet          E_SUCCESS             Config valid.
-         *                       E_OUT_OF_BOUNDS       pin out of bounds.
-         *                       E_INVALID_ELEM        svElemControlVal or 
-         *                                             svElemFeedbackVal not in 
-         *                                             SV.
-         *                       E_STATE_VECTOR_READ   Failed to read from SV.
-         *                       E_FPGA_WRITE          Failed to write to FPGA.
-         *                       E_PIN_NOT_CONFIGURED  Pin not configured.
+         * @param  kRet          E_SUCCESS            Config valid.
+         *                       E_OUT_OF_BOUNDS      pinNumber out of bounds.
+         *                       E_INVALID_ELEM       dvElemControlVal or 
+         *                                            dvElemFeedbackVal not in 
+         *                                            DV.
+         *                       E_DATA_VECTOR_READ   Failed to read from DV.
+         *                       E_FPGA_WRITE         Failed to write to FPGA.
+         *                       E_PIN_NOT_CONFIGURED Pin not configured.
          */
         DigitalOutDevice (NiFpga_Session& kSession, 
-                          std::shared_ptr<StateVector> kPStateVector,
+                          std::shared_ptr<DataVector> kPDataVector,
                           Config_t& kConfig,
                           Error_t& kRet);
 
     private:
 
         /**
-         * SV element to read to determine digital output value to set in run
+         * DV element to read to determine digital output value to set in run
          * method.
          */
-        StateVectorElement_t mSvElemControlVal;
+        DataVectorElement_t mDvElemControlVal;
 
         /**
-         * SV element to write digital pin feedback value to.
+         * DV element to write digital pin feedback value to.
          */
-        StateVectorElement_t mSvElemFeedbackVal;
+        DataVectorElement_t mDvElemFeedbackVal;
 
         /**
          * FPGA control identifier to set.
@@ -111,10 +111,10 @@ class DigitalOutDevice final : public Device
         uint32_t mFpgaIndicator;
 
         /**
-         * Read control value from State Vector and write to FPGA.
+         * Read control value from Data Vector and write to FPGA.
          *
          * @ret   E_SUCCESS             Device ran successfully.
-         *        E_STATE_VECTOR_READ   Failed to read from SV.
+         *        E_DATA_VECTOR_READ   Failed to read from DV.
          *        E_FPGA_WRITE          Failed to write to FPGA.
          */
         Error_t updateFpgaControlValue ();

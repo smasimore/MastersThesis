@@ -20,7 +20,7 @@ Error_t TestController::verifyConfig ()
 }
 
 TestController::TestController (TestController::Config_t kConfig,
-                                std::shared_ptr<StateVector> kPStateVector,
-                                StateVectorElement_t kSvModeElem) :
-    Controller (kPStateVector, kSvModeElem),
+                                std::shared_ptr<DataVector> kPDataVector,
+                                DataVectorElement_t kDvModeElem) :
+    Controller (kPDataVector, kDvModeElem),
     mConfig (kConfig) {}

@@ -29,12 +29,12 @@ Error_t DigitalOutDevice::run ()
         return E_FPGA_READ;
     }
 
-    // Write current pin value to SV. Note, there is some delay between writing
+    // Write current pin value to DV. Note, there is some delay between writing
     // a new value to digital out and the value being reflected in the indicator
     // value.
-    if (mPStateVector->write (mSvElemFeedbackVal, feedbackVal) != E_SUCCESS)
+    if (mPDataVector->write (mDvElemFeedbackVal, feedbackVal) != E_SUCCESS)
     {
-        return E_STATE_VECTOR_WRITE;
+        return E_DATA_VECTOR_WRITE;
     }
 
     return E_SUCCESS;
@@ -49,10 +49,10 @@ Error_t DigitalOutDevice::verifyConfig (Config_t& kConfig)
         return E_OUT_OF_BOUNDS;
     }
 
-    // Verify sv elements are in SV.
+    // Verify elements are in DV.
     bool value = false;
-    if (mPStateVector->read (kConfig.svElemControlVal, value) != E_SUCCESS ||
-        mPStateVector->read (kConfig.svElemFeedbackVal, value) != E_SUCCESS)
+    if (mPDataVector->read (kConfig.dvElemControlVal, value) != E_SUCCESS ||
+        mPDataVector->read (kConfig.dvElemFeedbackVal, value) != E_SUCCESS)
     {
         return E_INVALID_ELEM;
     }
@@ -61,10 +61,10 @@ Error_t DigitalOutDevice::verifyConfig (Config_t& kConfig)
 }
 
 DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession, 
-                                    std::shared_ptr<StateVector> kPStateVector,
+                                    std::shared_ptr<DataVector> kPDataVector,
                                     Config_t& kConfig,
                                     Error_t& kRet) :
-    Device (kSession, kPStateVector)
+    Device (kSession, kPDataVector)
 {
     // Verify config.
     kRet = this->verifyConfig (kConfig);
@@ -73,9 +73,10 @@ DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession,
         return;
     }
 
+    // Store config data in class globals.
+    mDvElemControlVal = kConfig.dvElemControlVal;
+    mDvElemFeedbackVal = kConfig.dvElemFeedbackVal;
     // Get pin config data.
-    mSvElemControlVal = kConfig.svElemControlVal;
-    mSvElemFeedbackVal = kConfig.svElemFeedbackVal;
     uint32_t fpgaOutputEnable = 0;
     switch (kConfig.pinNumber)
     {
@@ -225,11 +226,11 @@ DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession,
 
 Error_t DigitalOutDevice::updateFpgaControlValue ()
 {
-    // Read output value from SV.
+    // Read output value from DV.
     bool outputVal = false;
-    if (mPStateVector->read (mSvElemControlVal, outputVal) != E_SUCCESS)
+    if (mPDataVector->read (mDvElemControlVal, outputVal) != E_SUCCESS)
     {
-        return E_STATE_VECTOR_READ;
+        return E_DATA_VECTOR_READ;
     }
 
     // Write output value to FPGA.

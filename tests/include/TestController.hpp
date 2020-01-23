@@ -37,14 +37,14 @@ class TestController final : public Controller
          * visible to Controller::createNew.
          *
          * @param   kConfig        Controller configuration.
-         * @param   kStateVector   Ptr to initialized State Vector for this 
+         * @param   kDataVector    Ptr to initialized Data Vector for this 
          *                         node.
-         * @param   kSvModeElem    State Vector element to read to determine 
+         * @param   kDvModeElem    Data Vector element to read to determine 
          *                         controller's mode.
          */
         TestController (Config_t kConfig, 
-                        std::shared_ptr<StateVector> kPStateVector,
-                        StateVectorElement_t kSvModeElem);
+                        std::shared_ptr<DataVector> kPDataVector,
+                        DataVectorElement_t kDvModeElem);
 
     private:
 

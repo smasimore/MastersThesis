@@ -1,6 +1,6 @@
 /**
  * Base device class for implementing sensors and actuators. Device objects are 
- * the interface between the State Vector and the FPGA API.
+ * the interface between the Data Vector and the FPGA API.
  *
  * PRE-CONDITIONS
  * #1 The FPGA must be initialized and a session opened before initializing any 
@@ -20,7 +20,7 @@
  *    configuration (e.g. which DIO pin to use) and will be passed to
  *    YourDevice on initialization.
  * 3. Implement the constructor
- *        YourDevice (kSession, kPStateVector, kConfig, kRet));
+ *        YourDevice (kSession, kPDataVector, kConfig, kRet));
  * 4. Implement the run method, which will be called periodically.
  *
  * See LEDDevice for an example.
@@ -29,7 +29,7 @@
  *
  * 1. Call Device::createNew<YourDevice,
  *                           struct YourDevice::YourConfig> with an initialized
- *    FPGA session, State Vector, the relevant device config data, and a 
+ *    FPGA session, Data Vector, the relevant device config data, and a 
  *    unique_ptr to store the initialized device pointer in.
  * 2. Call YourDevice->run () for each loop of your main periodic thread.
  *
@@ -56,7 +56,7 @@
 
 #include "Errors.h"
 #include "NiFpga.h"
-#include "StateVector.hpp"
+#include "DataVector.hpp"
 
 class Device
 {
@@ -70,30 +70,30 @@ class Device
          * instantiated explicitly.
          *
          * @param   kSession            Initialized and open FPGA session.
-         * @param   kStateVector        Initialized State Vector for this node.
+         * @param   kDataVector         Initialized Data Vector for this node.
          * @param   kConfig             Device's config data.
          * @param   kPDeviceRet         Pointer to return device.
          *
          * @ret    E_SUCCESS            Device successfully created.
-         *         E_STATE_VECTOR_NULL  State Vector pointer null.
+         *         E_DATA_VECTOR_NULL  Data Vector pointer null.
          *         [other]              Constructor error returned by device.
         */
         template <class T_Device, class T_Config>
         static Error_t createNew (NiFpga_Session& kSession, 
-                                  std::shared_ptr<StateVector> kPStateVector, 
+                                  std::shared_ptr<DataVector> kPDataVector, 
                                   T_Config kConfig,
                                   std::unique_ptr<T_Device>& kPDeviceRet)
         {
             Error_t ret = E_SUCCESS;
 
-            // Verify State Vector param not null.
-            if (kPStateVector == nullptr)
+            // Verify Data Vector param not null.
+            if (kPDataVector == nullptr)
             {
-                return E_STATE_VECTOR_NULL;
+                return E_DATA_VECTOR_NULL;
             }
 
             // Create device.
-            kPDeviceRet.reset (new T_Device (kSession, kPStateVector, kConfig, 
+            kPDeviceRet.reset (new T_Device (kSession, kPDataVector, kConfig, 
                                ret));
             if (ret != E_SUCCESS)
             {
@@ -121,14 +121,14 @@ class Device
         NiFpga_Session& mSession;
 
         /**
-         * State Vector.
+         * Data Vector.
          */
-        std::shared_ptr<StateVector> mPStateVector;
+        std::shared_ptr<DataVector> mPDataVector;
 
         /**
          * Constructor. Must be called by derived device constructors.
          */
-        Device (NiFpga_Session& kSession, std::shared_ptr<StateVector> kPStateVector);
+        Device (NiFpga_Session& kSession, std::shared_ptr<DataVector> kPDataVector);
 };
 
 #endif

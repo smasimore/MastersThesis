@@ -3,6 +3,6 @@
 /*************************** PROTECTED FUNCTIONS ******************************/
 
 Device::Device (NiFpga_Session& kSession, 
-                std::shared_ptr<StateVector> kPStateVector) :
-    mSession (kSession),
-    mPStateVector (kPStateVector) {}
+                std::shared_ptr<DataVector> kPDataVector) :
+    mSession     (kSession),
+    mPDataVector (kPDataVector) {}

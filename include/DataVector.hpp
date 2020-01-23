@@ -1,10 +1,10 @@
 /**
- * The State Vector stores a vector of elements and their 
+ * The Data Vector stores a vector of elements and their 
  * corresponding values. This collection of values represents the current 
- * state of the system from the perspective of the compute node the State
+ * state of the system from the perspective of the compute node the Data
  * Vector is running on. 
  *
- * The State Vector functions as the shared memory abstraction for the avionics 
+ * The Data Vector functions as the shared memory abstraction for the avionics 
  * software system. It facilitates sharing memory between software modules 
  * (e.g. between the State Machine, Controllers, and Drivers), between threads
  * (e.g. the main RIO thread and the RIO comms thread), and between compute
@@ -12,7 +12,7 @@
  * Interface). 
  *
  * A lock is used for thread synchronization to ensure only 1 thread is 
- * accessing the State Vector at once. The underlying lock semantics are as 
+ * accessing the Data Vector at once. The underlying lock semantics are as 
  * follows:
  *         
  *     acquireLock: Thread blocks if lock not available and is added to the
@@ -22,12 +22,11 @@
  *                  switch to the higher priority thread will occur.
  *
  *
- *                   ------ Using the State Vector --------
+ *                   ------ Using the Data Vector --------
  *
- *     1) Define a StateVector::StateVectorConfig_t (see StateVectorTest.cpp 
- *        for examples). 
+ *     1) Define a DataVector::Config_t (see DataVectorTest.cpp for examples). 
  *
- *        WARNING: The initial values passed into the SV_ADD_<type> macros are 
+ *        WARNING: The initial values passed into the DV_ADD_<type> macros are 
  *                 not validated against <type>. Be careful to avoid mistakes
  *                 such as:
  *
@@ -37,23 +36,23 @@
  *                 c) Setting initialVal = 2^33 for an element that only fits
  *                    <= 32 bits.
  *                 d) Setting initialVal = -2   for an unsigned element (e.g.
- *                    SV_T_UINT32).
+ *                    DV_T_UINT32).
  *
- *     2) Call StateVector::createNew (yourConfig).
- *     3) Use the read and write methods to interact with elements in the State 
- *        Vector. Note, elements cannot be added to the State Vector after it 
+ *     2) Call DataVector::createNew (yourConfig).
+ *     3) Use the read and write methods to interact with elements in the Data
+ *        Vector. Note, elements cannot be added to the Data Vector after it 
  *        has been constructed.
  *
  *    
  * Assumptions: 
  *   #1  Little endian architecture.
- *   #2  Only 1 State Vector is created per compute node. This object is not a 
+ *   #2  Only 1 Data Vector is created per compute node. This object is not a 
  *       singleton in order to facilitate testing.
  *
  */
 
-#ifndef STATE_VECTOR_HPP
-#define STATE_VECTOR_HPP
+#ifndef DATA_VECTOR_HPP
+#define DATA_VECTOR_HPP
 
 #include <stdint.h>
 #include <pthread.h>
@@ -63,134 +62,134 @@
 #include <cstring>
 
 #include "Errors.h"
-#include "StateVectorEnums.hpp"
+#include "DataVectorEnums.hpp"
 #include "EnumClassHash.hpp"
 
-/*********************** HELPER MACROS FOR SV CONFIG *************************/
+/*********************** HELPER MACROS FOR DV CONFIG *************************/
 
 /**
- * Defines an ElementConfig_t of type SV_T_UINT8.
+ * Defines an ElementConfig_t of type DV_T_UINT8.
  */
-#define SV_ADD_UINT8(elem, initialVal)                                        \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_UINT8(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_UINT8,                                                          \
-         StateVector::toUInt64<uint8_t> (initialVal)                          \
+         DV_T_UINT8,                                                          \
+         DataVector::toUInt64<uint8_t> (initialVal)                          \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_UINT16.
+ * Defines an ElementConfig_t of type DV_T_UINT16.
  */
-#define SV_ADD_UINT16(elem, initialVal)                                       \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_UINT16(elem, initialVal)                                       \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_UINT16,                                                         \
-         StateVector::toUInt64<uint16_t> (initialVal)                         \
+         DV_T_UINT16,                                                         \
+         DataVector::toUInt64<uint16_t> (initialVal)                         \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_UINT32.
+ * Defines an ElementConfig_t of type DV_T_UINT32.
  */
-#define SV_ADD_UINT32(elem, initialVal)                                       \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_UINT32(elem, initialVal)                                       \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_UINT32,                                                         \
-         StateVector::toUInt64<uint32_t> (initialVal)                         \
+         DV_T_UINT32,                                                         \
+         DataVector::toUInt64<uint32_t> (initialVal)                         \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_UINT64.
+ * Defines an ElementConfig_t of type DV_T_UINT64.
  */
-#define SV_ADD_UINT64(elem, initialVal)                                       \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_UINT64(elem, initialVal)                                       \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_UINT64,                                                         \
-         StateVector::toUInt64<uint64_t> (initialVal)                         \
+         DV_T_UINT64,                                                         \
+         DataVector::toUInt64<uint64_t> (initialVal)                         \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_INT8.
+ * Defines an ElementConfig_t of type DV_T_INT8.
  */
-#define SV_ADD_INT8(elem, initialVal)                                         \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_INT8(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_INT8,                                                           \
-         StateVector::toUInt64<int8_t> (initialVal)                           \
+         DV_T_INT8,                                                           \
+         DataVector::toUInt64<int8_t> (initialVal)                           \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_INT16.
+ * Defines an ElementConfig_t of type DV_T_INT16.
  */
-#define SV_ADD_INT16(elem, initialVal)                                        \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_INT16(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_INT16,                                                          \
-         StateVector::toUInt64<int16_t> (initialVal)                          \
+         DV_T_INT16,                                                          \
+         DataVector::toUInt64<int16_t> (initialVal)                          \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_INT32.
+ * Defines an ElementConfig_t of type DV_T_INT32.
  */
-#define SV_ADD_INT32(elem, initialVal)                                        \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_INT32(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_INT32,                                                          \
-         StateVector::toUInt64<int32_t> (initialVal)                          \
+         DV_T_INT32,                                                          \
+         DataVector::toUInt64<int32_t> (initialVal)                          \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_INT64.
+ * Defines an ElementConfig_t of type DV_T_INT64.
  */
-#define SV_ADD_INT64(elem, initialVal)                                        \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_INT64(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_INT64,                                                          \
-         StateVector::toUInt64<int64_t> (initialVal)                          \
+         DV_T_INT64,                                                          \
+         DataVector::toUInt64<int64_t> (initialVal)                          \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_FLOAT.
+ * Defines an ElementConfig_t of type DV_T_FLOAT.
  */
-#define SV_ADD_FLOAT(elem, initialVal)                                        \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_FLOAT(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_FLOAT,                                                          \
-         StateVector::toUInt64<float> (initialVal)                            \
+         DV_T_FLOAT,                                                          \
+         DataVector::toUInt64<float> (initialVal)                            \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_DOUBLE.
+ * Defines an ElementConfig_t of type DV_T_DOUBLE.
  */
-#define SV_ADD_DOUBLE(elem, initialVal)                                       \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_DOUBLE(elem, initialVal)                                       \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_DOUBLE,                                                         \
-         StateVector::toUInt64<double> (initialVal)                           \
+         DV_T_DOUBLE,                                                         \
+         DataVector::toUInt64<double> (initialVal)                           \
     })
 
 /**
- * Defines an ElementConfig_t of type SV_T_BOOL.
+ * Defines an ElementConfig_t of type DV_T_BOOL.
  */
-#define SV_ADD_BOOL(elem, initialVal)                                         \
-    ((StateVector::ElementConfig_t) {                                         \
+#define DV_ADD_BOOL(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                         \
          elem,                                                                \
-         SV_T_BOOL,                                                           \
-         StateVector::toUInt64<bool> (initialVal)                             \
+         DV_T_BOOL,                                                           \
+         DataVector::toUInt64<bool> (initialVal)                             \
     })
 
-/**************************** STATE VECTOR CLASS *****************************/
+/**************************** DATA VECTOR CLASS *****************************/
 
-class StateVector final 
+class DataVector final 
 {
 public:
 
     /**
-     * Config for a single element in the State Vector.
+     * Config for a single element in the Data Vector.
      */
     typedef struct ElementConfig
     {
-        StateVectorElement_t     elem;
-        StateVectorElementType_t type;
+        DataVectorElement_t     elem;
+        DataVectorElementType_t type;
         uint64_t                 initialVal;
     } ElementConfig_t;
 
@@ -198,32 +197,32 @@ public:
      * Config for a group of elements called a region. Elements should be
      * grouped s.t. all elements that would be transmitted or received in one
      * message to/from another node are in the same region. This makes tx/rx'ing
-     * State Vector data more efficient, since it allows us to pass a pointer to 
+     * Data Vector data more efficient, since it allows us to pass a pointer to 
      * the region and length of data to the Network Interface.
      */
     typedef struct RegionConfig
     {
-        StateVectorRegion_t          region;
+        DataVectorRegion_t          region;
         std::vector<ElementConfig_t> elems;
     } RegionConfig_t;
 
     /**
      * Config for a group of regions used by a compute node. Used by the
-     * constructor to initialize the State Vector.
+     * constructor to initialize the Data Vector.
      */
-    typedef std::vector<RegionConfig_t> StateVectorConfig_t;
+    typedef std::vector<RegionConfig_t> Config_t;
 
     /**
      * Function to cast various types to a uint64_t bitwise. This is used in 
-     * defining the initial values in the State Vector config. In order to 
+     * defining the initial values in the Data Vector config. In order to 
      * support various types of initial values, these values need to be casted
      * bitwise to the largest possible element (uint64_t). It is declared as
      * an inline function to reduce function call overhead since it is called
-     * for every element in the State Vector on initialization.
+     * for every element in the Data Vector on initialization.
      *
      * Note: This function returns the uint64_t value instead of an Error_t so 
      *       that it can be used directly in the config, which significantly
-     *       simplifies the State Vector config definitions. Additionally,
+     *       simplifies the Data Vector config definitions. Additionally,
      *       reinterpret_cast has no failure mode and this function will never
      *       dereference a null pointer as defined.
      */
@@ -234,14 +233,14 @@ public:
     }
 
     /**
-     * Entry point for creating a new State Vector. Validates the
+     * Entry point for creating a new Data Vector. Validates the
      * passed in config. This should only be called once per compute node, although
      * this is not enforced to facilitate testing.
      *
-     * @param   kConfig             State Vector's config data.
-     * @param   kPStateVectorRet    Pointer to return State Vector.
+     * @param   kConfig             Data Vector's config data.
+     * @param   kPDataVectorRet    Pointer to return Data Vector.
      *
-     * @ret     E_SUCCESS             State Vector successfully created.
+     * @ret     E_SUCCESS             Data Vector successfully created.
      *          E_EMPTY_CONFIG        Config empty.
      *          E_EMPTY_ELEMS         Region's element list empty.
      *          E_DUPLICATE_REGION    Duplicate region.
@@ -251,11 +250,11 @@ public:
      *                                getSizeBytesFromType.
      *          E_FAILED_TO_INIT_LOCK Failed to initialize lock.
      */
-    static Error_t createNew (StateVectorConfig_t& kConfig, 
-                              std::shared_ptr<StateVector>& kPStateVectorRet);
+    static Error_t createNew (Config_t& kConfig, 
+                              std::shared_ptr<DataVector>& kPDataVectorRet);
 
     /**
-     * Given a State Vector element type, stores the size of that type (bytes)
+     * Given a Data Vector element type, stores the size of that type (bytes)
      * in the sizeBytesRet parameter.
      *
      * @param   kType               Type to get size of.
@@ -264,7 +263,7 @@ public:
      * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
      *          E_INVALID_ENUM      Type not supported.
      */
-    static Error_t getSizeBytesFromType (StateVectorElementType_t kType,
+    static Error_t getSizeBytesFromType (DataVectorElementType_t kType,
                                          uint8_t& kSizeBytesRet);
 
     /**
@@ -274,22 +273,22 @@ public:
      * @param   kSizeBytesRet       Param to store region's size in (bytes).
      *
      * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
-     *          E_INVALID_REGION    Region enum invalid or not in State Vector.
+     *          E_INVALID_REGION    Region enum invalid or not in Data Vector.
      */
-    Error_t getRegionSizeBytes (StateVectorRegion_t kRegion, 
+    Error_t getRegionSizeBytes (DataVectorRegion_t kRegion, 
                                 uint32_t& kSizeBytesRet);
 
     /**
-     * Returns number of bytes in the underlying State Vector buffer.
+     * Returns number of bytes in the underlying Data Vector buffer.
      *
-     * @param   kSizeBytesRet       Param to store State Vector's size in (bytes).
+     * @param   kSizeBytesRet       Param to store Data Vector's size in (bytes).
      *
      * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
      */
-    Error_t getStateVectorSizeBytes (uint32_t& kSizeBytesRet);
+    Error_t getDataVectorSizeBytes (uint32_t& kSizeBytesRet);
 
     /**
-     * Read an element from the State Vector. Defined in the header so that the
+     * Read an element from the Data Vector. Defined in the header so that the
      * templatized functions do not need to each be instantiated explicitly.
      * 
      * NOTE: Calling this method can result in the current thread blocking.
@@ -298,8 +297,8 @@ public:
      * @param   kValueRet                     Variable to store element's value.
      *
      * @ret     E_SUCCESS                     Element read successfully.
-     *          E_INVALID_ELEM                Element not in State Vector.
-     *          E_INVALID_TYPE                Elem_t not supported by State 
+     *          E_INVALID_ELEM                Element not in Data Vector.
+     *          E_INVALID_TYPE                Elem_t not supported by Data
      *                                        Vector.
      *          E_INCORRECT_TYPE              Elem_t does not match expected 
      *                                        element type.
@@ -310,7 +309,7 @@ public:
      *                                        unlock.
      */
     template<class Elem_T>
-    Error_t read (StateVectorElement_t kElem, Elem_T& kValueRet)
+    Error_t read (DataVectorElement_t kElem, Elem_T& kValueRet)
     {
         // Acquire lock.
         Error_t ret = this->acquireLock ();
@@ -344,7 +343,7 @@ public:
     }
 
     /**
-     * Write an element value to the State Vector.  Defined in the header so 
+     * Write an element value to the Data Vector.  Defined in the header so 
      * that the templatized functions do not need to each be instantiated 
      * explicitly.
      *
@@ -355,8 +354,8 @@ public:
      * @param   kValue                        Value to write.
      *
      * @ret     E_SUCCESS                     Element written to successfully.
-     *          E_INVALID_ELEM                Element not in State Vector.
-     *          E_INVALID_TYPE                Elem_t not supported by State 
+     *          E_INVALID_ELEM                Element not in Data Vector.
+     *          E_INVALID_TYPE                Elem_t not supported by Data 
      *                                        Vector.
      *          E_INCORRECT_TYPE              Elem_t does not match expected 
      *                                        element type.
@@ -367,7 +366,7 @@ public:
      *                                        unlock.
     */
     template<class Elem_T>
-    Error_t write (StateVectorElement_t kElem, Elem_T kValue)
+    Error_t write (DataVectorElement_t kElem, Elem_T kValue)
     {
         // Acquire lock.
         Error_t ret = this->acquireLock ();
@@ -413,14 +412,14 @@ public:
      *                                         underlying byte buffer in.
      *
      * @ret      E_SUCCESS                     Buffer copied successfully.
-     *           E_INVALID_REGION              Region enum not in State Vector.
+     *           E_INVALID_REGION              Region enum not in Data Vector.
      *           E_INCORRECT_SIZE              Vector provided does not have
      *                                         same size as region.
      *           E_FAILED_TO_LOCK              Failed to lock.
      *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
      *                                         unlock.
      */
-    Error_t readRegion (StateVectorRegion_t kRegion, 
+    Error_t readRegion (DataVectorRegion_t kRegion, 
                         std::vector<uint8_t>& kRegionBufRet);
 
     /**
@@ -434,24 +433,24 @@ public:
      *                                         to write to region.
      *
      * @ret      E_SUCCESS                     Buffer copied successfully.
-     *           E_INVALID_REGION              Region enum not in State Vector.
+     *           E_INVALID_REGION              Region enum not in Data Vector.
      *           E_INCORRECT_SIZE              Vector provided does not have
      *                                         same size as region.
      *           E_FAILED_TO_LOCK              Failed to lock.
      *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
      *                                         unlock.
      */
-    Error_t writeRegion (StateVectorRegion_t kRegion, 
+    Error_t writeRegion (DataVectorRegion_t kRegion, 
                          std::vector<uint8_t>& kRegionBuf);
 
     /**
-     * Returns a copy the State Vector's underlying byte buffer. The vector
+     * Returns a copy the Data Vector's underlying byte buffer. The vector
      * passed in to copy the underlying buffer to must already have a size
-     * equal to the size of the State Vector for copy efficiency purposes.
+     * equal to the size of the Data Vector for copy efficiency purposes.
      *
      * NOTE: Calling this method can result in the current thread blocking.
      *
-     * @param    kStateVectorBufRet            Vector to store copy of State 
+     * @param    kDataVectorBufRet             Vector to store copy of Data 
      *                                         Vector's underlying buffer in.
      *
      * @ret      E_SUCCESS                     Buffer copied successfully.
@@ -461,31 +460,31 @@ public:
      *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
      *                                         unlock.
      */
-    Error_t readStateVector (std::vector<uint8_t>& kStateVectorBufRet);
+    Error_t readDataVector (std::vector<uint8_t>& kDataVectorBufRet);
 
     /**
-     * Check if element exists in State Vector.
+     * Check if element exists in Data Vector.
      *
      * @param  kElem          Element to check.
      *
-     * @ret    E_SUCCESS      Element in SV.
-     *         E_INVALID_ELEM Element not in SV.
+     * @ret    E_SUCCESS      Element in DV.
+     *         E_INVALID_ELEM Element not in DV.
      */
-    Error_t elementExists (StateVectorElement_t kElem);
+    Error_t elementExists (DataVectorElement_t kElem);
 
     /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
-     * Print the State Vector in a human-readable form.
+     * Print the Data Vector in a human-readable form.
      * 
-     * @ret      E_SUCCESS                     State Vector successfully 
+     * @ret      E_SUCCESS                     Data Vector successfully 
      *                                         printed.
-     *           E_INVALID_ELEM                Element not found in SV.
+     *           E_INVALID_ELEM                Element not found in DV.
      *           E_INVALID_TYPE                Type not supported by print.
      *           E_INCORRECT_SIZE              Vector provided does not have
      *                                         same size as mBuffer.
-     *           E_INVALID_ELEM                Element not in State Vector.
-     *           E_INVALID_TYPE                Elem_t not supported by State 
+     *           E_INVALID_ELEM                Element not in Data Vector.
+     *           E_INVALID_TYPE                Elem_t not supported by Data
      *                                         Vector.
      *           E_INCORRECT_TYPE              Elem_t does not match expected 
      *                                         element type.
@@ -500,7 +499,7 @@ public:
     /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
-     * Print the State Vector CSV header (region and element names).
+     * Print the Data Vector CDV header (region and element names).
      * 
      * @ret      E_SUCCESS                     Header successfully printed.
      */
@@ -509,15 +508,15 @@ public:
     /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
-     * Print the State Vector CSV row (element values).
+     * Print the Data Vector CDV row (element values).
      * 
      * @ret      E_SUCCESS                     Row successfully printed.
-     *           E_INVALID_ELEM                Element not found in SV.
+     *           E_INVALID_ELEM                Element not found in DV.
      *           E_INVALID_TYPE                Type not supported by print.
      *           E_INCORRECT_SIZE              Vector provided does not have
      *                                         same size as mBuffer.
-     *           E_INVALID_ELEM                Element not in State Vector.
-     *           E_INVALID_TYPE                Elem_t not supported by State 
+     *           E_INVALID_ELEM                Element not in Data Vector.
+     *           E_INVALID_TYPE                Elem_t not supported by Data
      *                                         Vector.
      *           E_INCORRECT_TYPE              Elem_t does not match expected 
      *                                         element type.
@@ -530,10 +529,10 @@ public:
     Error_t printCsvRow ();
 
     /**
-     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF DATA VECTOR
      *
-     * Acquire the State Vector lock. This method is public so that the lock
-     * can be held while tx/rx'ing a region of or the entire State Vector using
+     * Acquire the Data Vector lock. This method is public so that the lock
+     * can be held while tx/rx'ing a region of or the entire Data Vector using
      * the Network Interface. 
      *
      * NOTE: Calling this method can result in the current thread blocking.
@@ -544,10 +543,10 @@ public:
     Error_t acquireLock ();
 
     /**
-     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF DATA VECTOR
      *
-     * Release the State Vector lock. This method is public so that the lock
-     * can be held while tx/rx'ing a region of or the entire State Vector using
+     * Release the Data Vector lock. This method is public so that the lock
+     * can be held while tx/rx'ing a region of or the entire Data Vector using
      * the Network Interface.
      *
      * NOTE: Calling this method can result in the current thread blocking.
@@ -558,7 +557,7 @@ public:
     Error_t releaseLock ();
 
     /**
-     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF DATA VECTOR
      *
      * Implementation of read. Defined in the header so that the templatized 
      * functions do not need to each be instantiated explicitly.
@@ -567,12 +566,12 @@ public:
      * @param   kValueRet         Variable to store element's value.
      *
      * @ret     E_SUCCESS         Element read successfully.
-     *          E_INVALID_ELEM    Element not in State Vector.
-     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INVALID_ELEM    Element not in Data Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by Data Vector.
      *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
      */
     template<class Elem_T>
-    Error_t readImpl (StateVectorElement_t kElem, Elem_T& kValueRet)
+    Error_t readImpl (DataVectorElement_t kElem, Elem_T& kValueRet)
     {
         Error_t ret = this->verifyElement (kElem, kValueRet); 
         if (ret != E_SUCCESS)
@@ -589,7 +588,7 @@ public:
     }
 
     /**
-     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF STATE VECTOR
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF DATA VECTOR
      *
      * Implementation of Write.  Defined in the header so that the templatized 
      * functions do not need to each be instantiated explicitly.
@@ -598,12 +597,12 @@ public:
      * @param   kValue            Value to write.
      *
      * @ret     E_SUCCESS         Element written to successfully.
-     *          E_INVALID_ELEM    Element not in State Vector.
-     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INVALID_ELEM    Element not in Data Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by Data Vector.
      *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
     */
     template<class Elem_T>
-    Error_t writeImpl (StateVectorElement_t kElem, Elem_T kValue)
+    Error_t writeImpl (DataVectorElement_t kElem, Elem_T kValue)
     {
         Error_t ret = this->verifyElement (kElem, kValue); 
         if (ret != E_SUCCESS)
@@ -627,23 +626,23 @@ private:
     typedef struct ElementInfo
     {   
         uint32_t startIdx;
-        StateVectorElementType_t type;
+        DataVectorElementType_t type;
     } ElementInfo_t;
 
     /** 
      * Struct containing a region's start index into mBuffer and size in bytes.
-     * The elements vector is stored to enable printing of the State Vector for
+     * The elements vector is stored to enable printing of the Data Vector for
      * debugging purposes.
      */
     typedef struct RegionInfo
     {   
         uint32_t startIdx;
         uint32_t sizeBytes;
-        std::vector<StateVectorElement_t> elements;
+        std::vector<DataVectorElement_t> elements;
     } RegionInfo_t;
 
     /**
-     * Buffer containing State Vector element data.
+     * Buffer containing Data Vector element data.
      */
     std::vector<uint8_t> mBuffer;
 
@@ -651,7 +650,7 @@ private:
      * Map from region to region's info, which contains the region's starting
      * address and size in bytes.
      */
-    std::unordered_map<StateVectorRegion_t, 
+    std::unordered_map<DataVectorRegion_t, 
                        RegionInfo_t, 
                        EnumClassHash> mRegionToRegionInfo;
 
@@ -659,12 +658,12 @@ private:
      * Map from element to element's info, which contains the element's starting
      * address and type.
      */
-    std::unordered_map<StateVectorElement_t, 
+    std::unordered_map<DataVectorElement_t, 
                        ElementInfo_t, 
                        EnumClassHash> mElementToElementInfo;
 
     /**
-     * Lock for synchronizing access to the State Vector in a multi-threaded 
+     * Lock for synchronizing access to the Data Vector in a multi-threaded 
      * environment.
      */
     pthread_mutex_t mLock;
@@ -674,16 +673,16 @@ private:
      * mElementToElementInfo. Because the construuctor can fail, an error code 
      * is returned in the ret parameter.
      *
-     * @param    kConfig      State Vector config.
+     * @param    kConfig      Data Vector config.
      * @param    kRet         E_SUCCESS                Successfully created 
-     *                                                 State Vector.
+     *                                                 Data Vector.
      *                        E_INVALID_ENUM           Element type in config 
      *                                                 not supported by 
      *                                                 getSizeBytesFromType.
      *                        E_FAILED_TO_INIT_LOCK    Failed to initialize 
      *                                                 lock.
      */        
-    StateVector (StateVectorConfig_t& kConfig, Error_t& kRet);
+    DataVector (Config_t& kConfig, Error_t& kRet);
 
     /**
      * Verifies provided config.
@@ -697,24 +696,24 @@ private:
      *          E_DUPLICATE_ELEM    Duplicate element.
      *          E_INVALID_ENUM      Invalid enumeration.
      */
-    static Error_t verifyConfig (StateVectorConfig_t& kConfig);
+    static Error_t verifyConfig (Config_t& kConfig);
 
     /**
-     * Verify element is in State Vector and kValue's type matches element's
+     * Verify element is in Data Vector and kValue's type matches element's
      * type. Defined in the header so that the templatized functions do not 
      * need to each be instantiated explicitly.
      *
      * @param   elem              Config to check.
      *
      * @ret     E_SUCCESS         Element and kValue type valid.
-     *          E_INVALID_ELEM    Element not in State Vector.
-     *          E_INVALID_TYPE    Elem_t not supported by State Vector.
+     *          E_INVALID_ELEM    Element not in Data Vector.
+     *          E_INVALID_TYPE    Elem_t not supported by Data Vector.
      *          E_INCORRECT_TYPE  Elem_t does not match expected element type.
      */
     template<class Elem_T>
-    Error_t verifyElement (StateVectorElement_t kElem, Elem_T& kValue)
+    Error_t verifyElement (DataVectorElement_t kElem, Elem_T& kValue)
     {
-        // Check if element in State Vector.
+        // Check if element in Data Vector.
         Error_t ret = this->elementExists (kElem);
         if (ret != E_SUCCESS)
         {
@@ -727,37 +726,37 @@ private:
         bool typeMatches = false;
         switch (pElementInfo->type)
         {   
-            case SV_T_UINT8:
+            case DV_T_UINT8:
                 typeMatches = typeid (kValue) == typeid (uint8_t);
                 break;
-            case SV_T_UINT16:
+            case DV_T_UINT16:
                 typeMatches = typeid (kValue) == typeid (uint16_t);
                 break;
-            case SV_T_UINT32:
+            case DV_T_UINT32:
                 typeMatches = typeid (kValue) == typeid (uint32_t);
                 break;
-            case SV_T_UINT64:
+            case DV_T_UINT64:
                 typeMatches = typeid (kValue) == typeid (uint64_t);
                 break;
-            case SV_T_INT8:
+            case DV_T_INT8:
                 typeMatches = typeid (kValue) == typeid (int8_t);
                 break;
-            case SV_T_INT16:
+            case DV_T_INT16:
                 typeMatches = typeid (kValue) == typeid (int16_t);
                 break;
-            case SV_T_INT32:
+            case DV_T_INT32:
                 typeMatches = typeid (kValue) == typeid (int32_t);
                 break;
-            case SV_T_INT64:
+            case DV_T_INT64:
                 typeMatches = typeid (kValue) == typeid (int64_t);
                 break;
-            case SV_T_FLOAT:
+            case DV_T_FLOAT:
                 typeMatches = typeid (kValue) == typeid (float);
                 break;
-            case SV_T_DOUBLE:
+            case DV_T_DOUBLE:
                 typeMatches = typeid (kValue) == typeid (double);
                 break;
-            case SV_T_BOOL:
+            case DV_T_BOOL:
                 typeMatches = typeid (kValue) == typeid (bool);
                 break;
             default:
@@ -786,7 +785,7 @@ private:
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
      * Convert a region enum to the corresponding string. Used for printing the
-     * State Vector.
+     * Data Vector.
      *
      * @param kRegionEnum                Region to convert.
      * @param kRegionStrRet              Param to store string in.
@@ -794,14 +793,14 @@ private:
      * @ret     E_SUCCESS                Successfully converted to string.
      *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
      */
-    Error_t regionEnumToString (StateVectorRegion_t kRegionEnum, 
+    Error_t regionEnumToString (DataVectorRegion_t kRegionEnum, 
                                 std::string& kRegionStrRet);
 
     /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
      * Convert an element enum to the corresponding string. Used for printing 
-     * the State Vector.
+     * the Data Vector.
      *
      * @param kElementEnum               Element to convert.
      * @param kElementStrRet             Param to store string in.
@@ -809,25 +808,25 @@ private:
      * @ret     E_SUCCESS                Successfully converted to string.
      *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
      */
-    Error_t elementEnumToString (StateVectorElement_t kElementEnum, 
+    Error_t elementEnumToString (DataVectorElement_t kElementEnum, 
                                  std::string& kElementStrRet);
 
     /**
      * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
      *
-     * Read element from SV and append to string.
+     * Read element from DV and append to string.
      *
      * @param kElem                         Element to append value of.
      * @param kStr                          String to append to.
      *
      * @ret   E_SUCCESS                     Successfully appended element 
      *                                      value.
-     *        E_INVALID_ELEM                Element not found in SV.
+     *        E_INVALID_ELEM                Element not found in DV.
      *        E_INVALID_TYPE                Type not supported by print.
      *        E_INCORRECT_SIZE              Vector provided does not have
      *                                      same size as mBuffer.
-     *        E_INVALID_ELEM                Element not in State Vector.
-     *        E_INVALID_TYPE                Elem_t not supported by State 
+     *        E_INVALID_ELEM                Element not in Data Vector.
+     *        E_INVALID_TYPE                Elem_t not supported by Data
      *                                      Vector.
      *        E_INCORRECT_TYPE              Elem_t does not match expected 
      *                                      element type.
@@ -837,7 +836,7 @@ private:
      *        E_FAILED_TO_UNLOCK            Read succeeded but failed to 
      *                                      unlock.
      */
-    Error_t appendElementValue (StateVectorElement_t kElem,
+    Error_t appendElementValue (DataVectorElement_t kElem,
                                 std::string& kStr);
 
 };

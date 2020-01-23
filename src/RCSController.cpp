@@ -8,9 +8,9 @@
 /*************************** PUBLIC FUNCTIONS *********************************/
 
 RCSController::RCSController (const RCSController::Config& kConfig,
-                              std::shared_ptr<StateVector> kPStateVector,
-                              StateVectorElement_t kSvModeElem) :
-    Controller (kPStateVector, kSvModeElem),
+                              std::shared_ptr<DataVector> kPDataVector,
+                              DataVectorElement_t kDvModeElem) :
+    Controller (kPDataVector, kDvModeElem),
 
     // Adopt phase channel configuration
     mCONFIG(kConfig),

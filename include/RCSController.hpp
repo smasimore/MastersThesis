@@ -73,13 +73,13 @@ public:
      * Controllers begin with response NO_FIRE.
      *
      * @param   kConfig       Configuration for phase channel geometry.
-     * @param   kPStateVector Ptr to initialized State Vector for this node.
-     * @param   kSvModeElem   State Vector element to read to determine 
+     * @param   kPDataVector  Ptr to initialized Data Vector for this node.
+     * @param   kDvModeElem   Data Vector element to read to determine 
      *                        controller's mode.
      */
     RCSController (const RCSController::Config& kConfig, 
-                   std::shared_ptr<StateVector> kPStateVector,
-                   StateVectorElement_t kSvModeElem);
+                   std::shared_ptr<DataVector> kPDataVector,
+                   DataVectorElement_t kDvModeElem);
 
     /**
      * Validates the phase channel configuration provided at construction.

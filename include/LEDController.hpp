@@ -18,26 +18,26 @@ public:
      */
     typedef struct Config
     {
-        StateVectorElement_t svElemControlVal;
+        DataVectorElement_t dvElemControlVal;
     } Config_t;
 
     /**
      * Creates a new LEDController.
      *
      * @param   kConf         Controller config.
-     * @param   kPStateVector Ptr to initialized State Vector.
-     * @param   kSvModeElem   State Vector element to read to determine 
+     * @param   kPDataVector  Ptr to initialized Data Vector.
+     * @param   kDvModeElem   Data Vector element to read to determine 
      *                        controller's mode.
      */
     LEDController (const LEDController::Config_t& kConf, 
-                   std::shared_ptr<StateVector> kPStateVector,
-                   StateVectorElement_t kSvModeElem);
+                   std::shared_ptr<DataVector> kPDataVector,
+                   DataVectorElement_t kDvModeElem);
 
     /**
      * Validates controller config.
      *
      * @ret     E_SUCCESS         Config was valid.
-     *          E_INVALID_ELEM    Elem in config dne in SV.
+     *          E_INVALID_ELEM    Elem in config dne in DV.
      */
     Error_t verifyConfig ();
 
@@ -45,7 +45,7 @@ public:
      * LED is on when controller is enabled.
      *
      * @ret     E_SUCCESS            Success.
-     *          E_STATE_VECTOR_WRITE Failed to write to SV.
+     *          E_DATA_VECTOR_WRITE Failed to write to DV.
      */
     Error_t runEnabled ();
 
@@ -53,24 +53,24 @@ public:
      * LED is off when controller is safed.
      *
      * @ret     E_SUCCESS            Success.
-     *          E_STATE_VECTOR_WRITE Failed to write to SV.
+     *          E_DATA_VECTOR_WRITE Failed to write to DV.
      */
     Error_t runSafed ();
 
 private:
 
     /**
-     * SV element to write to set LED's digital output value.
+     * DV element to write to set LED's digital output value.
      */
-    StateVectorElement_t mSvElemControlVal;
+    DataVectorElement_t mDvElemControlVal;
 
     /**
-     * Writes an LED control value to the SV.
+     * Writes an LED control value to the DV.
      *
      * @param   kControlVal          Control value to write.
      *
      * @ret     E_SUCCESS            Successfully set LED.
-     *          E_STATE_VECTOR_WRITE Failed to write to SV.
+     *          E_DATA_VECTOR_WRITE Failed to write to DV.
      */
     Error_t setLED (bool kControlVal);
 };

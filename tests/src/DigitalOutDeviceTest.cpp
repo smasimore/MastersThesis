@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <memory>
 
-#include "StateVector.hpp"
+#include "DataVector.hpp"
 #include "Errors.h"
 #include "NiFpga.h"
 #include "NiFpga_IO.h"
@@ -18,9 +18,9 @@
 #define BIT_FILE_PATH "/home/admin/FlightSoftware/"
 
 /**
- * Initialize FPGA session and State Vector.
+ * Initialize FPGA session and Data Vector.
  */
-#define INIT_SESSION_AND_SV                                                   \
+#define INIT_SESSION_AND_DV                                                   \
     NiFpga_Session session;                                                   \
     NiFpga_Status status = NiFpga_Initialize();                               \
     NiFpga_MergeStatus(&status, NiFpga_Open(                                  \
@@ -28,18 +28,18 @@
         NiFpga_IO_Signature, "RIO0", 0, &session));                           \
     CHECK_EQUAL (NiFpga_Status_Success, status);                              \
     TestHelpers::sleepMs (1000);                                              \
-    StateVector::StateVectorConfig_t config =                                 \
+    DataVector::Config_t config =                                             \
     {                                                                         \
         {                                                                     \
-            {SV_REG_TEST0,                                                    \
+            {DV_REG_TEST0,                                                    \
             {                                                                 \
-                SV_ADD_BOOL  (  SV_ELEM_LED_CONTROL_VAL,      false        ), \
-                SV_ADD_BOOL  (  SV_ELEM_LED_FEEDBACK_VAL,     false        ), \
+                DV_ADD_BOOL  (  DV_ELEM_LED_CONTROL_VAL,      false        ), \
+                DV_ADD_BOOL  (  DV_ELEM_LED_FEEDBACK_VAL,     false        ), \
             }},                                                               \
         }                                                                     \
     };                                                                        \
-    std::shared_ptr<StateVector> pSv;                                         \
-    CHECK_SUCCESS (StateVector::createNew (config, pSv));                       
+    std::shared_ptr<DataVector> pDv;                                          \
+    CHECK_SUCCESS (DataVector::createNew (config, pDv));                       
 
 
 TEST_GROUP (DigitalOutDeviceTest)
@@ -68,39 +68,39 @@ TEST_GROUP (DigitalOutDeviceTest)
 /* Test null State Vector pointer on init. */
 TEST (DigitalOutDeviceTest, NullStateVector)
 {
-    INIT_SESSION_AND_SV;
+    INIT_SESSION_AND_DV;
 
     DigitalOutDevice::Config_t deviceConfig = 
     {
-        SV_ELEM_LED_CONTROL_VAL, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
+        DV_ELEM_LED_CONTROL_VAL, 
+        DV_ELEM_LED_FEEDBACK_VAL, 
         static_cast<uint8_t> (DigitalOutDevice::MIN_PIN_NUMBER),
     };
     std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
     CHECK_ERROR (Device::createNew (session, nullptr, deviceConfig, 
                                     pDigitalOutDevice),
-                 E_STATE_VECTOR_NULL); 
+                 E_DATA_VECTOR_NULL); 
 }
 
 /* Test invalid pinNumber in config. */
 TEST (DigitalOutDeviceTest, InvalidPinNumber)
 {
-    INIT_SESSION_AND_SV;
+    INIT_SESSION_AND_DV;
 
     DigitalOutDevice::Config_t deviceConfig = 
     {
-        SV_ELEM_LED_CONTROL_VAL, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
+        DV_ELEM_LED_CONTROL_VAL, 
+        DV_ELEM_LED_FEEDBACK_VAL, 
         static_cast<uint8_t> (DigitalOutDevice::MAX_PIN_NUMBER + 1),
     };
     std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-    CHECK_ERROR (Device::createNew (session, pSv, deviceConfig, 
+    CHECK_ERROR (Device::createNew (session, pDv, deviceConfig, 
                                     pDigitalOutDevice),
                  E_OUT_OF_BOUNDS); 
 
     deviceConfig.pinNumber = static_cast<uint8_t> (
             DigitalOutDevice::MIN_PIN_NUMBER - 1);
-    CHECK_ERROR (Device::createNew (session, pSv, deviceConfig, 
+    CHECK_ERROR (Device::createNew (session, pDv, deviceConfig, 
                                     pDigitalOutDevice),
                  E_OUT_OF_BOUNDS); 
 }
@@ -108,24 +108,24 @@ TEST (DigitalOutDeviceTest, InvalidPinNumber)
 /* Test invalid State Vector elements config. */
 TEST (DigitalOutDeviceTest, InvalidSVElems)
 {
-    INIT_SESSION_AND_SV;
+    INIT_SESSION_AND_DV;
 
     // Verify invalid controlVal elem.
     DigitalOutDevice::Config_t deviceConfig = 
     {
-        SV_ELEM_TEST0, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
+        DV_ELEM_TEST0, 
+        DV_ELEM_LED_FEEDBACK_VAL, 
         static_cast<uint8_t> (DigitalOutDevice::MAX_PIN_NUMBER),
     };
     std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-    CHECK_ERROR (Device::createNew (session, pSv, deviceConfig, 
+    CHECK_ERROR (Device::createNew (session, pDv, deviceConfig, 
                                     pDigitalOutDevice),
                  E_INVALID_ELEM); 
 
     // Verify invalid feedbackVal elem.
-    deviceConfig.svElemControlVal = SV_ELEM_LED_CONTROL_VAL;
-    deviceConfig.svElemFeedbackVal = SV_ELEM_TEST0;
-    CHECK_ERROR (Device::createNew (session, pSv, deviceConfig, 
+    deviceConfig.dvElemControlVal = DV_ELEM_LED_CONTROL_VAL;
+    deviceConfig.dvElemFeedbackVal = DV_ELEM_TEST0;
+    CHECK_ERROR (Device::createNew (session, pDv, deviceConfig, 
                                     pDigitalOutDevice),
                  E_INVALID_ELEM); 
 }
@@ -134,18 +134,18 @@ TEST (DigitalOutDeviceTest, InvalidSVElems)
    pin value is low.*/
 TEST (DigitalOutDeviceTest, InitialStateLow)
 {
-    // 1) Initialize FPGA and SV. 
-    INIT_SESSION_AND_SV;
+    // 1) Initialize FPGA and DV. 
+    INIT_SESSION_AND_DV;
 
     // 2) Initialize device.
     DigitalOutDevice::Config_t deviceConfig = 
     {
-        SV_ELEM_LED_CONTROL_VAL, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
+        DV_ELEM_LED_CONTROL_VAL, 
+        DV_ELEM_LED_FEEDBACK_VAL, 
         5
     };
     std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-    CHECK_SUCCESS (Device::createNew (session, pSv, deviceConfig, pDigitalOutDevice)); 
+    CHECK_SUCCESS (Device::createNew (session, pDv, deviceConfig, pDigitalOutDevice)); 
     TestHelpers::sleepMs (1);
 
     // 3) Verify state is low after initializing.
@@ -162,21 +162,21 @@ TEST (DigitalOutDeviceTest, InitialStateLow)
    pin value is high.*/
 TEST (DigitalOutDeviceTest, InitialStateHigh)
 {
-    // 1) Initialize FPGA and SV. 
-    INIT_SESSION_AND_SV;
+    // 1) Initialize FPGA and DV. 
+    INIT_SESSION_AND_DV;
 
     // 2) Set control value high before initializing device.
-    CHECK_SUCCESS (pSv->write (SV_ELEM_LED_CONTROL_VAL, true));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_LED_CONTROL_VAL, true));
 
     // 3) Initialize device.
     DigitalOutDevice::Config_t deviceConfig = 
     {
-        SV_ELEM_LED_CONTROL_VAL, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
+        DV_ELEM_LED_CONTROL_VAL, 
+        DV_ELEM_LED_FEEDBACK_VAL, 
         5
     };
     std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-    CHECK_SUCCESS (Device::createNew (session, pSv, deviceConfig, pDigitalOutDevice)); 
+    CHECK_SUCCESS (Device::createNew (session, pDv, deviceConfig, pDigitalOutDevice)); 
     TestHelpers::sleepMs (1);
 
     // 4) Verify state is high after initializing.
@@ -192,8 +192,8 @@ TEST (DigitalOutDeviceTest, InitialStateHigh)
 /* Test successful initialization and run of device. */
 TEST (DigitalOutDeviceTest, DigitalOutOn)
 {
-    // 1) Initialize FPGA and SV. 
-    INIT_SESSION_AND_SV;
+    // 1) Initialize FPGA and DV. 
+    INIT_SESSION_AND_DV;
 
     // 2) Loop through valid pin numbers and verify functionality.
     for (uint8_t i = DigitalOutDevice::MIN_PIN_NUMBER; 
@@ -202,18 +202,18 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
         // 2a) Initialize device.
         DigitalOutDevice::Config_t deviceConfig = 
         {
-            SV_ELEM_LED_CONTROL_VAL, 
-            SV_ELEM_LED_FEEDBACK_VAL, 
+            DV_ELEM_LED_CONTROL_VAL, 
+            DV_ELEM_LED_FEEDBACK_VAL, 
             i
         };
         std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-        CHECK_SUCCESS (Device::createNew (session, pSv, deviceConfig, pDigitalOutDevice)); 
+        CHECK_SUCCESS (Device::createNew (session, pDv, deviceConfig, pDigitalOutDevice)); 
 
         // 2b) Verify starting state.
         bool controlVal = false;
         bool feedbackVal = false;
-        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal);
+        pDv->read (DV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
         CHECK_EQUAL (false, controlVal);
         CHECK_EQUAL (false, feedbackVal);
 
@@ -222,28 +222,28 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
         CHECK_SUCCESS (pDigitalOutDevice->run ());
         TestHelpers::sleepMs (1);
         CHECK_SUCCESS (pDigitalOutDevice->run ());
-        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal);
+        pDv->read (DV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
         CHECK_EQUAL (false, controlVal);
         CHECK_EQUAL (false, feedbackVal);
 
         // 2d) Set controlVal to true and verify updated state.
-        pSv->write (SV_ELEM_LED_CONTROL_VAL, true);
+        pDv->write (DV_ELEM_LED_CONTROL_VAL, true);
         CHECK_SUCCESS (pDigitalOutDevice->run ());
         TestHelpers::sleepMs (1);
         CHECK_SUCCESS (pDigitalOutDevice->run ());
-        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal);
+        pDv->read (DV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
         CHECK_EQUAL (true, controlVal);
         CHECK_EQUAL (true, feedbackVal);
 
         // 2e) Set controlVal to false and verify updated state.
-        pSv->write (SV_ELEM_LED_CONTROL_VAL, false);
+        pDv->write (DV_ELEM_LED_CONTROL_VAL, false);
         CHECK_SUCCESS (pDigitalOutDevice->run ());
         TestHelpers::sleepMs (1);
         CHECK_SUCCESS (pDigitalOutDevice->run ());
-        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal);
+        pDv->read (DV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
         CHECK_EQUAL (false, controlVal);
         CHECK_EQUAL (false, feedbackVal);
     }

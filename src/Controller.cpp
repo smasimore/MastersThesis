@@ -27,9 +27,9 @@ Error_t Controller::run ()
 Error_t Controller::getMode (Controller::Mode_t& kModeRet)
 {
     uint8_t mode;
-    if (mPStateVector->read (mSvModeElem, mode) != E_SUCCESS)
+    if (mPDataVector->read (mDvModeElem, mode) != E_SUCCESS)
     {
-        return E_STATE_VECTOR_READ;
+        return E_DATA_VECTOR_READ;
     }
 
     kModeRet = static_cast<Mode_t> (mode);
@@ -39,7 +39,7 @@ Error_t Controller::getMode (Controller::Mode_t& kModeRet)
 
 /*************************** PROTECTED FUNCTIONS ******************************/
 
-Controller::Controller (std::shared_ptr<StateVector> kPStateVector, 
-                        StateVectorElement_t kSvModeElem) :
-    mPStateVector (kPStateVector),
-    mSvModeElem   (kSvModeElem) {}
+Controller::Controller (std::shared_ptr<DataVector> kPDataVector, 
+                        DataVectorElement_t kDvModeElem) :
+    mPDataVector (kPDataVector),
+    mDvModeElem  (kDvModeElem) {}

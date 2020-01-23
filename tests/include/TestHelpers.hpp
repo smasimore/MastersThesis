@@ -12,7 +12,7 @@
 
 #include "Errors.h"
 #include "ThreadManager.hpp"
-#include "StateVector.hpp"
+#include "DataVector.hpp"
 #include "Log.hpp"
 
 #include "CppUTest/TestHarness.h"
@@ -68,11 +68,11 @@
     Log testLog = Log (ret);
 
 /**
- * Initializes State Vector as local variable pSv.
+ * Initializes Data Vector as local variable pDv.
  */
-#define INIT_STATE_VECTOR(config)                                             \
-    std::shared_ptr<StateVector> pSv = nullptr;                               \
-    CHECK_SUCCESS (StateVector::createNew (config, pSv));                     \
+#define INIT_DATA_VECTOR(config)                                             \
+    std::shared_ptr<DataVector> pDv = nullptr;                               \
+    CHECK_SUCCESS (DataVector::createNew (config, pDv));                     \
 
 /**
  * Verifies local variables expectedLog == actualLog.
