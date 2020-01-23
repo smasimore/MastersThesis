@@ -106,6 +106,7 @@ typedef enum Error
     /* Devices */
     E_FPGA_READ = 125,
     E_FPGA_WRITE,
+    E_PIN_NOT_CONFIGURED,
 
     /* Time */
     E_FAILED_TO_GET_TIME = 150,

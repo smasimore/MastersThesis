@@ -73,104 +73,131 @@ DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession,
         return;
     }
 
-    // Store config data in class globals.
+    // Get pin config data.
     mSvElemControlVal = kConfig.svElemControlVal;
     mSvElemFeedbackVal = kConfig.svElemFeedbackVal;
+    uint32_t fpgaOutputEnable = 0;
     switch (kConfig.pinNumber)
     {
         // DIO 0 - 4 not configured in FPGA bit file.
         case 5:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO5;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO5;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO5;
             break;
         case 6:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO6;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO6;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO6;
             break;
         case 7:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO7;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO7;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO7;
             break;
         case 8:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO8;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO8;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO8;
             break;
         case 9:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO9;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO9;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO9;
             break;
         case 10:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO10;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO10;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO10;
             break;
         case 11:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO11;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO11;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO11;
             break;
         case 12:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO12;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO12;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO12;
             break;
         case 13:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO13;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO13;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO13;
             break;
         case 14:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO14;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO14;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO14;
             break;
         case 15:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO15;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO15;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO15;
             break;
         case 16:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO16;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO16;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO16;
             break;
         case 17:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO17;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO17;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO17;
             break;
         case 18:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO18;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO18;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO18;
             break;
         case 19:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO19;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO19;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO19;
             break;
         case 20:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO20;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO20;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO20;
             break;
         case 21:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO21;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO21;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO21;
             break;
         case 22:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO22;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO22;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO22;
             break;
         case 23:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO23;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO23;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO23;
             break;
         case 24:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO24;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO24;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO24;
             break;
         case 25:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO25;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO25;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO25;
             break;
         case 26:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO26;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO26;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO26;
             break;
         case 27:
             mFpgaControl   = NiFpga_IO_ControlBool_outDIO27;
             mFpgaIndicator = NiFpga_IO_IndicatorBool_inDIO27;
+            fpgaOutputEnable = NiFpga_IO_ControlBool_outputEnableDIO27;
             break;
+        default:
+            kRet = E_PIN_NOT_CONFIGURED;
+            return;
     }
 
     kRet = updateFpgaControlValue ();
@@ -183,10 +210,8 @@ DigitalOutDevice::DigitalOutDevice (NiFpga_Session& kSession,
     // value so that the pin outputs the desired value as soon as it is set as
     // an output pin.
     NiFpga_Status status = NiFpga_Status_Success;
-    NiFpga_MergeStatus(&status, 
-                       NiFpga_WriteBool(kSession, 
-                                        NiFpga_IO_ControlBool_outputEnableDIO5,
-                                        NiFpga_True));
+    NiFpga_MergeStatus (&status, NiFpga_WriteBool (kSession, fpgaOutputEnable,
+                                                   NiFpga_True));
     if (status != NiFpga_Status_Success)
     {
         kRet = E_FPGA_WRITE;

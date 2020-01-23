@@ -70,16 +70,17 @@ class DigitalOutDevice final : public Device
          * Derived device constructor. This must be public so that it is visible 
          * to Device::createNew.
          *
-         * @param     kSession      Initialized and open FPGA session.
-         * @param     kStateVector  Node's State Vector.
-         * @param     kConfig       Device config.
-         * @param     kRet          E_SUCCESS           Config valid.
-         *                          E_OUT_OF_BOUNDS     pinNumber out of bounds.
-         *                          E_INVALID_ELEM      svElemControlVal or 
-         *                                              svElemFeedbackVal not in 
-         *                                              SV.
-         *                          E_STATE_VECTOR_READ Failed to read from SV.
-         *                          E_FPGA_WRITE        Failed to write to FPGA.
+         * @param  kSession      Initialized and open FPGA session.
+         * @param  kStateVector  Node's State Vector.
+         * @param  kConfig       Device config.
+         * @param  kRet          E_SUCCESS             Config valid.
+         *                       E_OUT_OF_BOUNDS       pin out of bounds.
+         *                       E_INVALID_ELEM        svElemControlVal or 
+         *                                             svElemFeedbackVal not in 
+         *                                             SV.
+         *                       E_STATE_VECTOR_READ   Failed to read from SV.
+         *                       E_FPGA_WRITE          Failed to write to FPGA.
+         *                       E_PIN_NOT_CONFIGURED  Pin not configured.
          */
         DigitalOutDevice (NiFpga_Session& kSession, 
                           std::shared_ptr<StateVector> kPStateVector,

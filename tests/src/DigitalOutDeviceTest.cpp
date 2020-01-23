@@ -42,13 +42,16 @@
     CHECK_SUCCESS (StateVector::createNew (config, pSv));                       
 
 
-TEST_GROUP(DigitalOutDeviceTest)
+TEST_GROUP (DigitalOutDeviceTest)
 {
     /**
      * Turn off memory leak detection due to undiagnosed memory leak caused
-     * by FPGA C API usage.
+     * by FPGA C API usage. This is a known NI issue and will only cause memory 
+     * issues in production code if the FPGA is initialized more than once.
+     *
+     * http://www.ni.com/product-documentation/55093/en/#660205_by_Date
      */
-    void setup()
+    void setup ()
     {
         MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
     }
@@ -63,7 +66,7 @@ TEST_GROUP(DigitalOutDeviceTest)
 };
 
 /* Test null State Vector pointer on init. */
-TEST(DigitalOutDeviceTest, NullStateVector)
+TEST (DigitalOutDeviceTest, NullStateVector)
 {
     INIT_SESSION_AND_SV;
 
@@ -80,7 +83,7 @@ TEST(DigitalOutDeviceTest, NullStateVector)
 }
 
 /* Test invalid pinNumber in config. */
-TEST(DigitalOutDeviceTest, InvalidPinNumber)
+TEST (DigitalOutDeviceTest, InvalidPinNumber)
 {
     INIT_SESSION_AND_SV;
 
@@ -103,7 +106,7 @@ TEST(DigitalOutDeviceTest, InvalidPinNumber)
 }
 
 /* Test invalid State Vector elements config. */
-TEST(DigitalOutDeviceTest, InvalidSVElems)
+TEST (DigitalOutDeviceTest, InvalidSVElems)
 {
     INIT_SESSION_AND_SV;
 
@@ -129,7 +132,7 @@ TEST(DigitalOutDeviceTest, InvalidSVElems)
 
 /* Verify that after the device is initialized with a low control value, the 
    pin value is low.*/
-TEST(DigitalOutDeviceTest, InitialStateLow)
+TEST (DigitalOutDeviceTest, InitialStateLow)
 {
     // 1) Initialize FPGA and SV. 
     INIT_SESSION_AND_SV;
@@ -157,7 +160,7 @@ TEST(DigitalOutDeviceTest, InitialStateLow)
 
 /* Verify that after the device is initialized with a high control value, the
    pin value is high.*/
-TEST(DigitalOutDeviceTest, InitialStateHigh)
+TEST (DigitalOutDeviceTest, InitialStateHigh)
 {
     // 1) Initialize FPGA and SV. 
     INIT_SESSION_AND_SV;
@@ -187,60 +190,65 @@ TEST(DigitalOutDeviceTest, InitialStateHigh)
 }
 
 /* Test successful initialization and run of device. */
-TEST(DigitalOutDeviceTest, DigitalOutOn)
+TEST (DigitalOutDeviceTest, DigitalOutOn)
 {
     // 1) Initialize FPGA and SV. 
     INIT_SESSION_AND_SV;
 
-    // 2) Initialize device.
-    DigitalOutDevice::Config_t deviceConfig = 
+    // 2) Loop through valid pin numbers and verify functionality.
+    for (uint8_t i = DigitalOutDevice::MIN_PIN_NUMBER; 
+         i <= DigitalOutDevice::MAX_PIN_NUMBER; i++)
     {
-        SV_ELEM_LED_CONTROL_VAL, 
-        SV_ELEM_LED_FEEDBACK_VAL, 
-        5
-    };
-    std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
-    CHECK_SUCCESS (Device::createNew (session, pSv, deviceConfig, pDigitalOutDevice)); 
+        // 2a) Initialize device.
+        DigitalOutDevice::Config_t deviceConfig = 
+        {
+            SV_ELEM_LED_CONTROL_VAL, 
+            SV_ELEM_LED_FEEDBACK_VAL, 
+            i
+        };
+        std::unique_ptr<DigitalOutDevice> pDigitalOutDevice;
+        CHECK_SUCCESS (Device::createNew (session, pSv, deviceConfig, pDigitalOutDevice)); 
 
-    // 3) Verify starting state.
-    bool controlVal = false;
-    bool feedbackVal = false;
-    pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-    pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
-    CHECK_EQUAL (false, controlVal);
-    CHECK_EQUAL (false, feedbackVal);
+        // 2b) Verify starting state.
+        bool controlVal = false;
+        bool feedbackVal = false;
+        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
+        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        CHECK_EQUAL (false, controlVal);
+        CHECK_EQUAL (false, feedbackVal);
 
-    // 4) Run, sleep, then run. Sleep since pin can take some time before 
-    // reflecting new output value. Expect the feedback value to remain false.
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    TestHelpers::sleepMs (1);
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-    pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
-    CHECK_EQUAL (false, controlVal);
-    CHECK_EQUAL (false, feedbackVal);
+        // 2c) Run, sleep, then run. Sleep since pin can take some time before 
+        // reflecting new output value. Expect the feedback value to remain false.
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        TestHelpers::sleepMs (1);
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
+        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        CHECK_EQUAL (false, controlVal);
+        CHECK_EQUAL (false, feedbackVal);
 
-    // 5) Set controlVal to true and verify updated state.
-    pSv->write (SV_ELEM_LED_CONTROL_VAL, true);
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    TestHelpers::sleepMs (1);
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-    pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
-    CHECK_EQUAL (true, controlVal);
-    CHECK_EQUAL (true, feedbackVal);
+        // 2d) Set controlVal to true and verify updated state.
+        pSv->write (SV_ELEM_LED_CONTROL_VAL, true);
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        TestHelpers::sleepMs (1);
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
+        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        CHECK_EQUAL (true, controlVal);
+        CHECK_EQUAL (true, feedbackVal);
 
-    // 6) Set controlVal to false and verify updated state.
-    pSv->write (SV_ELEM_LED_CONTROL_VAL, false);
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    TestHelpers::sleepMs (1);
-    CHECK_SUCCESS (pDigitalOutDevice->run ());
-    pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
-    pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
-    CHECK_EQUAL (false, controlVal);
-    CHECK_EQUAL (false, feedbackVal);
+        // 2e) Set controlVal to false and verify updated state.
+        pSv->write (SV_ELEM_LED_CONTROL_VAL, false);
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        TestHelpers::sleepMs (1);
+        CHECK_SUCCESS (pDigitalOutDevice->run ());
+        pSv->read (SV_ELEM_LED_CONTROL_VAL, controlVal);
+        pSv->read (SV_ELEM_LED_FEEDBACK_VAL, feedbackVal);
+        CHECK_EQUAL (false, controlVal);
+        CHECK_EQUAL (false, feedbackVal);
+    }
 
-    // 7) Close and finalize FPGA session.
-    NiFpga_MergeStatus(&status, NiFpga_Close(session, 0));
-    NiFpga_MergeStatus(&status, NiFpga_Finalize());
+    // 3) Close and finalize FPGA session.
+    NiFpga_MergeStatus (&status, NiFpga_Close (session, 0));
+    NiFpga_MergeStatus (&status, NiFpga_Finalize ());
 }
