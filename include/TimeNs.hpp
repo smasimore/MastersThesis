@@ -33,7 +33,7 @@ public:
     /**
      * Unsigned long long used to convert seconds to nanoseconds
      */
-    const uint64_t NS_IN_SECOND = 1000000000;
+    static const uint64_t NS_IN_SECOND = 1000000000;
 
     /**
      * Returns time elapsed since TimeNs module initialized.
@@ -49,7 +49,7 @@ public:
     /**
      * Used to initiate and access instance
      *
-     * @param   kPTimeNsRet                Param to fill with pointer to static 
+     * @param   kPTimeNsRet                Param to fill with pointer to static
      *                                     TimeNs Instance
      *
      * @ret     E_SUCCESS                  Instance correctly accessed
@@ -61,10 +61,10 @@ public:
 private:
 
     /**
-     * Max allowable seconds CLOCK_MONOTONIC_RAW clock can be from overflow at 
+     * Max allowable seconds CLOCK_MONOTONIC_RAW clock can be from overflow at
      * initialization time for initialization to succeed. 1 year.
      */
-    const int32_t SECONDS_AWAY_FROM_OVERFLOW_TO_INIT =  365 * 24 * 60 * 60; 
+    const int32_t SECONDS_AWAY_FROM_OVERFLOW_TO_INIT =  365 * 24 * 60 * 60;
 
     /**
      * Stores initialization time; defined at init

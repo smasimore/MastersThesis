@@ -187,6 +187,7 @@
 									<listOptionValue builtIn="false" value="&quot;${NILRT_TOOLCHAIN_PATH}/cortexa9-vfpv3-nilrt-linux-gnueabi/usr/include/c++/4.9.2&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${NILRT_TOOLCHAIN_PATH}/cortexa9-vfpv3-nilrt-linux-gnueabi/usr/include/c++/4.9.2/arm-nilrt-linux-gnueabi&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${NILRT_TOOLCHAIN_PATH}/cortexa9-vfpv3-nilrt-linux-gnueabi/usr/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;/mnt/TREL-Drive/AvGNC/AvSoftware/Workspaces/${AVSW_USER}/FlightSoftware/scripts/include&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.optimization.level.628952319" name="Optimization Level" superClass="gnu.cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.debugging.level.882256306" name="Debug Level" superClass="gnu.cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
@@ -220,7 +221,7 @@
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.945308066" name="ThreadManager.hpp" rcbsApplicability="disable" resourcePath="include/ThreadManager.hpp" toolsToInvoke=""/>
 					<fileInfo id="cdt.managedbuild.config.gnu.cross.exe.debug.1776709983.1685471804.348080487" name="Log.hpp" rcbsApplicability="disable" resourcePath="tests/include/Log.hpp" toolsToInvoke=""/>
 					<sourceEntries>
-						<entry excluding="excludes|src/main.cpp|scripts/" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
+						<entry excluding="excludes|src/main.cpp|scripts/src/scriptMain.cpp" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

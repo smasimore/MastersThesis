@@ -20,7 +20,7 @@
 
 int main (int ac, char** av)
 {
-    // IgniterTest::main (ac, av);
+    IgniterTest::main (ac, av);
     // ProfileCopyBuffer::main (ac, av);
     // ProfileLock::main (ac, av);
 }

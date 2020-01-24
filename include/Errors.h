@@ -101,6 +101,7 @@ typedef enum Error
     E_ENUM_STRING_UNDEFINED,
 
     /* Devices */
+    E_FPGA_INIT,
     E_FPGA_READ = 125,
     E_FPGA_WRITE,
     E_STATE_VECTOR_NULL,

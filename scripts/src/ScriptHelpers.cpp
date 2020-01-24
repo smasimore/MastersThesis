@@ -37,6 +37,5 @@ double ScriptHelpers::timeS ()
     }
 
     // Compute elapsed seconds and return.
-    static const uint64_t NS_IN_S = 1e9;
-    return time * 1.0 / NS_IN_S;
+    return time * 1.0 / TimeNs::NS_IN_SECOND;
 }
