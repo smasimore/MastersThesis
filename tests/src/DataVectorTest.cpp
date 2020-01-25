@@ -432,8 +432,8 @@ TEST (DataVector_Construct, 1Elem_TypesAndBoundaryVals)
         uint32_t actualDataVectorSizeBytes = 0;
         CHECK_SUCCESS (pDv->getDataVectorSizeBytes (
                     actualDataVectorSizeBytes));
-        std::vector<uint8_t> stateVectorBufCopy (actualDataVectorSizeBytes);
-        CHECK_SUCCESS (pDv->readDataVector (stateVectorBufCopy));
+        std::vector<uint8_t> dataVectorBufCopy (actualDataVectorSizeBytes);
+        CHECK_SUCCESS (pDv->readDataVector (dataVectorBufCopy));
 
         // Get region info.
         uint32_t actualRegionSizeBytes;
@@ -460,7 +460,7 @@ TEST (DataVector_Construct, 1Elem_TypesAndBoundaryVals)
         }
 
         // Verify DV's underlying buffer matches expected data.
-        int cmpDvRet = std::memcmp (stateVectorBufCopy.data (), 
+        int cmpDvRet = std::memcmp (dataVectorBufCopy.data (), 
                                     testCase.expectedBuf.data (),
                                     actualDataVectorSizeBytes);
         int cmpRegRet = std::memcmp (regionBufCopy.data (), 
@@ -473,7 +473,7 @@ TEST (DataVector_Construct, 1Elem_TypesAndBoundaryVals)
             uint64_t actualReg = 0;
             std::memcpy (&expected, testCase.expectedBuf.data (), 
                          expectedSizeBytes);
-            std::memcpy (&actualDv, stateVectorBufCopy.data (), expectedSizeBytes);
+            std::memcpy (&actualDv, dataVectorBufCopy.data (), expectedSizeBytes);
             std::memcpy (&actualReg, regionBufCopy.data (), expectedSizeBytes);
   
             std::stringstream stream;
@@ -555,8 +555,8 @@ TEST (DataVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     uint32_t actualDataVectorSizeBytes = 0;
     CHECK_SUCCESS (pDv->getDataVectorSizeBytes (
                    actualDataVectorSizeBytes));
-    std::vector<uint8_t> stateVectorBufCopy (actualDataVectorSizeBytes);
-    CHECK_SUCCESS (pDv->readDataVector (stateVectorBufCopy));
+    std::vector<uint8_t> dataVectorBufCopy (actualDataVectorSizeBytes);
+    CHECK_SUCCESS (pDv->readDataVector (dataVectorBufCopy));
 
     // Get Region0 info.
     uint32_t region0ActualSizeBytes;
@@ -583,10 +583,10 @@ TEST (DataVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     uint32_t region0ExpectedSizeBytes = region0ExpectedBuffer.size ();
     uint32_t region1ExpectedSizeBytes = region1ExpectedBuffer.size ();
     uint32_t region2ExpectedSizeBytes = region2ExpectedBuffer.size ();
-    uint32_t stateVectorExpectedSizeBytes = region0ExpectedSizeBytes +
+    uint32_t dataVectorExpectedSizeBytes = region0ExpectedSizeBytes +
                                             region1ExpectedSizeBytes +
                                             region2ExpectedSizeBytes;
-    CHECK (actualDataVectorSizeBytes == stateVectorExpectedSizeBytes);
+    CHECK (actualDataVectorSizeBytes == dataVectorExpectedSizeBytes);
     CHECK (region0ActualSizeBytes == region0ExpectedSizeBytes);
     CHECK (region1ActualSizeBytes == region1ExpectedSizeBytes);
     CHECK (region2ActualSizeBytes == region2ExpectedSizeBytes);
@@ -606,20 +606,20 @@ TEST (DataVector_Construct, MultipleElem_TypesAndBoundaryVals) {
     CHECK (cmpRet == 0);
 
     // Verify Data Vector's data matches expected.
-    std::vector<uint8_t> stateVectorExpectedBuffer;
-    stateVectorExpectedBuffer.reserve(stateVectorExpectedSizeBytes);
-    stateVectorExpectedBuffer.insert (stateVectorExpectedBuffer.end (), 
+    std::vector<uint8_t> dataVectorExpectedBuffer;
+    dataVectorExpectedBuffer.reserve(dataVectorExpectedSizeBytes);
+    dataVectorExpectedBuffer.insert (dataVectorExpectedBuffer.end (), 
                                       region0ExpectedBuffer.begin (),
                                       region0ExpectedBuffer.end ());
-    stateVectorExpectedBuffer.insert (stateVectorExpectedBuffer.end (), 
+    dataVectorExpectedBuffer.insert (dataVectorExpectedBuffer.end (), 
                                       region1ExpectedBuffer.begin (),
                                       region1ExpectedBuffer.end ());
-    stateVectorExpectedBuffer.insert (stateVectorExpectedBuffer.end (), 
+    dataVectorExpectedBuffer.insert (dataVectorExpectedBuffer.end (), 
                                       region2ExpectedBuffer.begin (),
                                       region2ExpectedBuffer.end ());
-    cmpRet = std::memcmp (stateVectorBufCopy.data (), 
-                          stateVectorExpectedBuffer.data (),
-                          stateVectorExpectedSizeBytes);
+    cmpRet = std::memcmp (dataVectorBufCopy.data (), 
+                          dataVectorExpectedBuffer.data (),
+                          dataVectorExpectedSizeBytes);
     CHECK (cmpRet == 0);
 }
 
@@ -1009,6 +1009,7 @@ TEST (DataVector_readWrite, SuccessfulWrite)
 }
 
 /*********************** READREGION/WRITEREGION TESTS *************************/
+
 DataVector::Config_t gReadRegionWriteRegionConfig = {
     // Regions
     {
@@ -1103,31 +1104,31 @@ TEST (DataVector_readRegionWriteRegion, Success)
 
     uint32_t region0SizeBytes;
     uint32_t region1SizeBytes;
-    uint32_t sVSizeBytes;
+    uint32_t dvSizeBytes;
     CHECK_SUCCESS (pDv->getRegionSizeBytes (DV_REG_TEST0, region0SizeBytes));
     CHECK_SUCCESS (pDv->getRegionSizeBytes (DV_REG_TEST1, region1SizeBytes));
-    CHECK_SUCCESS (pDv->getDataVectorSizeBytes (sVSizeBytes));
+    CHECK_SUCCESS (pDv->getDataVectorSizeBytes (dvSizeBytes));
 
     // Verify sizes match expected.
     CHECK_EQUAL (region0SizeBytes, 2);
     CHECK_EQUAL (region1SizeBytes, 4);
-    CHECK_EQUAL (sVSizeBytes, 6);
+    CHECK_EQUAL (dvSizeBytes, 6);
 
     // Get copy of region and dv buffers.
     std::vector<uint8_t> reg0Buf (region0SizeBytes);
     std::vector<uint8_t> reg1Buf (region1SizeBytes);
-    std::vector<uint8_t> sVBuf (sVSizeBytes);
+    std::vector<uint8_t> dvBuf (dvSizeBytes);
     CHECK_SUCCESS (pDv->readRegion (DV_REG_TEST0, reg0Buf));
     CHECK_SUCCESS (pDv->readRegion (DV_REG_TEST1, reg1Buf));
-    CHECK_SUCCESS (pDv->readDataVector (sVBuf));
+    CHECK_SUCCESS (pDv->readDataVector (dvBuf));
 
     // Verify buffers match expected.
     std::vector<uint8_t> reg0ExpBuf = {0x0, 0x1};
     std::vector<uint8_t> reg1ExpBuf = {0xa4, 0x70, 0x9d, 0x3f};
-    std::vector<uint8_t> sVExpBuf = {0x0, 0x1, 0xa4, 0x70, 0x9d, 0x3f};
+    std::vector<uint8_t> dvExpBuf = {0x0, 0x1, 0xa4, 0x70, 0x9d, 0x3f};
     CHECK (reg0Buf == reg0ExpBuf);
     CHECK (reg1Buf == reg1ExpBuf);
-    CHECK (sVBuf   == sVExpBuf);
+    CHECK (dvBuf   == dvExpBuf);
     
     // Write region 0 and verify Data Vector updated.
     std::vector<uint8_t> reg0WriteBuf = {0xff, 0x0};
@@ -1142,10 +1143,90 @@ TEST (DataVector_readRegionWriteRegion, Success)
     CHECK (reg1Buf == reg1WriteBuf);
     
     // Verify entire DV matches expected.
-    std::vector<uint8_t> sVExpBufAfterWrites = 
+    std::vector<uint8_t> dvExpBufAfterWrites = 
         {0xff, 0x0, 0x0, 0xff, 0x0, 0xff};
-    CHECK_SUCCESS (pDv->readDataVector (sVBuf));
-    CHECK (sVBuf == sVExpBufAfterWrites);
+    CHECK_SUCCESS (pDv->readDataVector (dvBuf));
+    CHECK (dvBuf == dvExpBufAfterWrites);
+}
+
+/*********************** READDATAVECTOR/WRITEDATAVECTOR TESTS *************************/
+
+DataVector::Config_t gReadDataVectorWriteDataVectorConfig = {
+    // Regions
+    {
+        //////////////////////////////////////////////////////////////////////////////////
+
+        // Region
+        {DV_REG_TEST0,
+
+        // Elements
+        //      TYPE                      ELEM            INITIAL_VALUE
+        {
+            DV_ADD_UINT8  (           DV_ELEM_TEST0,            0            ),
+            DV_ADD_BOOL   (           DV_ELEM_TEST1,            1            )
+        }},
+
+        //////////////////////////////////////////////////////////////////////////////////
+    }
+};
+
+/* Test Data Vector readDataVector and writeDataVector methods. */
+TEST_GROUP (DataVector_readDataVectorWriteDataVector)
+{
+
+};
+
+/* Test reading Data Vector with incorrect vector size. */
+TEST (DataVector_readDataVectorWriteDataVector, ReadIncorrectDataVectorSize)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gReadDataVectorWriteDataVectorConfig);
+
+    uint32_t dvSizeBytes;
+    CHECK_SUCCESS (pDv->getDataVectorSizeBytes (dvSizeBytes));
+
+    std::vector<uint8_t> dvBufCopy (dvSizeBytes + 1);
+    CHECK_ERROR (pDv->readDataVector (dvBufCopy), E_INCORRECT_SIZE);
+}
+
+///* Test writing Data Vector with incorrect vector size. */
+TEST (DataVector_readDataVectorWriteDataVector, WriteIncorrectDataVectorSize)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gReadDataVectorWriteDataVectorConfig);
+
+    uint32_t dvSizeBytes;
+    CHECK_SUCCESS (pDv->getDataVectorSizeBytes (dvSizeBytes));
+
+    std::vector<uint8_t> dvBuf (dvSizeBytes + 1);
+    CHECK_ERROR (pDv->writeDataVector (dvBuf), E_INCORRECT_SIZE);
+}
+
+///* Test writing Data Vector with correct vector size. */
+TEST (DataVector_readDataVectorWriteDataVector, Success)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gReadDataVectorWriteDataVectorConfig);
+
+    uint32_t dvSizeBytes;
+    CHECK_SUCCESS (pDv->getDataVectorSizeBytes (dvSizeBytes));
+
+    // Verify sizes match expected.
+    CHECK_EQUAL (dvSizeBytes, 2);
+
+    // Get copy of dv and dv buffers.
+    std::vector<uint8_t> dvBuf (dvSizeBytes);
+    CHECK_SUCCESS (pDv->readDataVector (dvBuf));
+
+    // Verify buffer matches expected.
+    std::vector<uint8_t> dvExpBuf = {0x0, 0x1};
+    CHECK (dvBuf == dvExpBuf);
+    
+    // Write DV and verify read updated.
+    std::vector<uint8_t> dvWriteBuf = {0xff, 0x0};
+    CHECK_SUCCESS (pDv->writeDataVector (dvWriteBuf));
+    CHECK_SUCCESS (pDv->readDataVector (dvBuf));
+    CHECK (dvBuf == dvWriteBuf);
 }
 
 /**************************** SYNCHRONIZATION TESTS ***************************/
@@ -1156,7 +1237,7 @@ TEST (DataVector_readRegionWriteRegion, Success)
 struct ThreadFuncArgs 
 {
     Log*                         testLog;
-    std::shared_ptr<DataVector> stateVector;
+    std::shared_ptr<DataVector> dataVector;
     uint8_t                      threadId;
 };
 
@@ -1200,7 +1281,7 @@ static void* threadFuncLockAndLog (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
     Log* log                         = pArgs->testLog;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
     uint8_t threadId                 = pArgs->threadId;
 
     ret = pDv->acquireLock ();
@@ -1229,7 +1310,7 @@ static void* threadFuncLockAndLogThenBlock (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
     Log* log                         = pArgs->testLog;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
     uint8_t threadId                 = pArgs->threadId;
 
     ret = pDv->acquireLock ();
@@ -1259,7 +1340,7 @@ static void* threadFuncRead (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
     Log* log                         = pArgs->testLog;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
 
     // Read first element in DV.
     uint8_t value = 0;
@@ -1280,7 +1361,7 @@ static void* threadFuncWrite (void *rawArgs)
 
     // Parse args.
     struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
 
     // Write first element in DV.
     uint8_t value = 2;
@@ -1300,7 +1381,7 @@ static void* threadFuncReadRegion (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
     Log* log                         = pArgs->testLog;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
 
     // Read first region in DV.
     uint32_t regionSizeBytes;
@@ -1323,11 +1404,9 @@ static void* threadFuncWriteRegion (void *rawArgs)
 
     // Parse args.
     struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
 
     // Write first region in DV.
-    uint32_t regionSizeBytes;
-    pDv->getRegionSizeBytes (DV_REG_TEST0, regionSizeBytes);
     std::vector<uint8_t> regBufWrite = {0x2};
     ret = pDv->writeRegion (DV_REG_TEST0, regBufWrite);
 
@@ -1344,16 +1423,34 @@ static void* threadFuncReadDataVector (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs     = (struct ThreadFuncArgs *) rawArgs;
     Log* log                         = pArgs->testLog;
-    std::shared_ptr<DataVector> pDv = pArgs->stateVector;
+    std::shared_ptr<DataVector> pDv  = pArgs->dataVector;
 
     // Read DV.
-    uint32_t sVSizeBytes;
-    pDv->getDataVectorSizeBytes (sVSizeBytes);
-    std::vector<uint8_t> sVBufCopy (sVSizeBytes);
-    ret = pDv->readDataVector (sVBufCopy);
+    uint32_t dvSizeBytes;
+    pDv->getDataVectorSizeBytes (dvSizeBytes);
+    std::vector<uint8_t> dvBufCopy (dvSizeBytes);
+    ret = pDv->readDataVector (dvBufCopy);
 
     // There's only 1, 1-byte element in DV. Log value.
-    log->logEvent (Log::LogEvent_t::READ_VALUE, sVBufCopy[0]);
+    log->logEvent (Log::LogEvent_t::READ_VALUE, dvBufCopy[0]);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls writeDataVector to update DV_REG_TEST0.
+ */
+static void* threadFuncWriteDataVector (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
+
+    // Write to DV.
+    std::vector<uint8_t> dvBufWrite = {0x2};
+    ret = pDv->writeRegion (DV_REG_TEST0, dvBufWrite);
 
     return (void *) ret;
 }
@@ -1784,7 +1881,7 @@ TEST (DataVector_threadSynchronization, WriteRegionBlocked)
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
-    // Create thread and sleep so that thread blocks on read.
+    // Create thread and sleep so that thread blocks on write.
     CHECK_SUCCESS (pThreadManager->createThread (
                                     t1, pThreadFuncWriteRegion,
                                     &argsThread1, sizeof (argsThread1),
@@ -1851,4 +1948,47 @@ TEST (DataVector_threadSynchronization, ReadDataVectorBlocked)
     
     // Verify expected == actual.
     VERIFY_LOGS;
+}
+
+/* Verify writeDataVector will block until lock is available. */
+TEST (DataVector_threadSynchronization, WriteDataVectorBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_DATA_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncWriteDataVector = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncWriteDataVector;
+
+    // Acquire lock so that thread blocks on write attempt.
+    CHECK_SUCCESS (pDv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on write.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncWriteDataVector,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Verify value is still 0.
+    uint8_t value = 0;
+    CHECK_SUCCESS (pDv->readImpl (DV_ELEM_TEST0, value));
+    CHECK_EQUAL (0, value);
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // updating the value.
+    pDv->releaseLock ();
+    TestHelpers::sleepMs (100);
+   
+    // Wait for thread.
+    Error_t threadReturn;
+    pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, ret);
+    
+    // Verify value is now 2.
+    pDv->read (DV_ELEM_TEST0, value);
+    CHECK_EQUAL (2, value);
 }

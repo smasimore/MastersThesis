@@ -463,6 +463,23 @@ public:
     Error_t readDataVector (std::vector<uint8_t>& kDataVectorBufRet);
 
     /**
+     * Overwrite the Data Vector with the provided buffer.
+     *
+     * NOTE: Calling this method can result in the current thread blocking.
+     *
+     * @param    kDvBuf                        Vector containing byte buffer
+     *                                         to write to Data Vector.
+     *
+     * @ret      E_SUCCESS                     Buffer copied successfully.
+     *           E_INCORRECT_SIZE              Vector provided does not have
+     *                                         same size as Data Vector.
+     *           E_FAILED_TO_LOCK              Failed to lock.
+     *           E_FAILED_TO_UNLOCK            Write succeeded but failed to 
+     *                                         unlock.
+     */
+    Error_t writeDataVector (std::vector<uint8_t>& kDvBuf);
+
+    /**
      * Check if element exists in Data Vector.
      *
      * @param  kElem          Element to check.

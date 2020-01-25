@@ -191,6 +191,32 @@ Error_t DataVector::readDataVector (std::vector<uint8_t>& kDataVectorBufRet)
     return this->releaseLock ();
 }
 
+
+Error_t DataVector::writeDataVector (std::vector<uint8_t>& kDvBuf)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Verify passed in buffer is same size as Data Vector's underlying buffer.
+    if (kDvBuf.size () != mBuffer.size ())
+    {
+        return E_INCORRECT_SIZE;
+    }
+
+    // Acquire lock.
+    ret = this->acquireLock (); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // Copy buffer.
+    std::vector<uint8_t>::iterator startIter = mBuffer.begin ();
+    std::copy_n (kDvBuf.begin (), mBuffer.size (), startIter);
+
+    // Release lock. 
+    return this->releaseLock ();
+}
+
 Error_t DataVector::acquireLock ()
 {
     if (pthread_mutex_lock (&mLock) != 0)
