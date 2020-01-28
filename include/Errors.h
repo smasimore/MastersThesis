@@ -101,8 +101,8 @@ typedef enum Error
     E_ENUM_STRING_UNDEFINED,
 
     /* Devices */
-    E_FPGA_INIT,
-    E_FPGA_READ = 125,
+    E_FPGA_INIT = 125,
+    E_FPGA_READ,
     E_FPGA_WRITE,
     E_STATE_VECTOR_NULL,
     E_STATE_VECTOR_READ,
@@ -112,6 +112,10 @@ typedef enum Error
     E_FAILED_TO_GET_TIME = 150,
     E_FAILED_TO_INIT_TIME,
     E_OVERFLOW_IMMINENT,
+
+    /* Scripts */
+    E_WRONG_ARGC,
+    E_INVALID_ARGUMENT,
 
     E_LAST
 } Error_t;

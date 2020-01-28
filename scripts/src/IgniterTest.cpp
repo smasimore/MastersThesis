@@ -1,7 +1,9 @@
 /**
  * ATTENTION: THIS SCRIPT AND THE ACCOMPANYING CIRCUIT ARE DESIGNED TO ACTUATE
  * BLACK POWDER. IGNITION TEST OPERATORS SHOULD BE TRAINED BY A MEMBER OF THE
- * RECOVERY AVIONICS TEAM BEFORE USE.
+ * RECOVERY AVIONICS TEAM BEFORE USE. BEFORE A TEST WITH BLACK POWDER, TEST
+ * OPERATORS MUST RUN THROUGH THE TEST PROCEDURES BELOW TO VERIFY CIRCUIT AND
+ * SCRIPT CORRECTNESS.
  *
  *
  * SUMMARY:
@@ -40,12 +42,12 @@
  *
  * Test 03 - Mid-raise abort
  *   Procedure:
- *     * Change LINE_RAISE_DURATION_MS to 5000 and recompile. This increases
- *       the duration of the line raise to 5 seconds, making the ignition
- *       easier to interrupt.
+ *     * Change gLINE_RAISE_DURATION_S to 5 and recompile. This increases the
+ *       duration of the line raise to 5 seconds, making the ignition easier
+ *       to interrupt.
  *     * Run the script with any ignition delay in the valid range.
  *     * When the countdown hits 0, quickly abort the script by pressing ENTER.
- *     * Revert the change to LINE_RAISE_DURATION_MS.
+ *     * Revert the change to gLINE_RAISE_DURATION_S.
  *   Expected Behavior:
  *     * Program exits immediately on abort with "TEST ABORTED BY USER".
  *     * Multimeter reads 1 A when the countdown hits 0 and then 0 A the moment
@@ -53,12 +55,12 @@
  *
  * Test 04 - Mid-raise interrupt
  *   Procedure:
- *     * Change LINE_RAISE_DURATION_MS to 5000 and recompile. This increases
- *       the duration of the line raise to 5 seconds, making the ignition
- *       easier to interrupt.
+ *     * Change gLINE_RAISE_DURATION_S to 5 and recompile. This increases the
+ *       duration of the line raise to 5 seconds, making the ignition easier
+ *       to interrupt.
  *     * Run the script with any ignition delay in the valid range.
  *     * When the countdown hits 0, quickly interrupt the script with CTRL + C.
- *     * Revert the change to LINE_RAISE_DURATION_MS.
+ *     * Revert the change to gLINE_RAISE_DURATION_S.
  *   Expected Behavior:
  *     * Program exits immediately on interrupt with "TEST INTERRUPTED BY USER".
  *     * Multimeter reads 1 A when the countdown hits 0 and then 0 A the moment
@@ -79,6 +81,7 @@
 #include <limits>
 #include <memory>
 #include <pthread.h>
+#include <stdexcept>
 #include <stdio.h>
 
 #include "DigitalOutDevice.hpp"
@@ -103,8 +106,8 @@
 }
 
 /**
- * Exits the program with a message if an expression does not evaluate to
- * E_SUCCESS
+ * Lowers the igniter DIO line and exits the program with a message if an
+ * expression does not evaluate to E_SUCCESS.
  *
  * @param   kExpr Expression to evaluate.
  */
@@ -113,26 +116,8 @@
     Error_t err = kExpr;                                                       \
     if (err != E_SUCCESS)                                                      \
     {                                                                          \
+        lowerLine ();                                                          \
         ERROR ("Program failed with error %d", err);                           \
-    }                                                                          \
-}
-
-/**
- * Aborts the program if the igniter line value is different from expected.
- *
- * @param   kExpectedVal True if line should be high, false otherwise.
- */
-#define VERIFY_LINE(kExpectedVal)                                              \
-{                                                                              \
-    bool kActualVal;                                                           \
-    Error_t err = getLineVal (kActualVal);                                     \
-    if (err != E_SUCCESS)                                                      \
-    {                                                                          \
-        ABORT ("Failed to query igniter line value");                          \
-    }                                                                          \
-    if (kActualVal != kExpectedVal)                                            \
-    {                                                                          \
-        ABORT ("Igniter line value mismatch: expected %d", kExpectedVal);      \
     }                                                                          \
 }
 
@@ -142,30 +127,31 @@
 #define BIT_FILE_PATH "/home/admin/FlightSoftware/"
 
 /**
- * Pin number for igniter line and corresponding NiFpga enum. THESE MUST
- * CORRESPOND.
+ * Pin number for igniter line. This should probably be different from the DIO
+ * pin raised in the DigitalOutDevice unit test, otherwise accidentally running
+ * the unit test script can cause ignition.
  */
-#define IGNITER_DIO_PIN_NUM       5
-#define IGNITER_DIO_PIN_NIFPGA_IO NiFpga_IO_IndicatorBool_inDIO5
+#define IGNITER_DIO_PIN_NUM 5
 
 /********************************** GLOBALS ***********************************/
 
 /**
- * Number of milliseconds that the DIO line is raised for during ignition.
+ * Number of seconds that the DIO line is raised for during ignition.
  */
-const uint32_t gLINE_RAISE_DURATION_MS = 750;
+const double gLINE_RAISE_DURATION_S = 0.75;
 
 /**
  * Lock for synchronizing FPGA calls, which may be made by both the ignition and
  * abort threads.
  */
-pthread_mutex_t gLineLock;
+pthread_mutex_t gFPGALock;
 
 /**
- * Whether or not an abort was triggered. Written by the abort thread, read
- * by the ignition thread.
+ * Whether or not an abort was triggered by an interrupt. Written by the SIGINT
+ * handler, which executes in an arbitrary thread, and read by the ignition
+ * thread.
  */
-bool gAbortPending = false;
+volatile bool gAbortPending = false;
 
 /**
  * DIO device for igniter line.
@@ -190,7 +176,7 @@ pthread_t gIgnitionThread;
  *
  * "SENSIBLE DEFAULTS" - Alison Norman
  */
-double gIgnitionDelayS = std::numeric_limits<double>::infinity();
+double gIgnitionDelayS = std::numeric_limits<double>::infinity ();
 
 /**
  * FPGA session and status.
@@ -244,18 +230,6 @@ void raiseLine ();
 void lowerLine ();
 
 /**
- * Gets whether or not the line is high from the FPGA session.
- *
- * @param   kVal        Becomes true if high or potentially floating, false
- *                      otherwise.
- *
- * @ret     E_SUCCESS   Checked line successfully.
- *          E_FPGA_READ Failed to get line value.
- *
- */
-Error_t getLineVal (bool& kVal);
-
-/**
  * Function run by the abort thread. Thread blocks while waiting for a line of
  * input from stdin and kills the test if received.
  *
@@ -276,7 +250,7 @@ void* abortThreadFunc (void* kUnused);
 void* ignitionThreadFunc (void* kUnused);
 
 /**
- * Raises the DIO line and lowers it gLINE_RAISE_DURATION_MS milliseconds later.
+ * Raises the DIO line and lowers it gLINE_RAISE_DURATION_S milliseconds later.
  * Program is slept for the duration of the raise and may safely be interrupted
  * during this time without the line remaining high.
  */
@@ -316,9 +290,6 @@ void* ignitionThreadFunc (void* kUnused)
             ABORT ("\nTEST INTERRUPTED BY USER");
         }
 
-        // Igniter line should be low at this point.
-        VERIFY_LINE (false);
-
         // Compute the time elapsed since the start of the countdown.
         double tCurrentTimeS = ScriptHelpers::timeS ();
         double tElapsedS = tCurrentTimeS - T_COUNTDOWN_START_S;
@@ -346,13 +317,30 @@ void* ignitionThreadFunc (void* kUnused)
 void ignite ()
 {
     raiseLine ();
-    ScriptHelpers::sleepMs (gLINE_RAISE_DURATION_MS);
+
+    // Block until ignition duration has elapsed, checking for aborts by
+    // interrupt all the while.
+    const double T_IGNITE_START_S = ScriptHelpers::timeS ();
+    while (ScriptHelpers::timeS () - T_IGNITE_START_S < gLINE_RAISE_DURATION_S)
+    {
+        if (gAbortPending)
+        {
+            ABORT ("\nTEST INTERRUPTED BY USER");
+        }
+    }
+
     lowerLine ();
 }
 
 void raiseLine ()
 {
-    pthread_mutex_lock (&gLineLock);
+    // If device has yet to be initialized, don't bother.
+    if (gPIgniterDev == nullptr)
+    {
+        return;
+    }
+
+    pthread_mutex_lock (&gFPGALock);
 
     Error_t err = gPSv->write (SV_ELEM_IGNTEST_CONTROL_VAL, true);
     if (err != E_SUCCESS)
@@ -366,12 +354,18 @@ void raiseLine ()
         ABORT ("Error: failed to update DIO device");
     }
 
-    pthread_mutex_unlock (&gLineLock);
+    pthread_mutex_unlock (&gFPGALock);
 }
 
 void lowerLine ()
 {
-    pthread_mutex_lock (&gLineLock);
+    // If device has yet to be initialized, don't bother.
+    if (gPIgniterDev == nullptr)
+    {
+        return;
+    }
+
+    pthread_mutex_lock (&gFPGALock);
 
     Error_t err = gPSv->write (SV_ELEM_IGNTEST_CONTROL_VAL, false);
     if (err != E_SUCCESS)
@@ -385,21 +379,7 @@ void lowerLine ()
         ABORT ("Error: failed to update DIO device");
     }
 
-    pthread_mutex_unlock (&gLineLock);
-}
-
-Error_t getLineVal (bool& kVal)
-{
-    NiFpga_MergeStatus (&gStatus,
-                        NiFpga_ReadBool (gSession,
-                                         IGNITER_DIO_PIN_NIFPGA_IO,
-                                         (NiFpga_Bool*) &kVal));
-    if (gStatus != NiFpga_Status_Success)
-    {
-        return E_FPGA_READ;
-    }
-
-    return E_SUCCESS;
+    pthread_mutex_unlock (&gFPGALock);
 }
 
 void sigIntHandler (int kSignum)
@@ -412,10 +392,20 @@ Error_t validateInput (int kAc, char** kAv)
     // Enforce correct usage.
     if (kAc != 2)
     {
-        return E_TEST_ERROR;
+        return E_WRONG_ARGC;
     }
 
-    gIgnitionDelayS = std::stof (kAv[1]);
+    // Try parsing the ignition delay, and catch non-numeric input.
+    try
+    {
+        gIgnitionDelayS = std::stof (kAv[1]);
+    }
+    catch (const std::invalid_argument& e)
+    {
+        return E_INVALID_ARGUMENT;
+    }
+
+    // Verify delay is in valid range.
     if (gIgnitionDelayS < gIGNITION_DELAY_LOWER_S ||
         gIgnitionDelayS > gIGNITION_DELAY_UPPER_S)
     {
@@ -436,23 +426,19 @@ Error_t initFPGA ()
         return E_FPGA_INIT;
     }
 
-    // Igniter line should be low at this point.
-    ScriptHelpers::sleepMs (10);
-    VERIFY_LINE (false);
-
     return E_SUCCESS;
 }
 
 Error_t initDevice ()
 {
-    // Initialize DIO line lock.
+    // Initialize FPGA lock.
     pthread_mutexattr_t attr;
     if (pthread_mutexattr_init (&attr) != 0 ||
         pthread_mutexattr_settype (&attr, PTHREAD_MUTEX_ERRORCHECK) != 0)
     {
         return E_FAILED_TO_INIT_LOCK;
     }
-    if (pthread_mutex_init (&gLineLock, &attr) != 0)
+    if (pthread_mutex_init (&gFPGALock, &attr) != 0)
     {
         return E_FAILED_TO_INIT_LOCK;
     }
@@ -487,9 +473,8 @@ Error_t initDevice ()
         return err;
     }
 
-    // Igniter line should be low at this point.
-    ScriptHelpers::sleepMs (10);
-    VERIFY_LINE (false);
+    // Run device to ensure line is brought low.
+    gPIgniterDev->run ();
 
     return E_SUCCESS;
 }
@@ -527,6 +512,8 @@ Error_t initThreads ()
     {
         return err;
     }
+
+    return E_SUCCESS;
 }
 
 Error_t waitForConclusion ()
@@ -539,9 +526,20 @@ Error_t waitForConclusion ()
 
 void IgniterTest::main (int kAc, char** kAv)
 {
+    // Validate user-specified ignition delay.
     if (validateInput (kAc, kAv) != E_SUCCESS)
     {
-        ERROR ("Usage: %s [IGNITION DELAY IN SECONDS]", kAv[0]);
+        ABORT ("Usage: %s [IGNITION DELAY IN SECONDS]\n"
+               "Ignition delay must be between %.1f and %.1f seconds", kAv[0],
+               gIGNITION_DELAY_LOWER_S, gIGNITION_DELAY_UPPER_S);
+    }
+
+    // Install SIGINT handler for lowering DIO line on program interrupt.
+    struct sigaction action = {};
+    action.sa_handler = sigIntHandler;
+    if (sigaction (SIGINT, &action, nullptr) != 0)
+    {
+        ABORT ("Error: failed to install signal handler");
     }
 
     // Clear terminal so output is more evident to test operator.

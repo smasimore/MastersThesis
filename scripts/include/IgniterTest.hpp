@@ -16,7 +16,7 @@ const double gIGNITION_DELAY_UPPER_S = 10;
  * @param   kAv             Argument vector.
  *
  * @ret     E_SUCCESS       Arguments are valid.
- *          E_TEST_ERROR    Argument count was wrong.
+ *          E_WRONG_ARGC    Argument count was wrong.
  *          E_OUT_OF_BOUNDS Ignition delay was outside valid range.
  */
 Error_t validateInput (int kAc, char** kAv);
