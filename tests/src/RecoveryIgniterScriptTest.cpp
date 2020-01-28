@@ -2,9 +2,9 @@
 #include <sstream>
 #include <string>
 
-#include "IgniterTest.hpp"
 #include "NiFpga.h"
 #include "NiFpga_IO.h"
+#include "RecoveryIgniterTest.hpp"
 
 #include "TestHelpers.hpp"
 #include "CppUTest/TestHarness.h"
@@ -24,14 +24,14 @@ char* floatToArg (float kF)
     return pStr;
 }
 
-TEST_GROUP(IgniterScriptTest)
+TEST_GROUP(RecoveryIgniterScriptTest)
 {
 };
 
 /**
  * Ignition delay input is validated correctly.
  */
-TEST(IgniterScriptTest, InputValidation)
+TEST(RecoveryIgniterScriptTest, InputValidation)
 {
     // No delay.
     char* avNone[] =

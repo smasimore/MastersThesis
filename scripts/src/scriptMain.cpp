@@ -14,13 +14,13 @@
  * 4. Build and run the Script build configuration.
  */
 
-#include "IgniterTest.hpp"
 #include "ProfileCopyBuffer.hpp"
 #include "ProfileLock.hpp"
+#include "RecoveryIgniterTest.hpp"
 
 int main (int ac, char** av)
 {
-    IgniterTest::main (ac, av);
+    RecoveryIgniterTest::main (ac, av);
     // ProfileCopyBuffer::main (ac, av);
     // ProfileLock::main (ac, av);
 }

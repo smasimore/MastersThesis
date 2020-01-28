@@ -85,9 +85,9 @@
 #include <stdio.h>
 
 #include "DigitalOutDevice.hpp"
-#include "IgniterTest.hpp"
 #include "NiFpga.h"
 #include "NiFpga_IO.h"
+#include "RecoveryIgniterTest.hpp"
 #include "ScriptHelpers.hpp"
 #include "StateVector.hpp"
 #include "ThreadManager.hpp"
@@ -524,7 +524,7 @@ Error_t waitForConclusion ()
 
 /******************************** ENTRY POINT *********************************/
 
-void IgniterTest::main (int kAc, char** kAv)
+void RecoveryIgniterTest::main (int kAc, char** kAv)
 {
     // Validate user-specified ignition delay.
     if (validateInput (kAc, kAv) != E_SUCCESS)
@@ -546,8 +546,8 @@ void IgniterTest::main (int kAc, char** kAv)
     system ("clear");
 
     // Run test.
-    EXIT_ON_ERR(initFPGA          ());
-    EXIT_ON_ERR(initDevice        ());
-    EXIT_ON_ERR(initThreads       ());
-    EXIT_ON_ERR(waitForConclusion ());
+    EXIT_ON_ERR (initFPGA          ());
+    EXIT_ON_ERR (initDevice        ());
+    EXIT_ON_ERR (initThreads       ());
+    EXIT_ON_ERR (waitForConclusion ());
 }

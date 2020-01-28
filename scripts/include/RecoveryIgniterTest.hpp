@@ -21,7 +21,7 @@ const double gIGNITION_DELAY_UPPER_S = 10;
  */
 Error_t validateInput (int kAc, char** kAv);
 
-namespace IgniterTest
+namespace RecoveryIgniterTest
 {
     /**
      * Entry point.
