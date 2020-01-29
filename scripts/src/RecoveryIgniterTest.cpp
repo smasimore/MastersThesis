@@ -74,6 +74,17 @@
  *     * Program exits with "TEST CONCLUDED" when the countdown hits 0.
  *     * Multimeter briefly reads 1 A when the countdown hits 0 and then 0 A.
  *     * Test concludes with multimeter reading 0 A.
+ *
+ * Test 06 - Pull-down resistor functionality
+ *   Procedure:
+ *     * Disconnect the sbRIO breakout board from the sbRIO.
+ *     * Configure the multimeter to read resistance. Place the probes on the
+ *       D5 and DGND pins on the breakout board (still attached to the igniter
+ *       circuit).
+ *   Expected behavior:
+ *     * Multimeter reads approximately 10.85K ohms.
+ *       - If it reads nothing, the pull-down resistor may not be connected and
+ *         the circuit is unsafe.
  */
 
 #include <csignal>
