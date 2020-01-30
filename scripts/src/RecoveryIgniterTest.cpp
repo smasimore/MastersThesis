@@ -100,7 +100,7 @@
 #include "NiFpga_IO.h"
 #include "RecoveryIgniterTest.hpp"
 #include "ScriptHelpers.hpp"
-#include "StateVector.hpp"
+#include "DataVector.hpp"
 #include "ThreadManager.hpp"
 #include "TimeNs.hpp"
 
@@ -169,9 +169,9 @@ volatile bool gAbortPending = false;
 std::unique_ptr<DigitalOutDevice> gPIgniterDev = nullptr;
 
 /**
- * State vector used in DIO device configuration.
+ * Data vector used in DIO device configuration.
  */
-std::shared_ptr<StateVector> gPSv = nullptr;
+std::shared_ptr<DataVector> gPDv = nullptr;
 
 /**
  * Thread manager and the two threads it creates during the test.
@@ -209,7 +209,7 @@ Error_t initFpga ();
  *
  * @ret     E_SUCCESS             Init succeeded.
  *          E_FAILED_TO_INIT_LOCK DIO line lock failed to initialize.
- *          [other]               Error from state vector or device creation.
+ *          [other]               Error from data vector or device creation.
  */
 Error_t initDevice ();
 
@@ -352,7 +352,7 @@ void raiseLine ()
 
     pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPSv->write (SV_ELEM_RECIGNTEST_CONTROL_VAL, true);
+    Error_t err = gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, true);
     if (err != E_SUCCESS)
     {
         ABORT ("Error %d: failed to raise DIO line", err);
@@ -377,7 +377,7 @@ void lowerLine ()
 
     pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPSv->write (SV_ELEM_RECIGNTEST_CONTROL_VAL, false);
+    Error_t err = gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, false);
     if (err != E_SUCCESS)
     {
         // Must ERROR rather than ABORT to avoid an infinite loop.
@@ -455,18 +455,18 @@ Error_t initDevice ()
         return E_FAILED_TO_INIT_LOCK;
     }
 
-    // Initialize state vector.
-    StateVector::StateVectorConfig_t config
+    // Initialize data vector.
+    DataVector::Config_t config
     {
         {
-            {SV_REG_TEST0,
+            {DV_REG_TEST0,
             {
-                SV_ADD_BOOL(SV_ELEM_RECIGNTEST_CONTROL_VAL,  false),
-                SV_ADD_BOOL(SV_ELEM_RECIGNTEST_FEEDBACK_VAL, false)
+                DV_ADD_BOOL(DV_ELEM_RECIGNTEST_CONTROL_VAL,  false),
+                DV_ADD_BOOL(DV_ELEM_RECIGNTEST_FEEDBACK_VAL, false)
             }}
         }
     };
-    Error_t err = StateVector::createNew (config, gPSv);
+    Error_t err = DataVector::createNew (config, gPDv);
     if (err != E_SUCCESS)
     {
         return err;
@@ -475,11 +475,11 @@ Error_t initDevice ()
     // Initialize igniter DIO device.
     DigitalOutDevice::Config_t deviceConfig =
     {
-        SV_ELEM_RECIGNTEST_CONTROL_VAL,
-        SV_ELEM_RECIGNTEST_FEEDBACK_VAL,
+        DV_ELEM_RECIGNTEST_CONTROL_VAL,
+        DV_ELEM_RECIGNTEST_FEEDBACK_VAL,
         IGNITER_DIO_PIN_NUM
     };
-    err = Device::createNew (gSession, gPSv, deviceConfig, gPIgniterDev);
+    err = Device::createNew (gSession, gPDv, deviceConfig, gPIgniterDev);
     if (err != E_SUCCESS)
     {
         return err;

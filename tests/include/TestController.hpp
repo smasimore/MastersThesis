@@ -3,8 +3,8 @@
 #include "Controller.hpp"
 
 /* Logs used for testing. */
-extern Log *PExpectedLog;
-extern Log *PTestLog;
+extern Log *gPExpectedLog;
+extern Log *gPTestLog;
 
 class TestController final : public Controller
 {
@@ -12,10 +12,10 @@ class TestController final : public Controller
     public:
 
         /* Controller configuration. */
-        struct TestConfig
+        typedef struct Config
         {
             bool valid; /* Whether config is valid or not. */
-        };
+        } Config_t;
 
         /**
          * Inherited from base.
@@ -36,12 +36,18 @@ class TestController final : public Controller
          * Derived controller constructor. This must be public so that it is
          * visible to Controller::createNew.
          *
-         * @param     config        Controller configuration.
+         * @param   kConfig        Controller configuration.
+         * @param   kDataVector    Ptr to initialized Data Vector for this 
+         *                         node.
+         * @param   kDvModeElem    Data Vector element to read to determine 
+         *                         controller's mode.
          */
-        TestController (struct TestConfig config);
+        TestController (Config_t kConfig, 
+                        std::shared_ptr<DataVector> kPDataVector,
+                        DataVectorElement_t kDvModeElem);
 
     private:
 
         /* Controller configuration. */
-        struct TestConfig Config;
+        Config_t mConfig;
 };

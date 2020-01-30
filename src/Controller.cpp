@@ -6,37 +6,40 @@ Controller::~Controller () {}
 
 Error_t Controller::run ()
 {
-    switch (this->Mode)
+    Mode_t mode = Controller::Mode_t::SAFED;
+    Error_t ret = this->getMode (mode);
+    if (ret != E_SUCCESS)
     {
-        case Controller::Mode_t::ENABLED:
-            return runEnabled();
+        return ret;
+    }
+
+    switch (mode)
+    {
         case Controller::Mode_t::SAFED:
             return runSafed();
+        case Controller::Mode_t::ENABLED:
+            return runEnabled();
         default:
             return E_INVALID_ENUM;
     }
 }
 
-Error_t Controller::getMode (Controller::Mode_t &modeRet)
+Error_t Controller::getMode (Controller::Mode_t& kModeRet)
 {
-    modeRet = this->Mode;
-    return E_SUCCESS;
-}
-
-Error_t Controller::setMode (Controller::Mode_t newMode)
-{
-    // Verify valid enum.
-    if (newMode >= Controller::Mode_t::LAST)
+    uint8_t mode;
+    if (mPDataVector->read (mDvModeElem, mode) != E_SUCCESS)
     {
-        return E_INVALID_ENUM;
+        return E_DATA_VECTOR_READ;
     }
 
-    this->Mode = newMode;
+    kModeRet = static_cast<Mode_t> (mode);
 
     return E_SUCCESS;
 }
 
 /*************************** PROTECTED FUNCTIONS ******************************/
 
-Controller::Controller () :
-    Mode (Controller::Mode_t::SAFED) {}
+Controller::Controller (std::shared_ptr<DataVector> kPDataVector, 
+                        DataVectorElement_t kDvModeElem) :
+    mPDataVector (kPDataVector),
+    mDvModeElem  (kDvModeElem) {}

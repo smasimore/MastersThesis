@@ -3,116 +3,158 @@
 #include "Log.hpp"
 #include "TestController.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
 /* Test globals. */
-Log *PExpectedLog = nullptr;
-Log *PTestLog = nullptr;
-std::unique_ptr<TestController> PTest = nullptr;
+Log *gPExpectedLog = nullptr;
+Log *gPTestLog = nullptr;
 
-TEST_GROUP(ControllerTest)
+static DataVector::Config_t gDvConfig = 
+{
+    {DV_REG_TEST0,
+    {
+        DV_ADD_UINT8 (DV_ELEM_TEST_CONTROLLER_MODE, Controller::Mode_t::SAFED),
+    }},
+};
+
+TEST_GROUP (ControllerTest)
 {
     void setup()
     {
-        Error_t ret;
-
-        // Create TestController and logs.
-        struct TestController::TestConfig config; 
-        config.valid = true;
-        ret = Controller::createNew<TestController, 
-                                    struct TestController::TestConfig> (config, 
-                                                                        PTest);
+        // Create logs.
+        
+        Error_t ret = E_SUCCESS;
+        gPExpectedLog = new Log (ret);
         CHECK_EQUAL (E_SUCCESS, ret);
-        PExpectedLog = new Log (ret);
-        CHECK_EQUAL (E_SUCCESS, ret);
-        PTestLog = new Log (ret);
+        gPTestLog = new Log (ret);
         CHECK_EQUAL (E_SUCCESS, ret);
     }
 
     void teardown()
     {
-        // Clean up TestController and logs.
-        PTest.reset (nullptr);
-        delete PExpectedLog;
-        delete PTestLog;
+        // Clean up logs.
+        delete gPExpectedLog;
+        delete gPTestLog;
     }
 };
 
 /* Test initialization of controller with a valid config. */
-TEST(ControllerTest, InitValidConfig)
+TEST (ControllerTest, InitValidConfig)
 {
-    Error_t ret;
-    Controller::Mode_t stateRet;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    ret = PTest->getMode (stateRet);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    std::unique_ptr<TestController> pTestController = nullptr;
+    TestController::Config_t conConfig = {true};
+    CHECK_SUCCESS (Controller::createNew<TestController> (
+                       conConfig, pDv,
+                       DV_ELEM_TEST_CONTROLLER_MODE,
+                       pTestController));
+
+    Controller::Mode_t stateRet;
+    CHECK_SUCCESS (pTestController->getMode (stateRet));
     CHECK_EQUAL (Controller::Mode_t::SAFED, stateRet);
 }
 
 /* Test initialization of controller with an invalid config. */
-TEST(ControllerTest, InitInvalidConfig)
+TEST (ControllerTest, InitInvalidConfig)
 {
-    Error_t ret;
+    INIT_DATA_VECTOR (gDvConfig);
 
     // Create invalid config.
     std::unique_ptr<TestController> pInvalid = nullptr;
-    struct TestController::TestConfig config; 
-    config.valid = false;
-    ret = Controller::createNew<TestController, 
-                                struct TestController::TestConfig> (config, 
-                                                                    pInvalid);
+    TestController::Config_t config = {false}; 
+    CHECK_ERROR (Controller::createNew<TestController> (
+                     config, pDv,
+                     DV_ELEM_TEST_CONTROLLER_MODE,
+                     pInvalid),
+                 E_OUT_OF_BOUNDS);
+    POINTERS_EQUAL (pInvalid.get (), nullptr);
+}
 
-    // Verify failure.
-    CHECK_EQUAL (ret, E_OUT_OF_BOUNDS);
+/* Test initialization of controller with a null DV. */
+TEST (ControllerTest, InitInvalidDV)
+{
+    std::unique_ptr<TestController> pInvalid = nullptr;
+    TestController::Config_t config = {true}; 
+    CHECK_ERROR (Controller::createNew<TestController> (
+                     config, nullptr,
+                     DV_ELEM_TEST_CONTROLLER_MODE,
+                     pInvalid),
+                 E_DATA_VECTOR_NULL);
+    POINTERS_EQUAL (pInvalid.get (), nullptr);
+}
+
+/* Test initialization of controller with an invalid DV elem. */
+TEST (ControllerTest, InitInvalidDVElem)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    std::unique_ptr<TestController> pInvalid = nullptr;
+    TestController::Config_t config = {true}; 
+    CHECK_ERROR (Controller::createNew<TestController> (
+                     config, pDv,
+                     DV_ELEM_RCS_CONTROLLER_MODE,
+                     pInvalid),
+                 E_INVALID_ELEM);
     POINTERS_EQUAL (pInvalid.get (), nullptr);
 }
 
 /* Test mode setters and getters. */
-TEST(ControllerTest, SetMode)
+TEST (ControllerTest, SetMode)
 {
-    Controller::Mode_t modeRet;
-    Error_t ret;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    std::unique_ptr<TestController> pTestController = nullptr;
+    TestController::Config_t conConfig = {true};
+    CHECK_SUCCESS (Controller::createNew<TestController> (
+                       conConfig, pDv,
+                       DV_ELEM_TEST_CONTROLLER_MODE,
+                       pTestController));
 
     // Controller should initialize SAFED.
-    ret = PTest->getMode (modeRet);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    Controller::Mode_t modeRet;
+    CHECK_SUCCESS (pTestController->getMode (modeRet));
     CHECK_EQUAL (Controller::Mode_t::SAFED, modeRet);
 
     // Set mode as ENABLED and verify.
-    ret = PTest->setMode (Controller::Mode_t::ENABLED);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = PTest->getMode (modeRet);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
+                               (uint8_t) Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (pTestController->getMode (modeRet));
     CHECK_EQUAL (Controller::Mode_t::ENABLED, modeRet);
 }
 
 /* Test running controller in ENABLED and SAFED modes. */
-TEST(ControllerTest, Run)
+TEST (ControllerTest, Run)
 {
-    Error_t ret;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    std::unique_ptr<TestController> pTestController = nullptr;
+    TestController::Config_t conConfig = {true};
+    CHECK_SUCCESS (Controller::createNew<TestController> (
+                       conConfig, pDv,
+                       DV_ELEM_TEST_CONTROLLER_MODE,
+                       pTestController));
 
     // Expect this to call runSafed
-    ret = PTest->run ();
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pTestController->run ());
 
     // Expect this to call runEnabled
-    PTest->setMode (Controller::Mode_t::ENABLED);
-    ret = PTest->run ();
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
+                               (uint8_t) Controller::Mode_t::ENABLED));
+    CHECK_SUCCESS (pTestController->run ());
 
     // Expect this to call runSafed
-    PTest->setMode (Controller::Mode_t::SAFED);
-    ret = PTest->run ();
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
+                               (uint8_t) Controller::Mode_t::SAFED));
+    CHECK_SUCCESS (pTestController->run ());
 
     // Build expected log.
-    PExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
-    PExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_ENABLED, 0);
-    PExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
+    gPExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
+    gPExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_ENABLED, 0);
+    gPExpectedLog->logEvent (Log::LogEvent_t::CONTROLLER_RAN_SAFED, 0);
 
     // Verify.
     bool logsEqual = false; 
-    ret = Log::verify (*PExpectedLog, *PTestLog, logsEqual);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (Log::verify (*gPExpectedLog, *gPTestLog, logsEqual));
     CHECK_TRUE (logsEqual); 
 }

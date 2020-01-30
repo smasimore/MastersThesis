@@ -1,8 +1,8 @@
 /**
- * Measure time it takes to lock and unlock the State Vector.
+ * Measure time it takes to lock and unlock the Data Vector.
  *
  * The purpose of this profiling script is to better understand cost of locking
- * and unlocking the State Vector. If cheap, the SV implementation would be
+ * and unlocking the Data Vector. If cheap, the DV implementation would be 
  * simplifying by always locking/unlocking instead of branching depending on
  * the context.
  */
@@ -12,7 +12,7 @@
 #include <iostream>
 #include <vector>
 
-#include "StateVector.hpp"
+#include "DataVector.hpp"
 #include "ProfileHelpers.hpp"
 #include "ProfileLock.hpp"
 
@@ -22,16 +22,16 @@
 static const uint32_t NUM_TIMES_TO_RUN = 10000;
 
 /**
- * Measure time to lock and unlock the State Vector.
+ * Measure time to lock and unlock the Data Vector.
  */
-uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<StateVector>& pSv)
+uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<DataVector>& pDv)
 {
     // Start time.
     uint64_t startNs = ProfileHelpers::getTimeNs ();
 
     // Acquire lock.
-    pSv->acquireLock ();
-    pSv->releaseLock ();
+    pDv->acquireLock ();
+    pDv->releaseLock ();
 
     // End time.
     uint64_t endNs = ProfileHelpers::getTimeNs ();
@@ -44,29 +44,29 @@ void ProfileLock::main (int ac, char** av)
 {
     ProfileHelpers::setThreadPriAndAffinity ();
 
-    // Initialize State Vector.
+    // Initialize Data Vector.
     Error_t ret = E_SUCCESS;
-    std::shared_ptr<StateVector> pSv;
-    StateVector::StateVectorConfig_t config = {
+    std::shared_ptr<DataVector> pDv;
+    DataVector::Config_t config = {
         // Regions
         {
             ////////////////////////////////////////////////////////////////////
 
             // Region
-            {SV_REG_TEST0,
-
+            {DV_REG_TEST0,
+        
             // Elements
-            //      TYPE           ELEM            INITIAL_VALUE
+            // TYPE                 ELEM           INITIAL_VALUE
             {
-                   SV_ADD_UINT8  ( SV_ELEM_TEST0,  0                          ),
+               DV_ADD_UINT8  (  DV_ELEM_TEST0,           0            ),
             }},
             ////////////////////////////////////////////////////////////////////
         }
     };
-    StateVector::createNew (config, pSv);
+    DataVector::createNew (config, pDv);
     if (ret != E_SUCCESS)
     {
-        throw "Failed to initialize State Vector.";
+        throw "Failed to initialize Data Vector.";
     }
 
     std::vector<uint64_t> results_Baseline (NUM_TIMES_TO_RUN);
@@ -79,7 +79,7 @@ void ProfileLock::main (int ac, char** av)
 
     for (uint16_t i = 0; i < NUM_TIMES_TO_RUN; i++)
     {
-        results_Lock[i] = measureLockTime (i, pSv);
+        results_Lock[i] = measureLockTime (i, pDv);
     }
 
     std::cout << "------ Results ------" << std::endl;

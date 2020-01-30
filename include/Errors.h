@@ -23,6 +23,10 @@ typedef enum Error
     E_OUT_OF_BOUNDS,
     E_OVERFLOW,
     E_INVALID_ENUM,
+    E_DATA_VECTOR_NULL,
+    E_DATA_VECTOR_READ,
+    E_DATA_VECTOR_WRITE,
+    E_INVALID_ELEM,
 
     /* Testing */
     E_TEST_ERROR,
@@ -89,7 +93,6 @@ typedef enum Error
     E_DUPLICATE_REGION,
     E_DUPLICATE_ELEM,
     E_INVALID_REGION,
-    E_INVALID_ELEM,
     E_INVALID_TYPE,
     E_INCORRECT_TYPE,
     E_INCORRECT_SIZE,
@@ -104,9 +107,7 @@ typedef enum Error
     E_FPGA_INIT = 125,
     E_FPGA_READ,
     E_FPGA_WRITE,
-    E_STATE_VECTOR_NULL,
-    E_STATE_VECTOR_READ,
-    E_STATE_VECTOR_WRITE,
+    E_PIN_NOT_CONFIGURED,
 
     /* Time */
     E_FAILED_TO_GET_TIME = 150,

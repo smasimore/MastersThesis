@@ -34,7 +34,7 @@ public:
         CONTROLLER_RAN_ENABLED,
         CONTROLLER_RAN_SAFED,
 
-        /* State Vector */
+        /* Data Vector */
         ACQUIRED_LOCK,
         RELEASED_LOCK,
         READ_VALUE,

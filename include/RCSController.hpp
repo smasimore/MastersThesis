@@ -44,37 +44,42 @@ public:
     struct Config
     {
         /**
-    	 * The maximum allowed magnitude of angular velocity.
-    	 */
+         * The maximum allowed magnitude of angular velocity.
+         */
         float rateLimitRadsPerSec;
         /**
-    	 * Half the width of the angled (gradient) portion of the phase channel.
-    	 */
+         * Half the width of the angled (gradient) portion of the phase channel.
+         */
         float deadband;
         /**
-    	 * Ratio of lower rate limit : upper rate limit. Defines the height of
-    	 * the drift channels.
-    	 */
+         * Ratio of lower rate limit : upper rate limit. Defines the height of
+         * the drift channels.
+         */
         float rateLimitsRatio;
         /**
-    	 * Ratio of hysteresis upper angle limit : gradient angle limit. Defines
-    	 * where the corners in the hysteresis lines lie between the rate axis
-    	 * and the corners of the channel boundary.
-    	 */
+         * Ratio of hysteresis upper angle limit : gradient angle limit. Defines
+         * where the corners in the hysteresis lines lie between the rate axis
+         * and the corners of the channel boundary.
+         */
         float hysteresisGradientRatio;
         /**
-    	 * Ratio of hysteresis rate limit : lower rate limit. Defines where the
-    	 * hysteresis line parallel to the angle axis lies in the drift channel.
-    	 */
+         * Ratio of hysteresis rate limit : lower rate limit. Defines where the
+         * hysteresis line parallel to the angle axis lies in the drift channel.
+         */
         float hysteresisRateLimitRatio;
     };
 
     /**
      * Controllers begin with response NO_FIRE.
      *
-     * @param   kConfig Configuration for phase channel geometry.
+     * @param   kConfig       Configuration for phase channel geometry.
+     * @param   kPDataVector  Ptr to initialized Data Vector for this node.
+     * @param   kDvModeElem   Data Vector element to read to determine 
+     *                        controller's mode.
      */
-    RCSController (const RCSController::Config& kConfig);
+    RCSController (const RCSController::Config& kConfig, 
+                   std::shared_ptr<DataVector> kPDataVector,
+                   DataVectorElement_t kDvModeElem);
 
     /**
      * Validates the phase channel configuration provided at construction.

@@ -12,6 +12,7 @@
 
 #include "Errors.h"
 #include "ThreadManager.hpp"
+#include "DataVector.hpp"
 #include "Log.hpp"
 
 #include "CppUTest/TestHarness.h"
@@ -65,6 +66,13 @@
     CHECK_EQUAL(E_SUCCESS, ret);                                               \
     Log expectedLog = Log (ret);                                               \
     Log testLog = Log (ret);
+
+/**
+ * Initializes Data Vector as local variable pDv.
+ */
+#define INIT_DATA_VECTOR(config)                                             \
+    std::shared_ptr<DataVector> pDv = nullptr;                               \
+    CHECK_SUCCESS (DataVector::createNew (config, pDv));                     \
 
 /**
  * Verifies local variables expectedLog == actualLog.

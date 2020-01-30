@@ -1,13 +1,13 @@
 /**
  * Measure time it takes to copy a vector<uint8_t> with 2000 elements. This
- * simulates copying the State Vector's buffer for 500 elements of 4 bytes
+ * simulates copying the Data Vector's buffer for 500 elements of 4 bytes
  * each using 3 different copy methods.
  *
  * The purpose of this profiling script is to better understand cost of copying
- * regions of (or the entire) State Vector for the purposes of tx'ing/rx'ing
+ * regions of (or the entire) Data Vector for the purposes of tx'ing/rx'ing
  * across the flight network. The alternative to passing around copies of
- * regions/State Vector is to pass the Network Manager a pointer to the region/
- * State Vector.
+ * regions/Data Vector is to pass the Network Manager a pointer to the region/
+ * Data Vector.
  */
 
 #include <stdint.h>
