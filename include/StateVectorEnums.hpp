@@ -100,9 +100,9 @@ enum StateVectorElement_t : uint32_t
     SV_ELEM_LED_CONTROL_VAL,
     SV_ELEM_LED_FEEDBACK_VAL,
 
-    /* Igniter test script */
-    SV_ELEM_IGNTEST_CONTROL_VAL,
-    SV_ELEM_IGNTEST_FEEDBACK_VAL,
+    /* Recovery igniter test script */
+    SV_ELEM_RECIGNTEST_CONTROL_VAL,
+    SV_ELEM_RECIGNTEST_FEEDBACK_VAL,
 
     SV_ELEM_LAST
 };

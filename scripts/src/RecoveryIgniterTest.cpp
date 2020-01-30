@@ -122,13 +122,12 @@
  *
  * @param   kExpr Expression to evaluate.
  */
-#define EXIT_ON_ERR(kExpr)                                                     \
+#define ABORT_ON_ERR(kExpr)                                                    \
 {                                                                              \
     Error_t err = kExpr;                                                       \
     if (err != E_SUCCESS)                                                      \
     {                                                                          \
-        lowerLine ();                                                          \
-        ERROR ("Program failed with error %d", err);                           \
+        ABORT ("Program failed with error %d", err);                           \
     }                                                                          \
 }
 
@@ -140,9 +139,9 @@
 /**
  * Pin number for igniter line. This should probably be different from the DIO
  * pin raised in the DigitalOutDevice unit test, otherwise accidentally running
- * the unit test script can cause ignition.
+ * the unit test binary may cause ignition without warning.
  */
-#define IGNITER_DIO_PIN_NUM 5
+#define IGNITER_DIO_PIN_NUM 6
 
 /********************************** GLOBALS ***********************************/
 
@@ -155,7 +154,7 @@ const double gLINE_RAISE_DURATION_S = 0.75;
  * Lock for synchronizing FPGA calls, which may be made by both the ignition and
  * abort threads.
  */
-pthread_mutex_t gFPGALock;
+pthread_mutex_t gFpgaLock;
 
 /**
  * Whether or not an abort was triggered by an interrupt. Written by the SIGINT
@@ -203,7 +202,7 @@ NiFpga_Status gStatus;
  * @ret     E_SUCCESS   Init succeeded.
  *          E_FPGA_INIT Init failed.
  */
-Error_t initFPGA ();
+Error_t initFpga ();
 
 /**
  * Initializes the igniter DIO device.
@@ -351,21 +350,21 @@ void raiseLine ()
         return;
     }
 
-    pthread_mutex_lock (&gFPGALock);
+    pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPSv->write (SV_ELEM_IGNTEST_CONTROL_VAL, true);
+    Error_t err = gPSv->write (SV_ELEM_RECIGNTEST_CONTROL_VAL, true);
     if (err != E_SUCCESS)
     {
-        ABORT ("Error: failed to raise DIO line");
+        ABORT ("Error %d: failed to raise DIO line", err);
     }
 
     err = gPIgniterDev->run ();
     if (err != E_SUCCESS)
     {
-        ABORT ("Error: failed to update DIO device");
+        ABORT ("Error %d: failed to update DIO device", err);
     }
 
-    pthread_mutex_unlock (&gFPGALock);
+    pthread_mutex_unlock (&gFpgaLock);
 }
 
 void lowerLine ()
@@ -376,21 +375,23 @@ void lowerLine ()
         return;
     }
 
-    pthread_mutex_lock (&gFPGALock);
+    pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPSv->write (SV_ELEM_IGNTEST_CONTROL_VAL, false);
+    Error_t err = gPSv->write (SV_ELEM_RECIGNTEST_CONTROL_VAL, false);
     if (err != E_SUCCESS)
     {
-        ABORT ("Error: failed to lower DIO line");
+        // Must ERROR rather than ABORT to avoid an infinite loop.
+        ERROR ("Error %d: failed to lower DIO line", err);
     }
 
     err = gPIgniterDev->run ();
     if (err != E_SUCCESS)
     {
-        ABORT ("Error: failed to update DIO device");
+        // Must ERROR rather than ABORT to avoid an infinite loop.
+        ERROR ("Error %d: failed to update DIO device", err);
     }
 
-    pthread_mutex_unlock (&gFPGALock);
+    pthread_mutex_unlock (&gFpgaLock);
 }
 
 void sigIntHandler (int kSignum)
@@ -426,7 +427,7 @@ Error_t validateInput (int kAc, char** kAv)
     return E_SUCCESS;
 }
 
-Error_t initFPGA ()
+Error_t initFpga ()
 {
     gStatus = NiFpga_Initialize ();
     NiFpga_MergeStatus (&gStatus, NiFpga_Open (
@@ -449,7 +450,7 @@ Error_t initDevice ()
     {
         return E_FAILED_TO_INIT_LOCK;
     }
-    if (pthread_mutex_init (&gFPGALock, &attr) != 0)
+    if (pthread_mutex_init (&gFpgaLock, &attr) != 0)
     {
         return E_FAILED_TO_INIT_LOCK;
     }
@@ -460,8 +461,8 @@ Error_t initDevice ()
         {
             {SV_REG_TEST0,
             {
-                SV_ADD_BOOL(SV_ELEM_IGNTEST_CONTROL_VAL,  false),
-                SV_ADD_BOOL(SV_ELEM_IGNTEST_FEEDBACK_VAL, false)
+                SV_ADD_BOOL(SV_ELEM_RECIGNTEST_CONTROL_VAL,  false),
+                SV_ADD_BOOL(SV_ELEM_RECIGNTEST_FEEDBACK_VAL, false)
             }}
         }
     };
@@ -474,8 +475,8 @@ Error_t initDevice ()
     // Initialize igniter DIO device.
     DigitalOutDevice::Config_t deviceConfig =
     {
-        SV_ELEM_IGNTEST_CONTROL_VAL,
-        SV_ELEM_IGNTEST_FEEDBACK_VAL,
+        SV_ELEM_RECIGNTEST_CONTROL_VAL,
+        SV_ELEM_RECIGNTEST_FEEDBACK_VAL,
         IGNITER_DIO_PIN_NUM
     };
     err = Device::createNew (gSession, gPSv, deviceConfig, gPIgniterDev);
@@ -557,8 +558,8 @@ void RecoveryIgniterTest::main (int kAc, char** kAv)
     system ("clear");
 
     // Run test.
-    EXIT_ON_ERR (initFPGA          ());
-    EXIT_ON_ERR (initDevice        ());
-    EXIT_ON_ERR (initThreads       ());
-    EXIT_ON_ERR (waitForConclusion ());
+    ABORT_ON_ERR (initFpga          ());
+    ABORT_ON_ERR (initDevice        ());
+    ABORT_ON_ERR (initThreads       ());
+    ABORT_ON_ERR (waitForConclusion ());
 }
