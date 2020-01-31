@@ -14,6 +14,7 @@
 
 #include "DataVector.hpp"
 #include "ProfileHelpers.hpp"
+#include "ProfileLock.hpp"
 
 /**
  * # of times to run.
@@ -26,7 +27,7 @@ static const uint32_t NUM_TIMES_TO_RUN = 10000;
 uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<DataVector>& pDv)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
+    uint64_t startNs = ProfileHelpers::getTimeNs ();
 
     // Acquire lock.
     pDv->acquireLock ();
@@ -39,7 +40,7 @@ uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<DataVector>& pDv)
     return abs (endNs - startNs);
 }
 
-int main ()
+void ProfileLock::main (int ac, char** av)
 {
     ProfileHelpers::setThreadPriAndAffinity ();
 
@@ -48,19 +49,19 @@ int main ()
     std::shared_ptr<DataVector> pDv;
     DataVector::Config_t config = {
         // Regions
-        {    
-            //////////////////////////////////////////////////////////////////////////////////
-        
+        {
+            ////////////////////////////////////////////////////////////////////
+
             // Region
             {DV_REG_TEST0,
         
             // Elements
-            //      TYPE                      ELEM            INITIAL_VALUE
+            // TYPE                 ELEM           INITIAL_VALUE
             {
-                   DV_ADD_UINT8  (           DV_ELEM_TEST0,            0            ),
+               DV_ADD_UINT8  (  DV_ELEM_TEST0,           0            ),
             }},
-            //////////////////////////////////////////////////////////////////////////////////
-        }    
+            ////////////////////////////////////////////////////////////////////
+        }
     };
     DataVector::createNew (config, pDv);
     if (ret != E_SUCCESS)
@@ -84,8 +85,8 @@ int main ()
     std::cout << "------ Results ------" << std::endl;
     std::cout << "# of runs: " << NUM_TIMES_TO_RUN << std::endl;
 
-    ProfileHelpers::printVectorStats (results_Baseline,      
+    ProfileHelpers::printVectorStats (results_Baseline,
                                       "\nBASELINE");
-    ProfileHelpers::printVectorStats (results_Lock,   
+    ProfileHelpers::printVectorStats (results_Lock,
                                       "\nLOCK");
 }
