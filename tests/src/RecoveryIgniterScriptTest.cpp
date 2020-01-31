@@ -13,7 +13,7 @@
  *
  * @ret     Command line arg.
  */
-char* floatToArg (float kF)
+static char* floatToArg (float kF)
 {
     static char pStr[128];
     sprintf (pStr, "%f", kF);
@@ -30,41 +30,49 @@ TEST_GROUP(RecoveryIgniterScriptTest)
 TEST(RecoveryIgniterScriptTest, InputValidation)
 {
     // No delay.
-    char* avNone[] =
-    {
-        "runIgniterTest"
-    };
-    CHECK_EQUAL (E_WRONG_ARGC, validateInput (1, avNone));
+    const char* avNone[] = {"runIgniterTest"};
+    CHECK_EQUAL (E_WRONG_ARGC, RecoveryIgniterTest::validateInput (1, avNone));
 
     // Non-numeric delay.
-    char* avNonNum[] =
+    const char* avNonNum[] =
     {
         "runIgniterTest",
         "a"
     };
-    CHECK_EQUAL (E_INVALID_ARGUMENT, validateInput (2, avNonNum));
+    CHECK_EQUAL (E_INVALID_ARGUMENT,
+                 RecoveryIgniterTest::validateInput (2,
+                                                     (const char**) avNonNum));
 
     // Delay is below lower bound.
-    char* avTooLow[] =
+    const char* avTooLow[] =
     {
         "runIgniterTest",
-        floatToArg (gIGNITION_DELAY_LOWER_S - 0.01)
+        (const char*) floatToArg (
+                RecoveryIgniterTest::gIGNITION_DELAY_LOWER_S - 0.01)
     };
-    CHECK_EQUAL (E_OUT_OF_BOUNDS, validateInput (2, avTooLow));
+    CHECK_EQUAL (E_OUT_OF_BOUNDS,
+                 RecoveryIgniterTest::validateInput (2,
+                                                     (const char**) avTooLow));
 
     // Delay is above upper bound.
-    char* avTooHigh[] =
+    const char* avTooHigh[] =
     {
         "runIgniterTest",
-        floatToArg (gIGNITION_DELAY_UPPER_S + 0.01)
+        (const char*) floatToArg (
+                RecoveryIgniterTest::gIGNITION_DELAY_UPPER_S + 0.01)
     };
-    CHECK_EQUAL (E_OUT_OF_BOUNDS, validateInput (2, avTooHigh));
+    CHECK_EQUAL (E_OUT_OF_BOUNDS,
+                 RecoveryIgniterTest::validateInput (2,
+                                                     (const char**) avTooHigh));
 
     // Delay is OK.
-    char* avOk[] =
+    const char* avOk[] =
     {
         "runIgniterTest",
-        floatToArg ((gIGNITION_DELAY_LOWER_S + gIGNITION_DELAY_UPPER_S) / 2)
+        (const char*) floatToArg (
+                (RecoveryIgniterTest::gIGNITION_DELAY_LOWER_S +
+                 RecoveryIgniterTest::gIGNITION_DELAY_UPPER_S) / 2)
     };
-    CHECK_SUCCESS (validateInput (2, avOk));
+    CHECK_SUCCESS (RecoveryIgniterTest::validateInput (2,
+                                                       (const char**) avOk));
 }

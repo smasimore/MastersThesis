@@ -79,7 +79,7 @@
  *   Procedure:
  *     * Disconnect the sbRIO breakout board from the sbRIO.
  *     * Configure the multimeter to read resistance. Place the probes on the
- *       D5 and DGND pins on the breakout board (still attached to the igniter
+ *       D6 and DGND pins on the breakout board (still attached to the igniter
  *       circuit).
  *   Expected behavior:
  *     * Multimeter reads approximately 10.85K ohms.
@@ -399,7 +399,7 @@ void sigIntHandler (int kSignum)
     gAbortPending = true;
 }
 
-Error_t validateInput (int kAc, char** kAv)
+Error_t RecoveryIgniterTest::validateInput (int kAc, const char** kAv)
 {
     // Enforce correct usage.
     if (kAc != 2)
@@ -530,13 +530,29 @@ Error_t initThreads ()
 
 Error_t waitForConclusion ()
 {
-    Error_t err;
-    return gPThreadManager->waitForThread (gIgnitionThread, err);
+    // Wait for ignition thread to end.
+    Error_t err = gPThreadManager->waitForThread (gIgnitionThread, err);
+    if (err != E_SUCCESS)
+    {
+        return err;
+    }
+
+    // Kill the abort thread so we can safely close the FPGA session.
+    if (pthread_cancel (gAbortThread) != 0)
+    {
+        return E_FAILED_TO_CANCEL_ABORT;
+    }
+
+    // Close the FPGA session.
+    NiFpga_MergeStatus (&gStatus, NiFpga_Close (gSession, 0));
+    NiFpga_MergeStatus (&gStatus, NiFpga_Finalize ());
+
+    return E_SUCCESS;
 }
 
 /******************************** ENTRY POINT *********************************/
 
-void RecoveryIgniterTest::main (int kAc, char** kAv)
+void RecoveryIgniterTest::main (int kAc, const char** kAv)
 {
     // Validate user-specified ignition delay.
     if (validateInput (kAc, kAv) != E_SUCCESS)

@@ -87,7 +87,7 @@ typedef enum Error
     E_NAME_NOTFOUND,
     E_NO_STATES,
 
-    /* State Vector */
+    /* Data Vector */
     E_EMPTY_CONFIG = 100,
     E_EMPTY_ELEMS,
     E_DUPLICATE_REGION,
@@ -117,6 +117,7 @@ typedef enum Error
     /* Scripts */
     E_WRONG_ARGC,
     E_INVALID_ARGUMENT,
+    E_FAILED_TO_CANCEL_ABORT,
 
     E_LAST
 } Error_t;

@@ -20,7 +20,7 @@
 
 int main (int ac, char** av)
 {
-    // RecoveryIgniterTest::main (ac, av);
+    // RecoveryIgniterTest::main (ac, (const char**) av);
     // ProfileCopyBuffer::main (ac, av);
     // ProfileLock::main (ac, av);
 }
