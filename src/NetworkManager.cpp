@@ -292,7 +292,7 @@ Error_t NetworkManager::convertIPStringToUInt32 (std::string kIpStr,
             return E_INVALID_IP_REGION;
         }
 
-        // Verify number of IP regions does not exceed
+        // Verify number of IP regions does not exceed expected
         if (numIpRegions >= EXPECTED_NUM_BYTES)
         {
             return E_IP_SIZE_EXCEEDED;
