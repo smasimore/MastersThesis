@@ -293,9 +293,9 @@ Error_t NetworkManager::convertIPStringToUInt32 (std::string kIpStr,
         }
 
         // Verify number of IP regions does not exceed expected
-        if (numIpRegions >= EXPECTED_NUM_BYTES)
+        if (numIpRegions > EXPECTED_NUM_BYTES)
         {
-            return E_IP_SIZE_EXCEEDED;
+            return E_INVALID_IP_SIZE;
         }
 
         ipRegionUInt8Arr[numIpRegions - 1] = static_cast<uint8_t> (byteUInt32);
