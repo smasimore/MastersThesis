@@ -107,6 +107,10 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_LED_CONTROL_VAL,
     DV_ELEM_LED_FEEDBACK_VAL,
 
+    /* Recovery igniter test script */
+    DV_ELEM_RECIGNTEST_CONTROL_VAL,
+    DV_ELEM_RECIGNTEST_FEEDBACK_VAL,
+
     DV_ELEM_LAST
 };
 
