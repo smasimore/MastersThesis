@@ -1,11 +1,28 @@
 /**
- * Singleton class to manage threads. To use this class call 
- * ThreadManager::getInstance to get the singleton. The first time this is 
- * called, ThreadManager::initKernelSchedulingEnvironment will be called to 
- * initialize the kernel scheduling environment.
+ * Singleton class to manage threads on a real-time target. The purpose of the
+ * Thread Manager is provide tight control over the scheduling environment for 
+ * binaries running on the flight computers (sbRIO's) running NI's Linux 
+ * Real-Time. The scheduling on these targets needs to be extremely controlled 
+ * and reliable to meet our 10ms loop deadlines. For other binaries, e.g. 
+ * programs running on a ground computer, this level of control is likely 
+ * unnecessary and should use the pthreads API directly. 
+ *
+ * To use this class call ThreadManager::getInstance to get the singleton. The 
+ * first time this is called, ThreadManager::initKernelSchedulingEnvironment 
+ * will be called to initialize the kernel scheduling environment. On thread 
+ * creation, the arguments to the thread function are copied to the heap to 
+ * protect against the caller's passed in arguments unintentionally going out of 
+ * scope.
  *    
- * NOTE: This object is intended to be called from only one thread and is not
- *       threadsafe.
+ * WARNINGS 
+ *
+ *     #1 This object is intended to be called from only one thread and is not
+ *        threadsafe.
+ *
+ *     #2 The Thread Manager is strictly intended to be used on real-time 
+ *        targets running NILRT (i.e. the sbRIO's). For creating threads on 
+ *        other targets (e.g. the ground computer), use the pthreads API 
+ *        directly. 
  * 
  * 
  *                    ---------- SCHEDULING ------------
