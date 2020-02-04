@@ -37,7 +37,7 @@
 #include <cstring>
 
 #include "EnumClassHash.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 
 class NetworkManager final 
 {

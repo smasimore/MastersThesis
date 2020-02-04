@@ -1,7 +1,7 @@
 #include <unistd.h>
 
 #include "StateMachine.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 #include "Log.hpp"
 #include "ThreadManager.hpp"
 

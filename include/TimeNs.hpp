@@ -16,7 +16,7 @@
  */
 #include <stdint.h>
 
-#include "Errors.h"
+#include "Errors.hpp"
 
 #ifndef TIMENS_HPP
 #define TIMENS_HPP

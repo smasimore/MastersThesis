@@ -54,7 +54,7 @@
 #include <stdint.h>
 #include <memory>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "NiFpga.h"
 #include "DataVector.hpp"
 

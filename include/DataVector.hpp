@@ -61,7 +61,7 @@
 #include <unordered_map>
 #include <cstring>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "DataVectorEnums.hpp"
 #include "EnumClassHash.hpp"
 

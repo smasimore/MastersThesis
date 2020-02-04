@@ -4,7 +4,7 @@
 #include <limits>
 #include <tuple>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "DataVector.hpp"
 #include "Log.hpp"
 

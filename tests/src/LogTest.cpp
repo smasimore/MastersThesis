@@ -1,5 +1,5 @@
 /** All #include statements should come before the CppUTest include */
-#include "Errors.h"
+#include "Errors.hpp"
 #include "Log.hpp"
 
 #include "CppUTest/TestHarness.h"

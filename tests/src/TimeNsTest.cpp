@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <memory>
-#include "Errors.h"
+#include "Errors.hpp"
 #include "TimeNs.hpp"
 
 #include "TestHelpers.hpp"

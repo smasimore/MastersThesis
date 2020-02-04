@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "DataVector.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 #include "NiFpga.h"
 #include "NiFpga_IO.h"
 #include "DigitalOutDevice.hpp"

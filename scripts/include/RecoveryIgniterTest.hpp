@@ -1,7 +1,7 @@
 # ifndef IGNITER_TEST_HPP
 # define IGNITER_TEST_HPP
 
-#include "Errors.h"
+#include "Errors.hpp"
 
 namespace RecoveryIgniterTest
 {

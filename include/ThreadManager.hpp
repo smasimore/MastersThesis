@@ -90,7 +90,7 @@
 #include <vector>
 #include <string>
 
-#include "Errors.h"
+#include "Errors.hpp"
 
 class ThreadManager final 
 {

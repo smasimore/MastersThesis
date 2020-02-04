@@ -17,7 +17,7 @@
 #include <stdint.h>
 
 #include "Controller.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 
 class RCSController final : public Controller
 {

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "DataVector.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 
 /**
  * Base controller class for implementing high-level controllers on the rocket

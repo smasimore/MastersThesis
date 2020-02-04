@@ -17,7 +17,7 @@
 #include <pthread.h>
 #include <vector>
 
-#include "Errors.h"
+#include "Errors.hpp"
 
 class Log final 
 {

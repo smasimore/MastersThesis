@@ -11,10 +11,13 @@
  *******************************************************************************
  */
 
-# ifndef ERRORS_H
-# define ERRORS_H
+# ifndef ERRORS_HPP
+# define ERRORS_HPP
 
-typedef enum Error
+#include <cstdint>
+#include <string>
+
+enum Error_t : uint32_t
 {
 
     /* General */
@@ -120,6 +123,20 @@ typedef enum Error
     E_FAILED_TO_CANCEL_ABORT,
 
     E_LAST
-} Error_t;
+};
+
+namespace Errors
+{
+
+    /**
+     * Exit process if kError is anything but E_SUCCESS. This function does not
+     * return an Error_t as it is intended to handle other errors in the system
+     * and has no error state of its own.
+     *
+     * @param  kError  Error_t variable to check.
+     * @param  kMsg    Message to print on error.
+     */
+    void exitOnError (Error_t kError, std::string kMsg);
+}
 
 #endif

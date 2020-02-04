@@ -2,8 +2,9 @@
 #include <sched.h>
 #include <signal.h>
 #include <iostream>
+#include <limits>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "Log.hpp"
 #include "ThreadManager.hpp"
 
@@ -71,7 +72,7 @@ TEST_GROUP (ThreadManagerInit)
     // Reset priorities of software irq threads.
     void teardown()
     {
-		// Priority of threads on boot.
+        // Priority of threads on boot.
         const uint8_t KSOFTIRQD_PRIORITY = 8;
         const uint8_t KTIMERSOFTD_PRIORITY = 1;
 
@@ -488,10 +489,13 @@ TEST (ThreadManagerCreate, CreatePeriodicThreadNoArgs)
                                         THREAD_PERIOD_MS);
    CHECK_EQUAL (E_SUCCESS, ret);
 
-    // Clean up thread. 
+    // Clean up thread.
     pthread_cancel (thread);
     pThreadManager->waitForThread (thread, ret);
-    CHECK_EQUAL (-1, ret);
+
+    // Expect the thread to return -1. Since ret is a uint32, this is the same 
+    // as max uint32.
+    CHECK_EQUAL (std::numeric_limits<uint32_t>::max (), ret);
 }
 
 /* Test creating and running a periodic thread with arguments. */
@@ -532,7 +536,10 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
     // cancelled.
     pthread_cancel (highPriPeriodicThread);
     pThreadManager->waitForThread (highPriPeriodicThread, ret);
-    CHECK_EQUAL (-1, ret);
+
+    // Expect the thread to return -1. Since ret is a uint32, this is the same 
+    // as max uint32.
+    CHECK_EQUAL (std::numeric_limits<uint32_t>::max (), ret);
 
     // Verify.
     VERIFY_LOGS;

@@ -1,5 +1,5 @@
 #include "State.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 #include <unordered_map>
 
 #include "CppUTest/TestHarness.h"

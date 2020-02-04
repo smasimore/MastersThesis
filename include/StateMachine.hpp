@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <memory>
 #include "State.hpp"
-#include "Errors.h"
+#include "Errors.hpp"
 
 class StateMachine
 {

@@ -2,7 +2,7 @@
 #include <cstring>
 #include <sstream>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "NetworkManager.hpp"
 #include "EnumClassHash.hpp"
 

@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include "Errors.h"
+#include "Errors.hpp"
 #include "ThreadManager.hpp"
 #include "DataVector.hpp"
 #include "Log.hpp"
