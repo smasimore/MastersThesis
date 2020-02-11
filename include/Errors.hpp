@@ -30,6 +30,7 @@ enum Error_t : uint32_t
     E_DATA_VECTOR_READ,
     E_DATA_VECTOR_WRITE,
     E_INVALID_ELEM,
+    E_FAILED_TO_OPEN_FILE,
 
     /* Testing */
     E_TEST_ERROR,
@@ -41,7 +42,6 @@ enum Error_t : uint32_t
     E_INVALID_ARGS_LENGTH,
     E_FAILED_TO_INIT_KERNEL_ENV,
     E_FAILED_TO_VERIFY_PROCESS,
-    E_FAILED_TO_OPEN_FILE,
     E_FAILED_TO_READ_FILE,
     E_FAILED_TO_CLOSE_FILE,
     E_FAILED_TO_ALLOCATE_ARGS,
@@ -105,6 +105,10 @@ enum Error_t : uint32_t
     E_FAILED_TO_READ_AND_UNLOCK,
     E_FAILED_TO_WRITE_AND_UNLOCK,
     E_ENUM_STRING_UNDEFINED,
+
+    /* Data Vector Logger */
+    E_FAILED_TO_WRITE_FILE,
+    E_FAILED_TO_SEEK,
 
     /* Devices */
     E_FPGA_INIT = 125,

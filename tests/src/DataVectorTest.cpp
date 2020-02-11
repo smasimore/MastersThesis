@@ -488,6 +488,16 @@ TEST (DataVector_Construct, 1Elem_TypesAndBoundaryVals)
 
             FAIL (stream.str ().c_str ());
         }
+
+        // Verify Data Vector's config stored correctly. To compare structs, 
+        // each piece must be compared independently due to indeterminate 
+        // padding and structs of vectors storing only the ptr to the vector.
+        MEMCMP_EQUAL (&pDv->mConfig[0].region, 
+                      &config[0].region, 
+                      sizeof (DataVectorRegion_t));
+        MEMCMP_EQUAL (pDv->mConfig[0].elems.data (), 
+                      config[0].elems.data (), 
+                      sizeof (config[0].elems.size ()));
     }
 }
 
@@ -621,7 +631,22 @@ TEST (DataVector_Construct, MultipleElem_TypesAndBoundaryVals) {
                           dataVectorExpectedBuffer.data (),
                           dataVectorExpectedSizeBytes);
     CHECK (cmpRet == 0);
+
+    // Verify Data Vector's config stored correctly. To compare structs, each
+    // piece must be compared independently due to indeterminate padding and
+    // structs of vectors storing only the ptr to the vector.
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        MEMCMP_EQUAL (&pDv->mConfig[i].region, 
+                      &gMultiElemConfig[i].region, 
+                      sizeof (DataVectorRegion_t));
+        MEMCMP_EQUAL (pDv->mConfig[i].elems.data (), 
+                      gMultiElemConfig[i].elems.data (), 
+                      sizeof (gMultiElemConfig[i].elems.size ()));
+    }
 }
+
+/************************* GETSIZEFROMBYTES TESTS *****************************/
 
 /* Group of tests to verify getSizeBytes. */
 TEST_GROUP (DataVector_getSizeFromBytes)
@@ -679,11 +704,74 @@ TEST (DataVector_getSizeFromBytes, Success)
     }
 }
 
+/************************** GETELEMENTTYPE TESTS ******************************/
+
+#define CHECK_ELEMENT_TYPE(elem, expectedType)                                 \
+{                                                                              \
+    DataVectorElementType_t type = DV_T_LAST;                                  \
+    CHECK_SUCCESS (pDv->getElementType (elem, type));                          \
+    CHECK_EQUAL (expectedType, type);                                          \
+}
+
+DataVector::Config_t gGetElementTypeConfig = 
+{
+    {DV_REG_TEST0,
+    {
+        DV_ADD_UINT8  (DV_ELEM_TEST0,  0   ),
+        DV_ADD_UINT16 (DV_ELEM_TEST1,  0   ),
+        DV_ADD_UINT32 (DV_ELEM_TEST2,  0   ),
+        DV_ADD_UINT64 (DV_ELEM_TEST3,  0   ),
+        DV_ADD_INT8   (DV_ELEM_TEST4,  0   ),
+        DV_ADD_INT16  (DV_ELEM_TEST5,  0   ),
+        DV_ADD_INT32  (DV_ELEM_TEST6,  0   ),
+        DV_ADD_INT64  (DV_ELEM_TEST7,  0   ),
+        DV_ADD_FLOAT  (DV_ELEM_TEST8,  0   ),
+        DV_ADD_DOUBLE (DV_ELEM_TEST9,  0   ),
+        DV_ADD_BOOL   (DV_ELEM_TEST10, true),
+    }},
+}; 
+
+/* Group of tests to verify getElementType. */
+TEST_GROUP (DataVector_getElementType)
+{
+
+};
+
+/* Test nonexistent elem. */
+TEST (DataVector_getElementType, DNE)
+{
+    INIT_DATA_VECTOR (gGetElementTypeConfig);
+    DataVectorElementType_t type = DV_T_LAST;
+    
+    CHECK_ERROR (pDv->getElementType (DV_ELEM_TEST11, type), E_INVALID_ELEM);
+    CHECK_EQUAL (type, DV_T_LAST);
+}
+
+/* Test existing elem. */
+TEST (DataVector_getElementType, Success)
+{
+    INIT_DATA_VECTOR (gGetElementTypeConfig);
+
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST0,  DV_T_UINT8 );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST1,  DV_T_UINT16);
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST2,  DV_T_UINT32);
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST3,  DV_T_UINT64);
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST4,  DV_T_INT8  );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST5,  DV_T_INT16 );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST6,  DV_T_INT32 );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST7,  DV_T_INT64 );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST8,  DV_T_FLOAT );
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST9,  DV_T_DOUBLE);
+    CHECK_ELEMENT_TYPE (DV_ELEM_TEST10, DV_T_BOOL  );
+}
+
+/*************************** ELEMENTEXISTS TESTS ******************************/
+
 DataVector::Config_t gSimpleConfig = 
 {
     {DV_REG_TEST0,
     {
-        DV_ADD_BOOL (DV_ELEM_TEST0, true),
+        DV_ADD_UINT8  (DV_ELEM_TEST0,  0   ),
     }},
 }; 
 
@@ -700,7 +788,7 @@ TEST (DataVector_elementExists, DNE)
     CHECK_ERROR (pDv->elementExists (DV_ELEM_TEST1), E_INVALID_ELEM);
 }
 
-/* Test existent elem. */
+/* Test existing elem. */
 TEST (DataVector_elementExists, Exists)
 {
     INIT_DATA_VECTOR (gSimpleConfig);

@@ -190,7 +190,7 @@ public:
     {
         DataVectorElement_t     elem;
         DataVectorElementType_t type;
-        uint64_t                 initialVal;
+        uint64_t                initialVal;
     } ElementConfig_t;
 
     /**
@@ -211,6 +211,11 @@ public:
      * constructor to initialize the Data Vector.
      */
     typedef std::vector<RegionConfig_t> Config_t;
+
+    /**
+     *  Copy of passed in Data Vector config. Used by DataVectorLogger.
+     */
+    const Config_t mConfig;
 
     /**
      * Function to cast various types to a uint64_t bitwise. This is used in 
@@ -286,6 +291,28 @@ public:
      * @ret     E_SUCCESS           Size stored in kSizeBytesRet successfully.
      */
     Error_t getDataVectorSizeBytes (uint32_t& kSizeBytesRet);
+
+    /**
+     * Get the element's type.
+     *
+     * @param  kElem          Element to check.
+     * @param  kTypeRet       Parameter to store type of element.
+     *
+     * @ret    E_SUCCESS      Element in DV.
+     *         E_INVALID_ELEM Element not in DV.
+     */
+    Error_t getElementType (DataVectorElement_t kElem, 
+                            DataVectorElementType_t& kTypeRet);
+
+    /**
+     * Check if element exists in Data Vector.
+     *
+     * @param  kElem          Element to check.
+     *
+     * @ret    E_SUCCESS      Element in DV.
+     *         E_INVALID_ELEM Element not in DV.
+     */
+    Error_t elementExists (DataVectorElement_t kElem);
 
     /**
      * Read an element from the Data Vector. Defined in the header so that the
@@ -480,72 +507,6 @@ public:
     Error_t writeDataVector (std::vector<uint8_t>& kDvBuf);
 
     /**
-     * Check if element exists in Data Vector.
-     *
-     * @param  kElem          Element to check.
-     *
-     * @ret    E_SUCCESS      Element in DV.
-     *         E_INVALID_ELEM Element not in DV.
-     */
-    Error_t elementExists (DataVectorElement_t kElem);
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Print the Data Vector in a human-readable form.
-     * 
-     * @ret      E_SUCCESS                     Data Vector successfully 
-     *                                         printed.
-     *           E_INVALID_ELEM                Element not found in DV.
-     *           E_INVALID_TYPE                Type not supported by print.
-     *           E_INCORRECT_SIZE              Vector provided does not have
-     *                                         same size as mBuffer.
-     *           E_INVALID_ELEM                Element not in Data Vector.
-     *           E_INVALID_TYPE                Elem_t not supported by Data
-     *                                         Vector.
-     *           E_INCORRECT_TYPE              Elem_t does not match expected 
-     *                                         element type.
-     *           E_FAILED_TO_LOCK              Failed to lock.
-     *           E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
-     *                                         unlock.
-     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
-     *                                         unlock.
-     */
-    Error_t printPretty ();
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Print the Data Vector CDV header (region and element names).
-     * 
-     * @ret      E_SUCCESS                     Header successfully printed.
-     */
-    Error_t printCsvHeader ();
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Print the Data Vector CDV row (element values).
-     * 
-     * @ret      E_SUCCESS                     Row successfully printed.
-     *           E_INVALID_ELEM                Element not found in DV.
-     *           E_INVALID_TYPE                Type not supported by print.
-     *           E_INCORRECT_SIZE              Vector provided does not have
-     *                                         same size as mBuffer.
-     *           E_INVALID_ELEM                Element not in Data Vector.
-     *           E_INVALID_TYPE                Elem_t not supported by Data
-     *                                         Vector.
-     *           E_INCORRECT_TYPE              Elem_t does not match expected 
-     *                                         element type.
-     *           E_FAILED_TO_LOCK              Failed to lock.
-     *           E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
-     *                                         unlock.
-     *           E_FAILED_TO_UNLOCK            Read succeeded but failed to 
-     *                                         unlock.
-     */
-    Error_t printCsvRow ();
-
-    /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF DATA VECTOR
      *
      * Acquire the Data Vector lock. This method is public so that the lock
@@ -648,14 +609,11 @@ private:
 
     /** 
      * Struct containing a region's start index into mBuffer and size in bytes.
-     * The elements vector is stored to enable printing of the Data Vector for
-     * debugging purposes.
      */
     typedef struct RegionInfo
     {   
         uint32_t startIdx;
         uint32_t sizeBytes;
-        std::vector<DataVectorElement_t> elements;
     } RegionInfo_t;
 
     /**
@@ -797,64 +755,6 @@ private:
      *          E_FAILED_TO_INIT_LOCK    Lock initialization failed.
      */
     Error_t initLock ();
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Convert a region enum to the corresponding string. Used for printing the
-     * Data Vector.
-     *
-     * @param kRegionEnum                Region to convert.
-     * @param kRegionStrRet              Param to store string in.
-     *
-     * @ret     E_SUCCESS                Successfully converted to string.
-     *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
-     */
-    Error_t regionEnumToString (DataVectorRegion_t kRegionEnum, 
-                                std::string& kRegionStrRet);
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Convert an element enum to the corresponding string. Used for printing 
-     * the Data Vector.
-     *
-     * @param kElementEnum               Element to convert.
-     * @param kElementStrRet             Param to store string in.
-     *
-     * @ret     E_SUCCESS                Successfully converted to string.
-     *          E_ENUM_STRING_UNDEFINED  Enum's string value not defined.
-     */
-    Error_t elementEnumToString (DataVectorElement_t kElementEnum, 
-                                 std::string& kElementStrRet);
-
-    /**
-     * FOR DEBUGGING PURPOSES ONLY -- DO NOT USE IN FLIGHT SOFTWARE
-     *
-     * Read element from DV and append to string.
-     *
-     * @param kElem                         Element to append value of.
-     * @param kStr                          String to append to.
-     *
-     * @ret   E_SUCCESS                     Successfully appended element 
-     *                                      value.
-     *        E_INVALID_ELEM                Element not found in DV.
-     *        E_INVALID_TYPE                Type not supported by print.
-     *        E_INCORRECT_SIZE              Vector provided does not have
-     *                                      same size as mBuffer.
-     *        E_INVALID_ELEM                Element not in Data Vector.
-     *        E_INVALID_TYPE                Elem_t not supported by Data
-     *                                      Vector.
-     *        E_INCORRECT_TYPE              Elem_t does not match expected 
-     *                                      element type.
-     *        E_FAILED_TO_LOCK              Failed to lock.
-     *        E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
-     *                                      unlock.
-     *        E_FAILED_TO_UNLOCK            Read succeeded but failed to 
-     *                                      unlock.
-     */
-    Error_t appendElementValue (DataVectorElement_t kElem,
-                                std::string& kStr);
 
 };
 #endif

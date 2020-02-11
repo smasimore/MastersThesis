@@ -99,6 +99,31 @@ Error_t DataVector::getRegionSizeBytes (DataVectorRegion_t kRegion,
     return E_SUCCESS;
 }
 
+Error_t DataVector::getElementType (DataVectorElement_t kElem, 
+                                    DataVectorElementType_t& kTypeRet)
+{
+    // Check if element in Data Vector.
+    Error_t ret = this->elementExists (kElem); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    kTypeRet = mElementToElementInfo[kElem].type;
+   
+    return E_SUCCESS;
+}
+
+Error_t DataVector::elementExists (DataVectorElement_t kElem)
+{
+    if (mElementToElementInfo.find (kElem) == mElementToElementInfo.end ())
+    {
+        return E_INVALID_ELEM;
+    }
+
+    return E_SUCCESS;
+}
+
 Error_t DataVector::readRegion (DataVectorRegion_t kRegion, 
                                 std::vector<uint8_t>& kRegionBufRet)
 {
@@ -237,129 +262,10 @@ Error_t DataVector::releaseLock ()
     return E_SUCCESS;
 }
 
-Error_t DataVector::elementExists (DataVectorElement_t kElem)
-{
-    if (mElementToElementInfo.find (kElem) == mElementToElementInfo.end ())
-    {
-        return E_INVALID_ELEM;
-    }
-
-    return E_SUCCESS;
-}
-
-Error_t DataVector::printPretty ()
-{
-    Error_t ret = E_SUCCESS;
-
-    // Add header.
-    std::string printStr = "\n\nDATA VECTOR\n\n";
-
-    // Loop over regions.
-    for (std::pair<DataVectorRegion_t, RegionInfo_t> region : 
-             mRegionToRegionInfo)
-    {
-        // Add region name.
-        printStr += "REGION: ";
-        std::string regionStr;
-        printStr += regionEnumToString (region.first, regionStr) != E_SUCCESS
-                        ? std::to_string (region.first) + "\n"
-                        : regionStr + "\n";
-
-        // Loop over elements
-        printStr += "ELEMENTS: \n";
-        for (DataVectorElement_t element : region.second.elements)
-        {
-            // Add element name. 
-            std::string elementStr;
-            printStr += elementEnumToString (element, elementStr) != E_SUCCESS
-                            ? std::to_string (element) + "\t"
-                            : elementStr + "\t";
-
-            // Add element value.
-            ret = this->appendElementValue (element, printStr);
-            if (ret != E_SUCCESS)
-            {
-                return ret;
-            }
-
-            printStr += "\n";
-        }
-
-        printStr += "\n";
-    }
-
-    // Print string.
-    std::cout << printStr << std::endl;
-
-    return E_SUCCESS;
-}
-
-Error_t DataVector::printCsvHeader ()
-{
-    // Loop over regions.
-    std::string printStr;
-    for (std::pair<DataVectorRegion_t, RegionInfo_t> region : 
-             mRegionToRegionInfo)
-    {
-        // Add region name.
-        std::string regionStr;
-        printStr += regionEnumToString (region.first, regionStr) != E_SUCCESS
-                        ? std::to_string (region.first) + ","
-                        : regionStr + ",";
-
-        // Loop over elements.
-        for (DataVectorElement_t element : region.second.elements)
-        {
-            // Add element name. 
-            std::string elementStr;
-            printStr += elementEnumToString (element, elementStr) != E_SUCCESS
-                            ? std::to_string (element) + ","
-                            : elementStr + ",";
-        }
-    }
-
-    // Print string.
-    std::cout << printStr << std::endl;
-
-    return E_SUCCESS;
-}
-
-Error_t DataVector::printCsvRow ()
-{
-    Error_t ret = E_SUCCESS;
-
-    // Loop over regions.
-    std::string printStr;
-    for (std::pair<DataVectorRegion_t, RegionInfo_t> region : 
-             mRegionToRegionInfo)
-    {
-        // Add empty cell for region.
-        printStr += ",";
-
-        // Loop over elements
-        for (DataVectorElement_t element : region.second.elements)
-        {
-            // Add element value.
-            ret = this->appendElementValue (element, printStr);
-            if (ret != E_SUCCESS)
-            {
-                return ret;
-            }
-
-            printStr += ",";
-        }
-    }
-
-    // Print string.
-    std::cout << printStr << std::endl;
-
-    return E_SUCCESS;
-}
-
-
 /**************************** PRIVATE FUNCTIONS *******************************/
 
-DataVector::DataVector (DataVector::Config_t& kConfig, Error_t& kRet)
+DataVector::DataVector (DataVector::Config_t& kConfig, Error_t& kRet) :
+    mConfig (kConfig)
 {
     // 1) Set kReturn value to success.
     kRet = E_SUCCESS;
@@ -432,7 +338,6 @@ DataVector::DataVector (DataVector::Config_t& kConfig, Error_t& kRet)
         RegionInfo_t regionInfo;
         regionInfo.startIdx = regionStartIdx;
         regionInfo.sizeBytes = regionSizeBytes;
-        regionInfo.elements = elementsInRegion;
         mRegionToRegionInfo[region] = regionInfo;
     }
 }
@@ -526,264 +431,4 @@ Error_t DataVector::initLock ()
     pthread_mutexattr_destroy (&attr);
 
     return E_SUCCESS;
-}
-
-Error_t DataVector::regionEnumToString (DataVectorRegion_t kRegionEnum, 
-                                        std::string& kRegionStrRet)
-{
-    switch (kRegionEnum)
-    {
-        case DV_REG_TEST0:
-            kRegionStrRet = "DV_REG_TEST0";
-            break;
-        case DV_REG_TEST1:
-            kRegionStrRet = "DV_REG_TEST1";
-            break;
-        case DV_REG_TEST2:
-            kRegionStrRet = "DV_REG_TEST2";
-            break;
-        case DV_REG_LAST:
-            kRegionStrRet = "DV_REG_LAST";
-            break;
-        default:
-            return E_ENUM_STRING_UNDEFINED;
-    }
-
-    return E_SUCCESS;
-}
-
-Error_t DataVector::elementEnumToString (DataVectorElement_t kElementEnum,
-                                         std::string& kElementStrRet)
-{
-    switch (kElementEnum)
-    {
-        case DV_ELEM_TEST0:
-            kElementStrRet = "DV_ELEM_TEST0";
-            break;
-        case DV_ELEM_TEST1:
-            kElementStrRet = "DV_ELEM_TEST1";
-            break;
-        case DV_ELEM_TEST2:
-            kElementStrRet = "DV_ELEM_TEST2";
-            break;
-        case DV_ELEM_TEST3:
-            kElementStrRet = "DV_ELEM_TEST3";
-            break;
-        case DV_ELEM_TEST4:
-            kElementStrRet = "DV_ELEM_TEST4";
-            break;
-        case DV_ELEM_TEST5:
-            kElementStrRet = "DV_ELEM_TEST5";
-            break;
-        case DV_ELEM_TEST6:
-            kElementStrRet = "DV_ELEM_TEST6";
-            break;
-        case DV_ELEM_TEST7:
-            kElementStrRet = "DV_ELEM_TEST7";
-            break;
-        case DV_ELEM_TEST8:
-            kElementStrRet = "DV_ELEM_TEST8";
-            break;
-        case DV_ELEM_TEST9:
-            kElementStrRet = "DV_ELEM_TEST9";
-            break;
-        case DV_ELEM_TEST10:
-            kElementStrRet = "DV_ELEM_TEST10";
-            break;
-        case DV_ELEM_TEST11:
-            kElementStrRet = "DV_ELEM_TEST11";
-            break;
-        case DV_ELEM_TEST12:
-            kElementStrRet = "DV_ELEM_TEST12";
-            break;
-        case DV_ELEM_TEST13:
-            kElementStrRet = "DV_ELEM_TEST13";
-            break;
-        case DV_ELEM_TEST14:
-            kElementStrRet = "DV_ELEM_TEST14";
-            break;
-        case DV_ELEM_TEST15:
-            kElementStrRet = "DV_ELEM_TEST15";
-            break;
-        case DV_ELEM_TEST16:
-            kElementStrRet = "DV_ELEM_TEST16";
-            break;
-        case DV_ELEM_TEST17:
-            kElementStrRet = "DV_ELEM_TEST17";
-            break;
-        case DV_ELEM_TEST18:
-            kElementStrRet = "DV_ELEM_TEST18";
-            break;
-        case DV_ELEM_TEST19:
-            kElementStrRet = "DV_ELEM_TEST19";
-            break;
-        case DV_ELEM_TEST20:
-            kElementStrRet = "DV_ELEM_TEST20";
-            break;
-        case DV_ELEM_TEST21:
-            kElementStrRet = "DV_ELEM_TEST21";
-            break;
-        case DV_ELEM_TEST22:
-            kElementStrRet = "DV_ELEM_TEST22";
-            break;
-        case DV_ELEM_TEST23:
-            kElementStrRet = "DV_ELEM_TEST23";
-            break;
-        case DV_ELEM_TEST24:
-            kElementStrRet = "DV_ELEM_TEST24";
-            break;
-        case DV_ELEM_TEST25:
-            kElementStrRet = "DV_ELEM_TEST25";
-            break;
-        case DV_ELEM_TEST26:
-            kElementStrRet = "DV_ELEM_TEST26";
-            break;
-        case DV_ELEM_TEST27:
-            kElementStrRet = "DV_ELEM_TEST27";
-            break;
-        case DV_ELEM_TEST28:
-            kElementStrRet = "DV_ELEM_TEST28";
-            break;
-        case DV_ELEM_TEST29:
-            kElementStrRet = "DV_ELEM_TEST29";
-            break;
-        case DV_ELEM_TEST30:
-            kElementStrRet = "DV_ELEM_TEST30";
-            break;
-        case DV_ELEM_TEST31:
-            kElementStrRet = "DV_ELEM_TEST31";
-            break;
-        case DV_ELEM_TEST32:
-            kElementStrRet = "DV_ELEM_TEST32";
-            break;
-        case DV_ELEM_TEST33:
-            kElementStrRet = "DV_ELEM_TEST33";
-            break;
-        case DV_ELEM_TEST34:
-            kElementStrRet = "DV_ELEM_TEST34";
-            break;
-        case DV_ELEM_TEST35:
-            kElementStrRet = "DV_ELEM_TEST35";
-            break;
-        case DV_ELEM_TEST36:
-            kElementStrRet = "DV_ELEM_TEST36";
-            break;
-        case DV_ELEM_TEST37:
-            kElementStrRet = "DV_ELEM_TEST37";
-            break;
-        case DV_ELEM_TEST38:
-            kElementStrRet = "DV_ELEM_TEST38";
-            break;
-        case DV_ELEM_TEST39:
-            kElementStrRet = "DV_ELEM_TEST39";
-            break;
-        case DV_ELEM_TEST40:
-            kElementStrRet = "DV_ELEM_TEST40";
-            break;
-        case DV_ELEM_TEST41:
-            kElementStrRet = "DV_ELEM_TEST41";
-            break;
-        case DV_ELEM_TEST42:
-            kElementStrRet = "DV_ELEM_TEST42";
-            break;
-        case DV_ELEM_TEST43:
-            kElementStrRet = "DV_ELEM_TEST43";
-            break;
-        case DV_ELEM_TEST44:
-            kElementStrRet = "DV_ELEM_TEST44";
-            break;
-        case DV_ELEM_TEST45:
-            kElementStrRet = "DV_ELEM_TEST45";
-            break;
-        case DV_ELEM_TEST46:
-            kElementStrRet = "DV_ELEM_TEST46";
-            break;
-        case DV_ELEM_LAST:
-            kElementStrRet = "DV_ELEM_LAST";
-            break;
-        default:
-            return E_ENUM_STRING_UNDEFINED;
-    }
-
-    return E_SUCCESS;
-}
-
-Error_t DataVector::appendElementValue (DataVectorElement_t kElem,
-                                        std::string& kStr)
-{
-    // Check if element in Data Vector.
-    Error_t ret = E_SUCCESS;
-    if (this->elementExists (kElem) != E_SUCCESS)
-    {
-        return ret;
-    }
-
-    // Since kElems have different types, get the type of this kElem
-    // and switch based on type.
-    ElementInfo_t kElemInfo = mElementToElementInfo[kElem];
-    DataVectorElementType_t type = kElemInfo.type;
-    
-    uint8_t valUInt8 = 0;
-    uint16_t valUInt16 = 0;
-    uint32_t valUInt32 = 0;
-    uint64_t valUInt64 = 0;
-    int8_t valInt8 = 0;
-    int16_t valInt16 = 0;
-    int32_t valInt32 = 0;
-    int64_t valInt64 = 0;
-    float valFloat = 0;
-    double valDouble = 0;
-    bool valBool = false;
-
-    switch (type)
-    {
-        case DV_T_UINT8:
-            ret = this->read (kElem, valUInt8);
-            kStr += std::to_string (valUInt8);
-            break;
-        case DV_T_UINT16:
-            ret = this->read (kElem, valUInt16);
-            kStr += std::to_string (valUInt16);
-            break;
-        case DV_T_UINT32:
-            ret = this->read (kElem, valUInt32);
-            kStr += std::to_string (valUInt32);
-            break;
-        case DV_T_UINT64:
-            ret = this->read (kElem, valUInt64);
-            kStr += std::to_string (valUInt64);
-            break;
-        case DV_T_INT8:
-            ret = this->read (kElem, valInt8);
-            kStr += std::to_string (valInt8);
-            break;
-        case DV_T_INT16:
-            ret = this->read (kElem, valInt16);
-            kStr += std::to_string (valInt16);
-            break;
-        case DV_T_INT32:
-            ret = this->read (kElem, valInt32);
-            kStr += std::to_string (valInt32);
-            break;
-        case DV_T_INT64:
-            ret = this->read (kElem, valInt64);
-            kStr += std::to_string (valInt64);
-            break;
-        case DV_T_FLOAT:
-            ret = this->read (kElem, valFloat);
-            kStr += std::to_string (valFloat);
-            break;
-        case DV_T_DOUBLE:
-            ret = this->read (kElem, valDouble);
-            kStr += std::to_string (valDouble);
-            break;
-        case DV_T_BOOL:
-            ret = this->read (kElem, valBool);
-            kStr += valBool == true ? "true" : "false";
-            break;
-        default:
-            return E_INVALID_TYPE;
-    }
-
-    return ret;
 }
