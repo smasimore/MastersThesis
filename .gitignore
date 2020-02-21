@@ -64,3 +64,4 @@ libs/include/
 .ycm_extra_conf.py
 /IntegrationTests_PlatformLEDTest_FC/
 /IntegrationTests_PlatformLEDTest_RIO0/
+/Script/
