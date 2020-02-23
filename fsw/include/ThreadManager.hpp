@@ -44,7 +44,8 @@
  *    this to make sure there is minimal latency in servicing these interrupts.
  *    Some of these hw IRQ threads do not do the full computation required to 
  *    service the interrupt, but instead schedule a software IRQ thread to 
- *    finish the processing (the bottom half of the interrupt servicing).
+ *    finish the processing (the bottom half of the interrupt servicing). The
+ *    hardware irq thread names all start with "irq".
  * 
  * 2. Software IRQ Threads: These kernel threads are sometimes scheduled by the 
  *    hw IRQ threads to finish servicing a hardware interrupt. The sw IRQ 

@@ -5,19 +5,28 @@
 #include <fstream>
 #include <numeric>
 #include <algorithm>
+#include <stdexcept>
 
 #include "ThreadManager.hpp"
+#include "Errors.hpp"
 #include "ProfileHelpers.hpp"
 
 void ProfileHelpers::setThreadPriAndAffinity ()
 {
+    // Initialize ThreadManager so that kernel environment is set.
+    ThreadManager* pTm;
+    if (ThreadManager::getInstance (&pTm) != E_SUCCESS)
+    {
+        throw std::runtime_error ("Failed to initialize Thread Manager");
+    }
+
     // Set priority to lowest FSW thread priority.
     pthread_t currentThread = pthread_self();
     struct sched_param schedParams;
     schedParams.sched_priority = ThreadManager::MIN_NEW_THREAD_PRIORITY;
     if (pthread_setschedparam (currentThread, SCHED_FIFO, &schedParams) != 0)
     {   
-        throw "Failed to set priority.";
+        throw std::runtime_error ("Failed to set priority.");
     }   
 
     // Use core 0 for determinism.
@@ -26,7 +35,7 @@ void ProfileHelpers::setThreadPriAndAffinity ()
     CPU_SET (0, &cpuset);
     if (pthread_setaffinity_np(currentThread, sizeof(cpu_set_t), &cpuset) != 0)
     {   
-        throw "Failed to set affinity.";
+        throw std::runtime_error ("Failed to set affinity.");
     }   
 }
 
@@ -37,7 +46,7 @@ uint64_t ProfileHelpers::getTimeNs ()
     struct timespec ts;
     if (clock_gettime (CLOCK_MONOTONIC_RAW, &ts) != 0)
     {
-        throw "Failed to get time.";
+        throw std::runtime_error ("Failed to get time.");
     }
 
     return (((uint64_t) ts.tv_sec) * NS_IN_S) + ts.tv_nsec;
@@ -52,7 +61,7 @@ uint64_t ProfileHelpers::measureBaseline ()
     uint64_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    return abs (endNs - startNs);
+    return endNs - startNs;
 }
 
 void ProfileHelpers::printProcessStats ()
@@ -67,7 +76,7 @@ void ProfileHelpers::printProcessStats ()
     }
     else
     {
-        throw "Failed to to open " + filePath;
+        throw std::runtime_error ("Failed to to open " + filePath);
     }
 }
 

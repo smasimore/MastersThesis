@@ -113,20 +113,23 @@ TEST (ThreadManagerInit, SetProcessPriority)
 {
     static const uint8_t DEFAULT_PRIORITY = 1;
 
-
-    // Set priority and verify.
+    // Set priority and verify. Sleep for 1ms to allow priority change to 
+    // propagate. 
     Error_t ret = ThreadManager::setProcessPriority (
                                     ThreadManager::KSOFTIRQD_0_PID,
                                     ThreadManager::SW_IRQ_PRIORITY); 
+    TestHelpers::sleepMs (1);
     CHECK_EQUAL (E_SUCCESS, ret);
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
     CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
                  schedParam.__sched_priority);
     
-    // Set priority back to default and verify.
+    // Set priority back to default and verify. Sleep for 1ms to allow
+    // priority change to propagate. 
     ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID, 
                                        DEFAULT_PRIORITY);
+    TestHelpers::sleepMs (1);
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
     CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);
 }

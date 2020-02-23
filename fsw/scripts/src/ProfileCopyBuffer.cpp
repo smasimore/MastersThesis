@@ -56,7 +56,7 @@ uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
     uint64_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    uint64_t elapsedNs = abs (endNs - startNs);
+    uint64_t elapsedNs = endNs - startNs;
 
     // Print results.
     if (gDebugPrint == true)
@@ -87,7 +87,7 @@ uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
     uint64_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    uint64_t elapsedNs = abs (endNs - startNs);
+    uint64_t elapsedNs = endNs - startNs;
 
     // Print results.
     if (gDebugPrint == true)
@@ -116,7 +116,7 @@ uint64_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, uint16_t runIdx)
     uint64_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    uint64_t elapsedNs = abs (endNs - startNs);
+    uint64_t elapsedNs = endNs - startNs;
 
     // Print results.
     if (gDebugPrint == true)
