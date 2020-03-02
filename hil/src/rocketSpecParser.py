@@ -13,10 +13,12 @@ DEFAULT_EXTENSION = '.xlsx'
 # wrapped by a SensorObject that helps make the interface cleaner
 class RocketSpecParser():
 
+    # The spec sheet is stored in a data frame to speed up accessing time
     def __init__(self):
-        self.sensorSpecs = pd.read_excel(DEFAULT_WORKBOOK_NAME + DEFAULT_EXTENSION)  # The spec sheet is stored in a data frame to speed up accessing time
+        self.sensorSpecs = pd.read_excel(DEFAULT_WORKBOOK_NAME + DEFAULT_EXTENSION)  
 
-    def getSensorInfo(self, sensorName):     # Returns a sensor object that acts as a wrapper around accessing the sensor info
+    # Returns a sensor object that acts as a wrapper around accessing the sensor info
+    def getSensorInfo(self, sensorName):   
         row  = self.sensorSpecs.loc[self.sensorSpecs['Common Name'] == sensorName].iloc[0].values
         sensor = SensorObject(row)
         return sensor

@@ -3,16 +3,16 @@ COMMON_NAME_INDEX                   = 0
 SENSOR_NAME_INDEX                   = 1
 SENSOR_TYPE_INDEX                   = 2
 SENSOR_COMMUNICATION_PROTOCOL_INDEX = 3
-SENSOR_PIN_INDEX                    = 4
-###
+SENSOR_PINS_INDEX                   = 4
+### End of Global Defines
 
 # Sensor Object serves as a wrapper around data retreived from the
 # spec sheet to abstract the interface between the the simulator and
-# how it access sensor information
+# how it accesses sensor information. 
 class SensorObject():
 
     def __init__(self, info):
-        self.info = info # Info is an array of all the info about the sensor
+        self.info = info                                            # Info is an array of all the info about the sensor
 
     def getSensorSpecs(self):
         return self.info
@@ -32,8 +32,8 @@ class SensorObject():
     def getSensorCommunicationProtocol(self):
         return self.getSpec(SENSOR_COMMUNICATION_PROTOCOL_INDEX)
 
-    def getSensorPin(self):
-        return self.getSpec(SENSOR_PIN_INDEX)
+    def getSensorPins(self):
+        return self.getSpec(SENSOR_PINS_INDEX)
 
     def __str__(self):
         string = ''
