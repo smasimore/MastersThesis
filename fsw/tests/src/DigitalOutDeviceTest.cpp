@@ -6,9 +6,8 @@
 
 #include "DataVector.hpp"
 #include "Errors.hpp"
-#include "NiFpga.h"
-#include "NiFpga_IO.h"
 #include "DigitalOutDevice.hpp"
+#include "Fpga.hpp"
 
 #include "TestHelpers.hpp"
 
@@ -20,25 +19,24 @@
 /**
  * Initialize FPGA session and Data Vector.
  */
-#define INIT_SESSION_AND_DV                                                   \
-    NiFpga_Session session;                                                   \
-    NiFpga_Status status = NiFpga_Initialize();                               \
-    NiFpga_MergeStatus(&status, NiFpga_Open(                                  \
-        BIT_FILE_PATH NiFpga_IO_Bitfile,                                      \
-        NiFpga_IO_Signature, "RIO0", 0, &session));                           \
-    CHECK_EQUAL (NiFpga_Status_Success, status);                              \
-    TestHelpers::sleepMs (1000);                                              \
-    DataVector::Config_t config =                                             \
-    {                                                                         \
-        {                                                                     \
-            {DV_REG_TEST0,                                                    \
-            {                                                                 \
-                DV_ADD_BOOL  (  DV_ELEM_LED_CONTROL_VAL,      false        ), \
-                DV_ADD_BOOL  (  DV_ELEM_LED_FEEDBACK_VAL,     false        ), \
-            }},                                                               \
-        }                                                                     \
-    };                                                                        \
-    std::shared_ptr<DataVector> pDv;                                          \
+#define INIT_SESSION_AND_DV                                                    \
+    NiFpga_Session session;                                                    \
+    NiFpga_Status status;                                                      \
+    CHECK_SUCCESS (Fpga::getSession (session));                                \
+    CHECK_SUCCESS (Fpga::getStatus (status));                                  \
+    CHECK_EQUAL (NiFpga_Status_Success, status);                               \
+    TestHelpers::sleepMs (1000);                                               \
+    DataVector::Config_t config =                                              \
+    {                                                                          \
+        {                                                                      \
+            {DV_REG_TEST0,                                                     \
+            {                                                                  \
+                DV_ADD_BOOL  (  DV_ELEM_LED_CONTROL_VAL,      false        ),  \
+                DV_ADD_BOOL  (  DV_ELEM_LED_FEEDBACK_VAL,     false        ),  \
+            }},                                                                \
+        }                                                                      \
+    };                                                                         \
+    std::shared_ptr<DataVector> pDv;                                           \
     CHECK_SUCCESS (DataVector::createNew (config, pDv));                       
 
 
@@ -249,6 +247,5 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
     }
 
     // 3) Close and finalize FPGA session.
-    NiFpga_MergeStatus (&status, NiFpga_Close (session, 0));
-    NiFpga_MergeStatus (&status, NiFpga_Finalize ());
+    CHECK_SUCCESS (Fpga::closeSession ());
 }
