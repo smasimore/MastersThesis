@@ -3,12 +3,12 @@ from openpyxl import Workbook, load_workbook
 from datetime import datetime
 
 ### Global variable define statements
-MAX_MESSAGE_SIZE    = 1024                                                          # Max number of bytes a packet can be
+MAX_TELEMETRY_MESSAGE_SIZE    = 1024                                                # Max number of bytes a packet can be
 DEFAULT_TEMPLATE = "fff?iLlhd"                                                      # Template of what data types are in the DataVector, will be loaded from a config file later
 DEFAULT_LOG_DIRECTORY_PATH = "SimulationLogs-"
 DEFAULT_LOG_NAME = "SimulationLog"
-DEFAULT_COMMAND_SHEET_NAME = "Command History"
-DEFAULT_TELEMETRY_SHEET_NAME = "DataVector Logs" 
+DEFAULT_COMMAND_SHEET_NAME = "Command_History_Logs"
+DEFAULT_TELEMETRY_SHEET_NAME = "DataVector_Logs" 
 DEFAULT_EXTENSION = '.xlsx'                                                         # All logs will be excel spreadsheets
 DEFAULT_IP = "0.0.0.0"                                                              # 0.0.0.0 means accept all incoming connections                
 DEFAULT_LOGGING_PORT = 8080                                                         # The default port the telemetry packets will come in on
@@ -73,7 +73,7 @@ class SimulationLogger(threading.Thread):
 
     # Receives and unpacks a byte array from an incoming UDP packet
     def _receiveDataVector(self):
-        byteData, _ = self.sock.recvfrom(MAX_MESSAGE_SIZE)                          
+        byteData, _ = self.sock.recvfrom(MAX_TELEMETRY_MESSAGE_SIZE)                          
         dataVector = list(struct.unpack(self.template, byteData))                   # Unpacks the byteData into an array of data types detailed in the template
         return dataVector
 

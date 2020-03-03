@@ -3,8 +3,8 @@ from sensorObject import SensorObject
 import pandas as pd
 
 ### Global variable define statements
-DEFAULT_WORKBOOK_NAME = 'Sensor Workbook'
-DEFAULT_SHEET_NAME = "Sensor Info"
+DEFAULT_WORKBOOK_NAME = 'Sensor_Workbook'
+DEFAULT_SHEET_NAME = "Sensor_Info"
 DEFAULT_EXTENSION = '.xlsx'
 ### 
 

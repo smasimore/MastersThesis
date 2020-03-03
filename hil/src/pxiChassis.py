@@ -1,7 +1,7 @@
 import socket, threading, struct, queue
 
 ### Global Variable Define Statements
-MAX_MESSAGE_SIZE    = 1024                   # Max number of bytes a packet can be
+MAX_CHASSIS_MESSAGE_SIZE    = 1024           # Max number of bytes a message can be
 DEFAULT_IP          = "127.0.0.1"            # IP Address the communication lib will try and connect to the chassis on
 DEFAULT_TX_PORT     = 8081                   # Ports for the TX and RX socket respectively
 DEFAULT_RX_PORT     = 8082
@@ -40,13 +40,13 @@ class PxiChassis():
         message = parent.txBuffer.get()
         connection.send(message.encode('utf-8'))
         if parent.ackRequired:
-            ack = connection.recv(MAX_MESSAGE_SIZE).decode('utf-8')                     # Receiving ack to synch communication
+            ack = connection.recv(MAX_CHASSIS_MESSAGE_SIZE).decode('utf-8')                     # Receiving ack to synch communication
             assert(ack == DEFAULT_ACK_MESSAGE)                                          # Double checking we really get an ack 
 
     # Polls the rx socket for incoming messages that then get stored in the rx buffer
     @threadMainDecorator
     def rxThreadMain(connection, parent):
-        message = connection.recv(MAX_MESSAGE_SIZE).decode('utf-8')
+        message = connection.recv(MAX_CHASSIS_MESSAGE_SIZE).decode('utf-8')
         if parent.ackRequired: connection.send(DEFAULT_ACK_MESSAGE.encode('utf-8'))     # Sending ack to synch communication
         parent.rxBuffer.put(message)
 
