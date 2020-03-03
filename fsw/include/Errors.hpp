@@ -83,15 +83,18 @@ enum Error_t : uint32_t
     E_FAILED_TO_RECV_MSG,
     E_UNEXPECTED_SEND_SIZE,
     E_UNEXPECTED_RECV_SIZE,
+    E_VECTORS_DIFF_SIZES,
+    E_TIMEOUT_TOO_LARGE,
+    E_SELECT_FAILED,
 
     /* State Machine */
-    E_INVALID_TRANSITION = 75,
+    E_INVALID_TRANSITION = 100,
     E_DUPLICATE_NAME,
     E_NAME_NOTFOUND,
     E_NO_STATES,
 
     /* Data Vector */
-    E_EMPTY_CONFIG = 100,
+    E_EMPTY_CONFIG = 125,
     E_EMPTY_ELEMS,
     E_DUPLICATE_REGION,
     E_DUPLICATE_ELEM,
@@ -111,13 +114,13 @@ enum Error_t : uint32_t
     E_FAILED_TO_SEEK,
 
     /* Devices */
-    E_FPGA_INIT = 125,
+    E_FPGA_INIT = 150,
     E_FPGA_READ,
     E_FPGA_WRITE,
     E_PIN_NOT_CONFIGURED,
 
     /* Time */
-    E_FAILED_TO_GET_TIME = 150,
+    E_FAILED_TO_GET_TIME = 175,
     E_FAILED_TO_INIT_TIME,
     E_OVERFLOW_IMMINENT,
 

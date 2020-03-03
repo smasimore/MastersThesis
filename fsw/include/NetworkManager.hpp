@@ -25,6 +25,23 @@
  *
  * Choose ports between 2200-2299. These are unused on the sbRIO's and on Ubuntu
  * 16.4. To see what ports are in use, run "cat /etc/services".
+ *
+ *
+ *                         ------- WARNINGS -------
+ *
+ * #1 Receiving data on the same channel is NOT threadsafe. For example:
+ *      a) Thread 1 running on Node A calls recvMult on a channel from Node B
+ *      b) Thread 1 calls select, which returns that the channel now has 
+ *         data in it from Node B.
+ *      c) Thread 2 takes over the CPU (blocking Thread 1) and calls recv on 
+ *         the same channel from Node B and reads the new data.
+ *      d) Thread 1 runs again and attempts to read the same new data it is
+ *         expecting from Node B and blocks. 
+ *
+ *      Thread 1 blocking on the recvMult call is undesired and unexpected, as
+ *      recvMult is intended to allow the Control Node to listen on multiple
+ *      channels and timeout. recvMult should never block.
+ *
  */
 
 #ifndef NETWORK_MANAGER_HPP
@@ -55,14 +72,19 @@ public:
     static const uint16_t MAX_PORT;
 
     /**
+     * Maximum timeout size in microseconds.
+     */
+    static const uint32_t MAX_TIMEOUT_US;
+
+    /**
      * Allowed network nodes.
      */
     enum Node_t : uint8_t
     {
-        FLIGHT_COMPUTER,
-        REMOTE_IO_0,
-        REMOTE_IO_1,
-        REMOTE_IO_2,
+        CONTROL_NODE,
+        DEVICE_NODE_0,
+        DEVICE_NODE_1,
+        DEVICE_NODE_2,
         GROUND,
 
         LAST
@@ -91,7 +113,7 @@ public:
     typedef struct NetworkManagerConfig
     {
         std::unordered_map<Node_t, IP_t, EnumClassHash> nodeToIp;
-        std::vector<ChannelConfig_t>                          channels;
+        std::vector<ChannelConfig_t>                    channels;
         Node_t                                          me;
     } NetworkManagerConfig_t;
 
@@ -136,22 +158,56 @@ public:
     Error_t send (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBuf);
 
     /**
-     * Receive a message from a node. kBuf must already have size equal to
+     * Receive a message from a node. kBufRet must already have size equal to
      * expected message size.
      *
      * WARNING: This method will block if no message currently in receive
      *          buffer.
      *
-     * @param   kNode                        Node to send message to.
-     * @param   kBuf                        Buffer to fill with message.
+     * @param   kNode                       Node to receive message from.
+     * @param   kBufRet                     Buffer to fill with message.
      *
-     * @ret     E_SUCCESS                   Message successfully sent.
+     * @ret     E_SUCCESS                   Message successfully received.
      *          E_EMPTY_BUFFER              kBuf empty.
      *          E_INVALID_NODE              No channel for node.
-     *          E_FAILED_TO_RECV_MSG        Failed to send message.
+     *          E_FAILED_TO_RECV_MSG        Failed to receive message.
      *          E_UNEXPECTED_RECV_SIZE      Message recv length != kBuf size.
     */
-    Error_t recv (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBuf);
+    Error_t recv (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBufRet);
+
+    /**
+     * Receive a message from each of the provided nodes. The method returns
+     * after either a message is received from each of the nodes or the timeout
+     * has been reached. Each buffer in kBufsRet must already have size equal to
+     * expected message size. kNodes, kBufsRet, and kMsgReceived must be the
+     * same size.
+     *
+     * Note: The select call has up to 250us of overhead.
+     *
+     * @param   kTimeoutUs                  Timeout in microseconds. Max timeout 
+     *                                      is 999999us.
+     * @param   kNodes                      Nodes to receive messages from.
+     * @param   kBufsRet                    Buffers to fill with messages.
+     * @param   kMsgReceivedRet             True if message received from node.
+     *
+     * @ret     E_SUCCESS                   Message successfully received.
+     *          E_TIMEOUT_TOO_LARGE         Timeout greater than max.
+     *          E_VECTORS_DIFF_SIZES        Vector params have different sizes.
+     *          E_EMPTY_BUFFER              One or more of the buffers empty.
+     *          E_INVALID_NODE              One or more node has no channel.
+     *          E_SELECT_FAILED             Select call failed. Returns as soon 
+     *                                      as failure occurs.
+     *          E_FAILED_TO_RECV_MSG        Failed to receive message from one
+     *                                      or more nodes. Returns as soon as
+     *                                      failure occurs.
+     *          E_UNEXPECTED_RECV_SIZE      Message recv length != kBuf size for
+     *                                      one or more nodes. Returns as soon 
+     *                                      as failure occurs.
+    */
+    Error_t recvMult (uint32_t kTimeoutUs,
+                      std::vector<NetworkManager::Node_t> kNodes, 
+                      std::vector<std::vector<uint8_t>>& kBufsRet, 
+                      std::vector<bool>& kMsgReceivedRet);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF NETWORK MANAGER

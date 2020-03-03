@@ -41,6 +41,7 @@ public:
 
         /* Network Manager */
         CALLED_RECV,
+        CALLED_RECVMULT,
         CALLED_SEND,
         RECEIVED,
 

@@ -5,11 +5,13 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h> 
+#include <sys/select.h>
 
 #include "NetworkManager.hpp"
 
-const uint16_t NetworkManager::MIN_PORT = 2200;
-const uint16_t NetworkManager::MAX_PORT = 2299;
+const uint16_t NetworkManager::MIN_PORT       = 2200;
+const uint16_t NetworkManager::MAX_PORT       = 2299;
+const uint32_t NetworkManager::MAX_TIMEOUT_US = 999999;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
@@ -80,10 +82,10 @@ Error_t NetworkManager::send (NetworkManager::Node_t kNode,
 }
 
 Error_t NetworkManager::recv (NetworkManager::Node_t kNode, 
-                             std::vector<uint8_t>& kBuf)
+                             std::vector<uint8_t>& kBufRet)
 {
     // 1) Verify buffer is not empty.
-    if (kBuf.size () == 0)
+    if (kBufRet.size () == 0)
     {
         return E_EMPTY_BUFFER;
     }
@@ -97,15 +99,142 @@ Error_t NetworkManager::recv (NetworkManager::Node_t kNode,
 
     // 3) Receive message. MSG_TRUNC causes recv to return the total size of 
     // the received packet even if it is larger than the buffer supplied.
-    int32_t numBytesRecvd = ::recv (channel.socketFd, kBuf.data (), 
-                                    kBuf.size (), MSG_TRUNC);
+    int32_t numBytesRecvd = ::recv (channel.socketFd, kBufRet.data (), 
+                                    kBufRet.size (), MSG_TRUNC);
     if (numBytesRecvd == -1)
     {
         return E_FAILED_TO_RECV_MSG;
     }
-    else if (numBytesRecvd != (int32_t) kBuf.size ())
+    else if (numBytesRecvd != (int32_t) kBufRet.size ())
     {
         return E_UNEXPECTED_RECV_SIZE;
+    }
+
+    return E_SUCCESS;
+}
+
+Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
+                                  std::vector<NetworkManager::Node_t> kNodes,
+                                  std::vector<std::vector<uint8_t>>& kBufsRet, 
+                                  std::vector<bool>& kMsgReceivedRet)
+{
+    // 1) Verify vector inputs are the same size.
+    uint8_t numNodes = kNodes.size ();
+    if (numNodes != kBufsRet.size () ||
+        numNodes != kMsgReceivedRet.size ())
+    {
+        return E_VECTORS_DIFF_SIZES;
+    }
+
+    // 2) Verify timeout less than max.
+    if (kTimeoutUs > NetworkManager::MAX_TIMEOUT_US)
+    {
+        return E_TIMEOUT_TOO_LARGE;
+    }
+
+    // 3) Loop through nodes to receive from to verify buffers, initialize
+    //    kMsgReceivedRet, and get relevant channels.
+    std::vector<NetworkManager::Channel_t> channels (numNodes);
+    for (uint8_t i = 0; i < numNodes; i++)
+    {
+        // 3a) Verify buffer is not empty.
+        if (kBufsRet[i].size () == 0)
+        {
+            return E_EMPTY_BUFFER;
+        }
+
+        // 3b) Verify node is valid.
+        if (mNodeToChannel.find (kNodes[i]) == mNodeToChannel.end ())
+        {
+            return E_INVALID_NODE;
+        }
+
+        // 3c) Initialize kMsgReceivedRet.
+        kMsgReceivedRet[i] = false;
+
+        // 3d) Build vector of channels. Each channel contains socket fd used 
+        //     that will be used in the select call.
+        channels[i] = mNodeToChannel[kNodes[i]];
+    }
+
+    // 4) Build file descriptor set for select call.
+    fd_set readFds;
+    FD_ZERO (&readFds);
+    for (NetworkManager::Channel_t channel : channels)
+    {
+        FD_SET (channel.socketFd, &readFds); 
+    }
+
+    // 5) Create struct timeval for select call.
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = kTimeoutUs;
+
+    // 6) Attempt to receive message from nodes until timeout expires or all
+    //    nodes have sent one message.
+    uint8_t numMsgsReceived = 0;
+    while (timeout.tv_usec > 0)
+    {
+        // 6a) Call select on remaining fd's. Select returns 0 if timeout
+        //     expired, -1 if there was an error, and > 0 to specify how many
+        //     fd's have content to read. Select modifies timeout to store time
+        //     remaining. fd_set is modified to contain fd's that are ready to
+        //     read.
+        //
+        //     NOTE: Calling select has up to 250us of overhead.
+        fd_set readFdsMutated = readFds;
+        int32_t selectRet = select (FD_SETSIZE, &readFdsMutated, nullptr, nullptr,
+                                    &timeout);
+        if (selectRet < 0)
+        {
+            return E_SELECT_FAILED;
+        }
+        else if (selectRet == 0)
+        {
+            break;
+        }
+       
+        // 6b) Loop through channels to determine which sockets can be read.
+        //     Read message and remove channel from fd's to read in next select
+        //     call.
+        for (uint8_t i = 0; i < numNodes; i++)
+        {
+            NetworkManager::Channel_t channel = channels[i];
+            if (FD_ISSET (channel.socketFd, &readFdsMutated) != 0)
+            {
+                // 6b i) Read socket. MSG_TRUNC causes recv to return the total
+                //      size of the received packet even if it is larger than 
+                //      the buffer supplied.
+                int32_t numBytesRecvd = ::recv (channel.socketFd, 
+                                                kBufsRet[i].data (), 
+                                                kBufsRet[i].size (), 
+                                                MSG_TRUNC);
+
+                // 6b ii) Handle failed recv.
+                if (numBytesRecvd == -1)
+                {
+                    return E_FAILED_TO_RECV_MSG;
+                }
+                else if (numBytesRecvd != (int32_t) kBufsRet[i].size ())
+                {
+                    return E_UNEXPECTED_RECV_SIZE;
+                }
+
+                // 6b iii) Remove socket from readFds, since message successfully
+                //        received.
+                FD_CLR (channel.socketFd, &readFds);
+
+                // 6b iv) Set msg received flag to true.
+                kMsgReceivedRet[i] = true;
+                numMsgsReceived++;
+            }
+        }
+
+        // 6c) If a message has been received from each node, break.
+        if (numMsgsReceived == numNodes)
+        {
+            break;
+        }
     }
 
     return E_SUCCESS;

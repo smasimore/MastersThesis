@@ -36,6 +36,11 @@ public:
     static const uint64_t NS_IN_SECOND = 1000000000;
 
     /**
+     * Unsigned long long used to convert microseconds to nanoseconds
+     */
+    static const uint64_t NS_IN_US = 1000;
+
+    /**
      * Returns time elapsed since TimeNs module initialized.
      *
      * @param   KElapsedTimeRet            Calculated elapsed time

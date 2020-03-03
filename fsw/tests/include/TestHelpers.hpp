@@ -86,8 +86,8 @@
 }
 
 /**
- * Fails the ongoing test if the absolute difference between two integral types
- * is greater than specified bound
+ * Fails the ongoing test if the absolute difference between two int64_t types
+ * is greater than specified bound. Inputs are cast to int64_t.
  *
  * Note: llabs() used to get absolute value
  *
@@ -97,10 +97,11 @@
  */
 #define CHECK_IN_BOUND(kExp, kVal, kBound)                                     \
 {                                                                              \
-    if (llabs (kExp - kVal) > kBound)                                          \
+    if (llabs ((int64_t) kExp - (int64_t) kVal) > (int64_t) kBound)            \
     {                                                                          \
         std::string macroFailStr = std::to_string(kExp) + " != " +             \
-                                   std::to_string (kVal);                      \
+                                   std::to_string (kVal) + "(bound = " +       \
+                                   std::to_string (kBound) + ")";              \
         FAIL (macroFailStr.c_str ());                                          \
     }                                                                          \
 }
