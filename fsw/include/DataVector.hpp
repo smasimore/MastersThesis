@@ -415,7 +415,7 @@ public:
                 return E_FAILED_TO_WRITE_AND_UNLOCK;
             } 
 
-            // Otherwise, return error from read.
+            // Otherwise, return error from write.
             else 
             {
                 return ret;
@@ -425,6 +425,28 @@ public:
         // Release lock.
         return this->releaseLock ();
     }
+
+    /**
+     * Increment an element's value by 1. Float, double, and bool cannot be
+     * incremented. If element's value is already max value, element will not
+     * be incremented and E_ALREADY_MAX will be returned.
+     *
+     * @param   kElem                         Element to increment.
+     *
+     * @ret     E_SUCCESS                     Element incremented successfully.
+     *          E_ALREADY_MAX                 Element already at max value.
+     *          E_INVALID_ELEM                Element not in Data Vector.
+     *          E_INVALID_TYPE                Element type cannot be 
+     *                                        incremented or not supported by 
+     *                                        Data Vector.
+     *          E_FAILED_TO_LOCK              Failed to lock.
+     *          E_FAILED_TO_UNLOCK            Failed to unlock.
+     *          E_FAILED_TO_WRITE_AND_UNLOCK  Error on write and failed to 
+     *                                        unlock.
+     *          E_FAILED_TO_READ_AND_UNLOCK   Error on read and failed to 
+     *                                        unlock.
+    */
+    Error_t increment (DataVectorElement_t kElem);
 
     /**
      * Returns a copy the specified region's underlying byte buffer. The vector
