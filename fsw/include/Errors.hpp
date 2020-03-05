@@ -119,6 +119,7 @@ enum Error_t : uint32_t
     E_FPGA_READ,
     E_FPGA_WRITE,
     E_FPGA_NO_SESSION,
+    E_FPGA_CLOSE_SESSION,
     E_PIN_NOT_CONFIGURED,
 
     /* Time */

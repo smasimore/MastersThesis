@@ -49,8 +49,10 @@ namespace Fpga
      * Closes the global FPGA session. A new session one can safely be created
      * with Fpga::getSession().
      *
-     * @ret     E_SUCCESS         Successfully closed.
-     *          E_FPGA_NO_SESSION A session is not currently open.
+     * @ret     E_SUCCESS            Successfully closed.
+     *          E_FPGA_CLOSE_SESSION Attempting to close the session resulted
+     *                               in an unsuccessful status.
+     *          E_FPGA_NO_SESSION    A session is not currently open.
      */
     Error_t closeSession ();
 }
