@@ -104,11 +104,6 @@
 #include "TimeNs.hpp"
 
 /**
- * Path to bit file on sbRIO.
- */
-#define BIT_FILE_PATH "/home/admin/FlightSoftware/"
-
-/**
  * Pin number for igniter line. This should probably be different from the DIO
  * pin raised in the DigitalOutDevice unit test, otherwise accidentally running
  * the unit test binary may cause ignition without warning.

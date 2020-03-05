@@ -13,8 +13,6 @@
 #include "Fpga.hpp"
 #include "TestHelpers.hpp"
 
-NiFpga_Session gFpgaSession;
-
 TEST_GROUP (FpgaGlobalTest)
 {
 };
