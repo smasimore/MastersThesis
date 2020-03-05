@@ -90,6 +90,10 @@ Error_t Fpga::closeSession ()
 
     NiFpga_MergeStatus (&gFpgaStatus, NiFpga_Close (gFpgaSession, 0));
     gSessionOpen = false;
+    if (gFpgaStatus != NiFpga_Status_Success)
+    {
+        return E_FPGA_CLOSE_SESSION;
+    }
 
     return E_SUCCESS;
 }
