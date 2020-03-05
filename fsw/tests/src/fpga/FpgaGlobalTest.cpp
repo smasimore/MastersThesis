@@ -5,9 +5,9 @@
  * to ensure that this test (FpgaGlobalTest.cpp) begins with no global session
  * open.
  *
- * Note 2: this test does not test that the FPGA API is finalized on program
- * end. This can be validated with the recovery igniter test procedures
- * (RecoveryIgniterTest.cpp).
+ * Note 2: this test does not verify that the FPGA API is finalized on program
+ * end. This can be validated with recovery igniter test procedures 03 and 04,
+ * detailed in RecoveryIgniterTest.cpp.
  */
 
 #include "Fpga.hpp"
