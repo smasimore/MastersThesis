@@ -12,11 +12,6 @@
 #include "TestHelpers.hpp"
 
 /**
- * Path to bit file on sbRIO.
- */
-#define BIT_FILE_PATH "/home/admin/FlightSoftware/"
-
-/**
  * Initialize FPGA session and Data Vector.
  */
 #define INIT_SESSION_AND_DV                                                    \
@@ -246,6 +241,6 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
         CHECK_EQUAL (false, feedbackVal);
     }
 
-    // 3) Close and finalize FPGA session.
+    // 3) Close global FPGA session.
     CHECK_SUCCESS (Fpga::closeSession ());
 }

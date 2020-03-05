@@ -37,10 +37,17 @@
     }                                                                         \
 }
 
-
 TEST_GROUP (Errors)
 {
+    void setup ()
+    {
+        MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
+    }
 
+    void teardown()
+    {
+        MemoryLeakWarningPlugin::turnOnNewDeleteOverloads();
+    }
 };
 
 /* Test exitOnError. */
