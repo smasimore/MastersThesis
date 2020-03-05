@@ -2,36 +2,21 @@
  * Note: interaction between devices and the global session should be tested in
  * their own test suites (e.g. DigitalOutDeviceTest.cpp) and ONLY the global
  * session should be used. Such tests should close the session once complete
- * to ensure that this test begins with no global session open.
+ * to ensure that this test (FpgaGlobalTest.cpp) begins with no global session
+ * open.
  */
 
 #include "Fpga.hpp"
 #include "TestHelpers.hpp"
 
-static NiFpga_Session gSession;
-static NiFpga_Status gStatus;
+/**
+ * Global session and status used in tests.
+ */
+NiFpga_Session gSession;
+NiFpga_Status gStatus;
 
 TEST_GROUP (FpgaGlobalTest)
 {
-    /**
-     * Turn off memory leak detection due to undiagnosed memory leak caused
-     * by FPGA C API usage. This is a known NI issue and will only cause memory 
-     * issues in production code if the FPGA is initialized more than once.
-     *
-     * http://www.ni.com/product-documentation/55093/en/#660205_by_Date
-     */
-    void setup ()
-    {
-        MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    }
-
-    /**
-     * Turn memory leak detection back on.
-     */
-    void teardown()
-    {
-        MemoryLeakWarningPlugin::turnOnNewDeleteOverloads();
-    }
 };
 
 /**

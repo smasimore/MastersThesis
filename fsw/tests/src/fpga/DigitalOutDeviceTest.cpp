@@ -37,25 +37,6 @@
 
 TEST_GROUP (DigitalOutDeviceTest)
 {
-    /**
-     * Turn off memory leak detection due to undiagnosed memory leak caused
-     * by FPGA C API usage. This is a known NI issue and will only cause memory 
-     * issues in production code if the FPGA is initialized more than once.
-     *
-     * http://www.ni.com/product-documentation/55093/en/#660205_by_Date
-     */
-    void setup ()
-    {
-        MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    }
-
-    /**
-     * Turn memory leak detection back on.
-     */
-    void teardown()
-    {
-        MemoryLeakWarningPlugin::turnOnNewDeleteOverloads();
-    }
 };
 
 /* Test null State Vector pointer on init. */

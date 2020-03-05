@@ -5,7 +5,7 @@
  * finalized on regular program exit (main returns or exit() is called). The
  * interface is designed so that the global session can be created, closed, and
  * created again as many times as is needed, but the FPGA API itself is
- * initialized and finalized only once.
+ * initialized only once and finalized only once.
  */
 
 # ifndef FPGA_HPP
