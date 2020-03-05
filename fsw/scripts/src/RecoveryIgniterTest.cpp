@@ -96,40 +96,12 @@
 #include <stdio.h>
 
 #include "DigitalOutDevice.hpp"
-#include "NiFpga.h"
-#include "NiFpga_IO.h"
+#include "Fpga.hpp"
 #include "RecoveryIgniterTest.hpp"
 #include "ScriptHelpers.hpp"
 #include "DataVector.hpp"
 #include "ThreadManager.hpp"
 #include "TimeNs.hpp"
-
-/**
- * Lowers the igniter DIO line and errs.
- *
- * @param   kFmt    Exit message.
- *          [other] Format arguments.
- */
-#define ABORT(kFmt, ...)                                                       \
-{                                                                              \
-    lowerLine ();                                                              \
-    ERROR (kFmt, ##__VA_ARGS__);                                               \
-}
-
-/**
- * Lowers the igniter DIO line and exits the program with a message if an
- * expression does not evaluate to E_SUCCESS.
- *
- * @param   kExpr Expression to evaluate.
- */
-#define ABORT_ON_ERR(kExpr)                                                    \
-{                                                                              \
-    Error_t err = kExpr;                                                       \
-    if (err != E_SUCCESS)                                                      \
-    {                                                                          \
-        ABORT ("Program failed with error %d", err);                           \
-    }                                                                          \
-}
 
 /**
  * Path to bit file on sbRIO.
@@ -280,7 +252,7 @@ void* abortThreadFunc (void* kUnused)
 {
     std::string in;
     std::getline (std::cin, in);
-    ABORT ("\nTEST ABORTED BY USER");
+    ERROR ("\nTEST ABORTED BY USER");
     return nullptr; // Not reached.
 }
 
@@ -297,7 +269,7 @@ void* ignitionThreadFunc (void* kUnused)
         // Check if an abort was triggered.
         if (gAbortPending)
         {
-            ABORT ("\nTEST INTERRUPTED BY USER");
+            ERROR ("\nTEST INTERRUPTED BY USER");
         }
 
         // Compute the time elapsed since the start of the countdown.
@@ -335,7 +307,7 @@ void ignite ()
     {
         if (gAbortPending)
         {
-            ABORT ("\nTEST INTERRUPTED BY USER");
+            ERROR ("\nTEST INTERRUPTED BY USER");
         }
     }
 
@@ -352,17 +324,9 @@ void raiseLine ()
 
     pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, true);
-    if (err != E_SUCCESS)
-    {
-        ABORT ("Error %d: failed to raise DIO line", err);
-    }
-
-    err = gPIgniterDev->run ();
-    if (err != E_SUCCESS)
-    {
-        ABORT ("Error %d: failed to update DIO device", err);
-    }
+    Errors::exitOnError (gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, true),
+                         "write ign control val");
+    Errors::exitOnError (gPIgniterDev->run (), "run igniter device");
 
     pthread_mutex_unlock (&gFpgaLock);
 }
@@ -377,19 +341,9 @@ void lowerLine ()
 
     pthread_mutex_lock (&gFpgaLock);
 
-    Error_t err = gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, false);
-    if (err != E_SUCCESS)
-    {
-        // Must ERROR rather than ABORT to avoid an infinite loop.
-        ERROR ("Error %d: failed to lower DIO line", err);
-    }
-
-    err = gPIgniterDev->run ();
-    if (err != E_SUCCESS)
-    {
-        // Must ERROR rather than ABORT to avoid an infinite loop.
-        ERROR ("Error %d: failed to update DIO device", err);
-    }
+    Errors::exitOnError (gPDv->write (DV_ELEM_RECIGNTEST_CONTROL_VAL, false),
+                         "write ign control val");
+    Errors::exitOnError (gPIgniterDev->run (), "run igniter device");
 
     pthread_mutex_unlock (&gFpgaLock);
 }
@@ -429,11 +383,16 @@ Error_t RecoveryIgniterTest::validateInput (int kAc, const char** kAv)
 
 Error_t initFpga ()
 {
-    gStatus = NiFpga_Initialize ();
-    NiFpga_MergeStatus (&gStatus, NiFpga_Open (
-        BIT_FILE_PATH NiFpga_IO_Bitfile,
-        NiFpga_IO_Signature, "RIO0", 0, &gSession));
-    if (gStatus != NiFpga_Status_Success)
+    // Get the global FPGA session.
+    Error_t err = Fpga::getSession (gSession);
+    if (err != E_SUCCESS)
+    {
+        return err;
+    }
+
+    // Check that the global status is success.
+    err = Fpga::getStatus (gStatus);
+    if (err != E_SUCCESS || gStatus != NiFpga_Status_Success)
     {
         return E_FPGA_INIT;
     }
@@ -543,10 +502,6 @@ Error_t waitForConclusion ()
         return E_FAILED_TO_CANCEL_ABORT;
     }
 
-    // Close the FPGA session.
-    NiFpga_MergeStatus (&gStatus, NiFpga_Close (gSession, 0));
-    NiFpga_MergeStatus (&gStatus, NiFpga_Finalize ());
-
     return E_SUCCESS;
 }
 
@@ -557,7 +512,7 @@ void RecoveryIgniterTest::main (int kAc, const char** kAv)
     // Validate user-specified ignition delay.
     if (validateInput (kAc, kAv) != E_SUCCESS)
     {
-        ABORT ("Usage: %s [IGNITION DELAY IN SECONDS]\n"
+        ERROR ("Usage: %s [IGNITION DELAY IN SECONDS]\n"
                "Ignition delay must be between %.1f and %.1f seconds", kAv[0],
                gIGNITION_DELAY_LOWER_S, gIGNITION_DELAY_UPPER_S);
     }
@@ -567,15 +522,15 @@ void RecoveryIgniterTest::main (int kAc, const char** kAv)
     action.sa_handler = sigIntHandler;
     if (sigaction (SIGINT, &action, nullptr) != 0)
     {
-        ABORT ("Error: failed to install signal handler");
+        ERROR ("Error: failed to install signal handler");
     }
 
     // Clear terminal so output is more evident to test operator.
     system ("clear");
 
     // Run test.
-    ABORT_ON_ERR (initFpga          ());
-    ABORT_ON_ERR (initDevice        ());
-    ABORT_ON_ERR (initThreads       ());
-    ABORT_ON_ERR (waitForConclusion ());
+    Errors::exitOnError (initFpga          (), "FPGA init");
+    Errors::exitOnError (initDevice        (), "device init");
+    Errors::exitOnError (initThreads       (), "threads init");
+    Errors::exitOnError (waitForConclusion (), "wait for conclusion");
 }

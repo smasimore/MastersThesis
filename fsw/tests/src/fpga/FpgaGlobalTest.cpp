@@ -1,9 +1,13 @@
 /**
- * Note: interaction between devices and the global session should be tested in
- * their own test suites (e.g. DigitalOutDeviceTest.cpp) and ONLY the global
+ * Note 1: interaction between devices and the global session should be tested
+ * in their own test suites (e.g. DigitalOutDeviceTest.cpp) and ONLY the global
  * session should be used. Such tests should close the session once complete
  * to ensure that this test (FpgaGlobalTest.cpp) begins with no global session
  * open.
+ *
+ * Note 2: this test does not test that the FPGA API is finalized on program
+ * end. This can be validated with the recovery igniter test procedures
+ * (RecoveryIgniterTest.cpp).
  */
 
 #include "Fpga.hpp"
