@@ -16,6 +16,9 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
+
+#include "DataVectorEnums.hpp"
 
 enum Error_t : uint32_t
 {
@@ -108,6 +111,7 @@ enum Error_t : uint32_t
     E_FAILED_TO_READ_AND_UNLOCK,
     E_FAILED_TO_WRITE_AND_UNLOCK,
     E_ENUM_STRING_UNDEFINED,
+    E_ALREADY_MAX,
 
     /* Data Vector Logger */
     E_FAILED_TO_WRITE_FILE,
@@ -135,6 +139,12 @@ enum Error_t : uint32_t
     E_LAST
 };
 
+/**
+ * Forward declaraction of DataVector to avoid circular dependency if include
+ * DataVector.hpp in Errors.hpp.
+ */
+class DataVector;
+
 namespace Errors
 {
 
@@ -147,6 +157,17 @@ namespace Errors
      * @param  kMsg    Message to print on error.
      */
     void exitOnError (Error_t kError, std::string kMsg);
+
+    /**
+     * Increments Data Vector value if kError is anything but E_SUCCESS. This 
+     * function does not return an Error_t as it is intended to handle other 
+     * errors in the system.
+     *
+     * @param  kError  Error_t variable to check.
+     * @param  kElem   Message to print on error.
+     */
+    void incrementOnError (Error_t kError, std::shared_ptr<DataVector>& kPDv, 
+                           DataVectorElement_t kElem);
 }
 
 #endif

@@ -2,10 +2,17 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
+#include "DataVector.hpp"
 #include "Errors.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
+/**
+ * Fork a process and verify Errors:exitOnError behaves as expected.
+ *
+ * @param  kError     Error to test.
+ * @param  kExpected  Expected process exit code.
+ */
 #define TEST_EXIT_ON_ERROR(kError, kExpected)                                 \
 {                                                                             \
     pid_t pid = fork ();                                                      \
@@ -37,6 +44,22 @@
     }                                                                         \
 }
 
+/**
+ * Verify Errors:incrementOnError behaves as expected.
+ *
+ * @param  kError     Error to test.
+ * @param  kPDv       Pointer to Data Vector.
+ * @param  kElem      Data Vector element to increment.
+ * @param  kExpVal    Expected value of element after Errors::incrementOnError 
+ *                    call.
+ */
+#define TEST_INCREMENT_ON_ERROR(kError, kPDv, kElem, kExpVal)                 \
+{                                                                             \
+    Errors::incrementOnError (kError, kPDv, kElem);                           \
+    uint8_t val = 0;                                                          \
+    CHECK_SUCCESS (kPDv->read (kElem, val));                                  \
+    CHECK_EQUAL (kExpVal, val);                                               \
+}
 
 TEST_GROUP (Errors)
 {
@@ -50,3 +73,19 @@ TEST (Errors, exitOnError)
     TEST_EXIT_ON_ERROR (E_OVERFLOW, EXIT_FAILURE);
 };
 
+/* Test incrementOnError. */
+TEST (Errors, incrementOnError)
+{
+    DataVector::Config_t dvConfig =
+    {
+        {DV_REG_TEST0,
+        {
+            DV_ADD_UINT8  (DV_ELEM_TEST0,  0    ),
+        }},
+    };
+    std::shared_ptr<DataVector> pDv;
+    CHECK_SUCCESS (DataVector::createNew (dvConfig, pDv));
+
+    TEST_INCREMENT_ON_ERROR (E_SUCCESS, pDv, DV_ELEM_TEST0, 0);
+    TEST_INCREMENT_ON_ERROR (E_OVERFLOW, pDv, DV_ELEM_TEST0, 1);
+}

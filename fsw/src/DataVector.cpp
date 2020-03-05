@@ -2,6 +2,7 @@
 #include <cstring>
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 #include "DataVector.hpp"
 
@@ -122,6 +123,163 @@ Error_t DataVector::elementExists (DataVectorElement_t kElem)
     }
 
     return E_SUCCESS;
+}
+
+Error_t DataVector::increment (DataVectorElement_t kElem)
+{
+    // 1) Get type of kElem.
+    DataVectorElementType_t type;
+    Error_t ret = this->getElementType (kElem, type);
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // 2) Validate type.
+    if (type == DV_T_FLOAT || type == DV_T_DOUBLE || type == DV_T_BOOL)
+    {
+        return E_INVALID_TYPE;
+    }
+
+    // 3) Acquire lock.
+    ret = this->acquireLock (); 
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // 4) Read current value, determine max value, and check if current value
+    //    is equal to max value.
+    bool isMax = false;
+    uint8_t  valU8    = 0;
+    uint16_t valU16   = 0;
+    uint32_t valU32   = 0;
+    uint64_t valU64   = 0;
+    int8_t   val8     = 0;
+    int16_t  val16    = 0;
+    int32_t  val32    = 0;
+    int64_t  val64    = 0;
+    switch (type)
+    {
+        case DV_T_UINT8:
+            ret = this->readImpl (kElem, valU8);
+            isMax = valU8 == std::numeric_limits<uint8_t>::max ();
+            break;
+        case DV_T_UINT16:
+            ret = this->readImpl (kElem, valU16);
+            isMax = valU16 == std::numeric_limits<uint16_t>::max ();
+            break;
+        case DV_T_UINT32:
+            ret = this->readImpl (kElem, valU32);
+            isMax = valU32 == std::numeric_limits<uint32_t>::max ();
+            break;
+        case DV_T_UINT64:
+            ret = this->readImpl (kElem, valU64);
+            isMax = valU64 == std::numeric_limits<uint64_t>::max ();
+            break;
+        case DV_T_INT8:
+            ret = this->readImpl (kElem, val8);
+            isMax = val8 == std::numeric_limits<int8_t>::max ();
+            break;
+        case DV_T_INT16:
+            ret = this->readImpl (kElem, val16);
+            isMax = val16 == std::numeric_limits<int16_t>::max ();
+            break;
+        case DV_T_INT32:
+            ret = this->readImpl (kElem, val32);
+            isMax = val32 == std::numeric_limits<int32_t>::max ();
+            break;
+        case DV_T_INT64:
+            ret = this->readImpl (kElem, val64);
+            isMax = val64 == std::numeric_limits<int64_t>::max ();
+            break;
+        default:
+            return E_INVALID_TYPE;
+    }
+
+    // 5) Handle read failure.
+     if (ret != E_SUCCESS)
+    {
+        // If read fails, attempt to release lock.
+        Error_t unlockRet = this->releaseLock ();
+
+        // If release fails, return updated error.
+        if (unlockRet != E_SUCCESS)
+        {
+            return E_FAILED_TO_READ_AND_UNLOCK;
+        }
+
+        // Otherwise, return error from read.
+        else
+        {
+            return ret;
+        }
+    }
+
+    // 6) Release lock and return if element value already at max.
+    if (isMax == true)
+    {
+        ret = this->releaseLock ();
+        if (ret == E_SUCCESS)
+        {
+            return E_ALREADY_MAX;
+        }
+
+        return ret;
+    }
+
+    // 7) Increment element's value. 
+    switch (type)
+    {
+        case DV_T_UINT8:
+            ret = this->writeImpl (kElem, ++valU8);
+            break;
+        case DV_T_UINT16:
+            ret = this->writeImpl (kElem, ++valU16);
+            break;
+        case DV_T_UINT32:
+            ret = this->writeImpl (kElem, ++valU32);
+            break;
+        case DV_T_UINT64:
+            ret = this->writeImpl (kElem, ++valU64);
+            break;
+        case DV_T_INT8:
+            ret = this->writeImpl (kElem, ++val8);
+            break;
+        case DV_T_INT16:
+            ret = this->writeImpl (kElem, ++val16);
+            break;
+        case DV_T_INT32:
+            ret = this->writeImpl (kElem, ++val32);
+            break;
+        case DV_T_INT64:
+            ret = this->writeImpl (kElem, ++val64);
+            break;
+        default:
+            return E_INVALID_TYPE;
+    }
+
+    // 8) Handle write error.
+    if (ret != E_SUCCESS)
+    {
+        // If write fails, attempt to release lock.
+        Error_t unlockRet = this->releaseLock (); 
+
+        // If release fails, return updated error.
+        if (unlockRet != E_SUCCESS)
+        {
+            return E_FAILED_TO_WRITE_AND_UNLOCK;
+        }
+
+        // Otherwise, return error from write.
+        else 
+        {
+            return ret;
+        }
+    }
+
+    // 9) Release lock.
+    return this->releaseLock ();
 }
 
 Error_t DataVector::readRegion (DataVectorRegion_t kRegion, 

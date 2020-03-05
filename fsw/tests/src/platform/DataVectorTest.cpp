@@ -1096,6 +1096,161 @@ TEST (DataVector_readWrite, SuccessfulWrite)
     checkMultiElemWriteSuccess ();
 }
 
+/****************************** INCREMENT TESTS *******************************/
+
+DataVector::Config_t gIncrementConfig = 
+{
+    {DV_REG_TEST0,
+    {
+        // Zero-initialized elems.
+        DV_ADD_UINT8  (DV_ELEM_TEST0,  0   ),
+        DV_ADD_UINT16 (DV_ELEM_TEST1,  0   ),
+        DV_ADD_UINT32 (DV_ELEM_TEST2,  0   ),
+        DV_ADD_UINT64 (DV_ELEM_TEST3,  0   ),
+        DV_ADD_INT8   (DV_ELEM_TEST4,  0   ),
+        DV_ADD_INT16  (DV_ELEM_TEST5,  0   ),
+        DV_ADD_INT32  (DV_ELEM_TEST6,  0   ),
+        DV_ADD_INT64  (DV_ELEM_TEST7,  0   ),
+
+        // Min-initialized elems.
+        DV_ADD_UINT8  (DV_ELEM_TEST8,  std::numeric_limits<uint8_t> ::min ()),
+        DV_ADD_UINT16 (DV_ELEM_TEST9,  std::numeric_limits<uint16_t>::min ()),
+        DV_ADD_UINT32 (DV_ELEM_TEST10, std::numeric_limits<uint32_t>::min ()),
+        DV_ADD_UINT64 (DV_ELEM_TEST11, std::numeric_limits<uint64_t>::min ()),
+        DV_ADD_INT8   (DV_ELEM_TEST12, std::numeric_limits<int8_t>  ::min ()),
+        DV_ADD_INT16  (DV_ELEM_TEST13, std::numeric_limits<int16_t> ::min ()),
+        DV_ADD_INT32  (DV_ELEM_TEST14, std::numeric_limits<int32_t> ::min ()),
+        DV_ADD_INT64  (DV_ELEM_TEST15, std::numeric_limits<int64_t> ::min ()),
+
+        // Max-initialized elems.
+        DV_ADD_UINT8  (DV_ELEM_TEST16,  std::numeric_limits<uint8_t> ::max ()),
+        DV_ADD_UINT16 (DV_ELEM_TEST17,  std::numeric_limits<uint16_t>::max ()),
+        DV_ADD_UINT32 (DV_ELEM_TEST18,  std::numeric_limits<uint32_t>::max ()),
+        DV_ADD_UINT64 (DV_ELEM_TEST19,  std::numeric_limits<uint64_t>::max ()),
+        DV_ADD_INT8   (DV_ELEM_TEST20,  std::numeric_limits<int8_t>  ::max ()),
+        DV_ADD_INT16  (DV_ELEM_TEST21,  std::numeric_limits<int16_t> ::max ()),
+        DV_ADD_INT32  (DV_ELEM_TEST22,  std::numeric_limits<int32_t> ::max ()),
+        DV_ADD_INT64  (DV_ELEM_TEST23,  std::numeric_limits<int64_t> ::max ()),
+
+        // Unsupported increment types.
+        DV_ADD_FLOAT  (DV_ELEM_TEST24,  0),
+        DV_ADD_DOUBLE (DV_ELEM_TEST25,  0),
+        DV_ADD_BOOL   (DV_ELEM_TEST26,  false),
+    }},
+}; 
+
+/* Test Data Vector increment methods. */
+TEST_GROUP (DataVector_increment)
+{
+
+};
+
+/* Test incrementing elem not in Data Vector. */
+TEST (DataVector_increment, InvalidIncrElem)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gIncrementConfig);
+
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST27), E_INVALID_ELEM);
+}
+
+/* Test incrementing elem with unsupported type. */
+TEST (DataVector_increment, InvalidType)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gIncrementConfig);
+
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST24), E_INVALID_TYPE);
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST25), E_INVALID_TYPE);
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST26), E_INVALID_TYPE);
+}
+
+/* Test incrementing max-initialized elems. */
+TEST (DataVector_increment, AlreadyMax)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gIncrementConfig);
+
+    // Increment elems.
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST16), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST17), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST18), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST19), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST20), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST21), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST22), E_ALREADY_MAX); 
+    CHECK_ERROR (pDv->increment (DV_ELEM_TEST23), E_ALREADY_MAX); 
+
+    // Verify values are still equal to max.
+    uint8_t  valU8     = 0;
+    uint16_t valU16    = 0;
+    uint32_t valU32    = 0;
+    uint64_t valU64    = 0;
+    int8_t   val8      = 0;
+    int16_t  val16     = 0;
+    int32_t  val32     = 0;
+    int64_t  val64     = 0;
+    CHECK_READ_SUCCESS (DV_ELEM_TEST16, valU8,  std::numeric_limits<uint8_t> ::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST17, valU16, std::numeric_limits<uint16_t>::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST18, valU32, std::numeric_limits<uint32_t>::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST19, valU64, std::numeric_limits<uint64_t>::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST20, val8,   std::numeric_limits<int8_t>  ::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST21, val16,  std::numeric_limits<int16_t> ::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST22, val32,  std::numeric_limits<int32_t> ::max ()); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST23, val64,  std::numeric_limits<int64_t> ::max ()); 
+}
+
+/* Test successfully incrementing zero- and min-initialized elems. */
+TEST (DataVector_increment, Success)
+{
+    // Create DV
+    INIT_DATA_VECTOR (gIncrementConfig);
+
+    // Increment elems.
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST0)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST1)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST2)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST3)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST4)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST5)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST6)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST7)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST8)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST9)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST10)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST11)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST12)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST13)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST14)); 
+    CHECK_SUCCESS (pDv->increment (DV_ELEM_TEST15)); 
+
+    // Verify values are incremented.
+    uint8_t  valU8     = 0;
+    uint16_t valU16    = 0;
+    uint32_t valU32    = 0;
+    uint64_t valU64    = 0;
+    int8_t   val8      = 0;
+    int16_t  val16     = 0;
+    int32_t  val32     = 0;
+    int64_t  val64     = 0;
+    CHECK_READ_SUCCESS (DV_ELEM_TEST0, valU8,   1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST1, valU16,  1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST2, valU32,  1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST3, valU64,  1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST4, val8,    1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST5, val16,   1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST6, val32,   1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST7, val64,   1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST8, valU8,   std::numeric_limits<uint8_t> ::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST9, valU16,  std::numeric_limits<uint16_t>::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST10, valU32, std::numeric_limits<uint32_t>::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST11, valU64, std::numeric_limits<uint64_t>::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST12, val8,   std::numeric_limits<int8_t>  ::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST13, val16,  std::numeric_limits<int16_t> ::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST14, val32,  std::numeric_limits<int32_t> ::min () + 1); 
+    CHECK_READ_SUCCESS (DV_ELEM_TEST15, val64,  std::numeric_limits<int64_t> ::min () + 1); 
+}
+
 /*********************** READREGION/WRITEREGION TESTS *************************/
 
 DataVector::Config_t gReadRegionWriteRegionConfig = {
@@ -1277,7 +1432,7 @@ TEST (DataVector_readDataVectorWriteDataVector, ReadIncorrectDataVectorSize)
     CHECK_ERROR (pDv->readDataVector (dvBufCopy), E_INCORRECT_SIZE);
 }
 
-///* Test writing Data Vector with incorrect vector size. */
+/* Test writing Data Vector with incorrect vector size. */
 TEST (DataVector_readDataVectorWriteDataVector, WriteIncorrectDataVectorSize)
 {
     // Create DV
@@ -1290,7 +1445,7 @@ TEST (DataVector_readDataVectorWriteDataVector, WriteIncorrectDataVectorSize)
     CHECK_ERROR (pDv->writeDataVector (dvBuf), E_INCORRECT_SIZE);
 }
 
-///* Test writing Data Vector with correct vector size. */
+/* Test writing Data Vector with correct vector size. */
 TEST (DataVector_readDataVectorWriteDataVector, Success)
 {
     // Create DV
@@ -1454,6 +1609,23 @@ static void* threadFuncWrite (void *rawArgs)
     // Write first element in DV.
     uint8_t value = 2;
     ret = pDv->write (DV_ELEM_TEST0, value);
+
+    return (void *) ret;
+}
+
+/**
+ * Thread that calls increment to update DV_ELEM_TEST0.
+ */
+static void* threadFuncIncrement (void *rawArgs)
+{
+    Error_t ret = E_SUCCESS;
+
+    // Parse args.
+    struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
+    std::shared_ptr<DataVector> pDv = pArgs->dataVector;
+
+    // Increment first element in DV.
+    ret = pDv->increment (DV_ELEM_TEST0);
 
     return (void *) ret;
 }
@@ -1885,7 +2057,7 @@ TEST (DataVector_threadSynchronization, WriteBlocked)
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
-    // Create thread and sleep so that thread blocks on read.
+    // Create thread and sleep so that thread blocks on write.
     CHECK_SUCCESS (pThreadManager->createThread (
                                     t1, pThreadFuncWrite,
                                     &argsThread1, sizeof (argsThread1),
@@ -1911,6 +2083,49 @@ TEST (DataVector_threadSynchronization, WriteBlocked)
     // Verify value is now 2.
     pDv->read (DV_ELEM_TEST0, value);
     CHECK_EQUAL (2, value);
+}
+
+/* Verify increment will block until lock is available. */
+TEST (DataVector_threadSynchronization, IncrementBlocked)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_DATA_VECTOR (gSynchronizationConfig);
+
+    // Initialize thread.
+    pthread_t t1;
+    struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
+    ThreadManager::ThreadFunc_t *pThreadFuncIncrement = 
+        (ThreadManager::ThreadFunc_t *) &threadFuncIncrement;
+
+    // Acquire lock so that thread blocks on write attempt.
+    CHECK_SUCCESS (pDv->acquireLock ());
+
+    // Create thread and sleep so that thread blocks on increment.
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    t1, pThreadFuncIncrement,
+                                    &argsThread1, sizeof (argsThread1),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+    TestHelpers::sleepMs (10);
+
+    // Verify value is still 0.
+    uint8_t value = 0;
+    CHECK_SUCCESS (pDv->readImpl (DV_ELEM_TEST0, value));
+    CHECK_EQUAL (0, value);
+
+    // Release lock and sleep. Expect this to unblock t1, resulting in t1
+    // updating the value.
+    CHECK_SUCCESS (pDv->releaseLock ());
+    TestHelpers::sleepMs (100);
+   
+    // Wait for thread.
+    Error_t threadReturn;
+    pThreadManager->waitForThread (t1, threadReturn);
+    CHECK_EQUAL (E_SUCCESS, threadReturn);
+    
+    // Verify value is now 1.
+    pDv->read (DV_ELEM_TEST0, value);
+    CHECK_EQUAL (1, value);
 }
 
 /* Verify readRegion will block until lock is available. */
