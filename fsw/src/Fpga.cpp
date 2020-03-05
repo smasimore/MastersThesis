@@ -8,29 +8,29 @@
 #define BIT_FILE_PATH "/home/admin/FlightSoftware/"
 
 /**
- * Global session, accessible only through Fpga::getSession.
+ * Global session, accessible only through Fpga::getSession().
  */
-NiFpga_Session gFpgaSession;
+static NiFpga_Session gFpgaSession;
 
 /**
- * Global status, accessible only through Fpga::getStatus.
+ * Global status, accessible only through Fpga::getStatus().
  */
-NiFpga_Status gFpgaStatus;
+static NiFpga_Status gFpgaStatus;
 
 /**
  * Whether or not a session is currently open.
  */
-bool gSessionOpen = false;
+static bool gSessionOpen = false;
 
 /**
  * Whether or not the FPGA API has been initialized.
  */
-bool gNiFpgaInitialized = false;
+static bool gNiFpgaInitialized = false;
 
 /**
  * Called at program exit to close global session and finalize the FPGA API.
  */
-void finalizeFpgaAtExit ();
+static void finalizeFpgaAtExit ();
 
 Error_t Fpga::getSession (NiFpga_Session& kSessionRet)
 {

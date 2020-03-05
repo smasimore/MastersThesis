@@ -13,11 +13,7 @@
 #include "Fpga.hpp"
 #include "TestHelpers.hpp"
 
-/**
- * Global session and status used in tests.
- */
-NiFpga_Session gSession;
-NiFpga_Status gStatus;
+NiFpga_Session gFpgaSession;
 
 TEST_GROUP (FpgaGlobalTest)
 {
@@ -29,24 +25,27 @@ TEST_GROUP (FpgaGlobalTest)
  */
 TEST (FpgaGlobalTest, GetSessionAndStatus)
 {
+    NiFpga_Session session;
+    NiFpga_Status status;
+
     // No session open; trying to close or get status errs.
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (gStatus));
+    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (status));
     CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::closeSession ());
 
     // Create a new session.
-    CHECK_SUCCESS (Fpga::getSession (gSession));
-    CHECK_SUCCESS (Fpga::getStatus (gStatus));
-    CHECK_EQUAL (NiFpga_Status_Success, gStatus);
+    CHECK_SUCCESS (Fpga::getSession (session));
+    CHECK_SUCCESS (Fpga::getStatus (status));
+    CHECK_EQUAL (NiFpga_Status_Success, status);
 
     // Getting another session returns the same session.
-    NiFpga_Session oldSession = gSession;
-    CHECK_SUCCESS (Fpga::getSession (gSession));
-    CHECK_EQUAL (oldSession, gSession);
+    NiFpga_Session oldSession = session;
+    CHECK_SUCCESS (Fpga::getSession (session));
+    CHECK_EQUAL (oldSession, session);
 
     // Close the session.
     CHECK_SUCCESS (Fpga::closeSession ());
 
     // No session open, closing or status queries again fail.
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (gStatus));
+    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (status));
     CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::closeSession ());
 }
