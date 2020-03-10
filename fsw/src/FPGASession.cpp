@@ -1,6 +1,5 @@
 #include <cstdlib>
 #include <time.h>
-#include <iostream>
 
 #include "FPGASession.hpp"
 
@@ -60,7 +59,6 @@ Error_t FPGASession::getSession (NiFpga_Session& kSessionRet,
 
         if (kStatusRet != NiFpga_Status_Success)
         {
-            std::cout << kStatusRet << std::endl;
             return E_FPGA_SESSION_INIT;
         }
 
