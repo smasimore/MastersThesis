@@ -3,6 +3,6 @@
 
 int main(int ac, char** av)
 {
-    std::cout << "Running all tests" << std::endl;
+    std::cout << "Running all platform tests" << std::endl;
     return CommandLineTestRunner::RunAllTests(ac, av);
 }

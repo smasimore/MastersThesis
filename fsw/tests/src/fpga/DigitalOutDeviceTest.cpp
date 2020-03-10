@@ -6,63 +6,35 @@
 
 #include "DataVector.hpp"
 #include "Errors.hpp"
-#include "NiFpga.h"
-#include "NiFpga_IO.h"
 #include "DigitalOutDevice.hpp"
+#include "FPGASession.hpp"
 
 #include "TestHelpers.hpp"
 
 /**
- * Path to bit file on sbRIO.
- */
-#define BIT_FILE_PATH "/home/admin/FlightSoftware/"
-
-/**
  * Initialize FPGA session and Data Vector.
  */
-#define INIT_SESSION_AND_DV                                                   \
-    NiFpga_Session session;                                                   \
-    NiFpga_Status status = NiFpga_Initialize();                               \
-    NiFpga_MergeStatus(&status, NiFpga_Open(                                  \
-        BIT_FILE_PATH NiFpga_IO_Bitfile,                                      \
-        NiFpga_IO_Signature, "RIO0", 0, &session));                           \
-    CHECK_EQUAL (NiFpga_Status_Success, status);                              \
-    TestHelpers::sleepMs (1000);                                              \
-    DataVector::Config_t config =                                             \
-    {                                                                         \
-        {                                                                     \
-            {DV_REG_TEST0,                                                    \
-            {                                                                 \
-                DV_ADD_BOOL  (  DV_ELEM_LED_CONTROL_VAL,      false        ), \
-                DV_ADD_BOOL  (  DV_ELEM_LED_FEEDBACK_VAL,     false        ), \
-            }},                                                               \
-        }                                                                     \
-    };                                                                        \
-    std::shared_ptr<DataVector> pDv;                                          \
+#define INIT_SESSION_AND_DV                                                    \
+    NiFpga_Session session;                                                    \
+    NiFpga_Status status;                                                      \
+    CHECK_SUCCESS (FPGASession::getSession (session, status));                 \
+    CHECK_EQUAL (NiFpga_Status_Success, status);                               \
+    DataVector::Config_t config =                                              \
+    {                                                                          \
+        {                                                                      \
+            {DV_REG_TEST0,                                                     \
+            {                                                                  \
+                DV_ADD_BOOL  (  DV_ELEM_LED_CONTROL_VAL,      false        ),  \
+                DV_ADD_BOOL  (  DV_ELEM_LED_FEEDBACK_VAL,     false        ),  \
+            }},                                                                \
+        }                                                                      \
+    };                                                                         \
+    std::shared_ptr<DataVector> pDv;                                           \
     CHECK_SUCCESS (DataVector::createNew (config, pDv));                       
 
 
 TEST_GROUP (DigitalOutDeviceTest)
 {
-    /**
-     * Turn off memory leak detection due to undiagnosed memory leak caused
-     * by FPGA C API usage. This is a known NI issue and will only cause memory 
-     * issues in production code if the FPGA is initialized more than once.
-     *
-     * http://www.ni.com/product-documentation/55093/en/#660205_by_Date
-     */
-    void setup ()
-    {
-        MemoryLeakWarningPlugin::turnOffNewDeleteOverloads();
-    }
-
-    /**
-     * Turn memory leak detection back on.
-     */
-    void teardown()
-    {
-        MemoryLeakWarningPlugin::turnOnNewDeleteOverloads();
-    }
 };
 
 /* Test null State Vector pointer on init. */
@@ -248,7 +220,7 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
         CHECK_EQUAL (false, feedbackVal);
     }
 
-    // 3) Close and finalize FPGA session.
-    NiFpga_MergeStatus (&status, NiFpga_Close (session, 0));
-    NiFpga_MergeStatus (&status, NiFpga_Finalize ());
+    // 3) Close global FPGA session.
+    CHECK_SUCCESS (FPGASession::closeSession (status));
+    CHECK_EQUAL (NiFpga_Status_Success, status);
 }
