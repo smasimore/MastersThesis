@@ -42,6 +42,8 @@ namespace FPGASession
     Error_t getSession (NiFpga_Session& kSessionRet, NiFpga_Status& kStatusRet);
 
     /**
+     * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF UNIT TESTS.
+     *
      * Closes the global FPGA session. A new session can safely be created with
      * FPGASession::getSession().
      *

@@ -32,7 +32,7 @@ Error_t FPGASession::getSession (NiFpga_Session& kSessionRet,
                                  NiFpga_Status& kStatusRet)
 {
     // Zero the status to clear garbage.
-    kStatusRet = 0;
+    kStatusRet = NiFpga_Status_Success;
 
     // First call--initialize the FPGA API.
     if (!gNiFpgaInitialized)
@@ -81,6 +81,9 @@ Error_t FPGASession::closeSession (NiFpga_Status& kStatusRet)
         return E_FPGA_NO_SESSION;
     }
 
+    // Zero the status to clear garbage.
+    kStatusRet = NiFpga_Status_Success;
+    
     NiFpga_MergeStatus (&kStatusRet, NiFpga_Close (gFpgaSession, 0));
     gSessionOpen = false;
     if (kStatusRet != NiFpga_Status_Success)
