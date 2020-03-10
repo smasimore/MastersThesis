@@ -10,10 +10,10 @@
  * detailed in RecoveryIgniterTest.cpp.
  */
 
-#include "Fpga.hpp"
+#include "FPGASession.hpp"
 #include "TestHelpers.hpp"
 
-TEST_GROUP (FpgaGlobalTest)
+TEST_GROUP (FPGASessionTest)
 {
 };
 
@@ -21,29 +21,27 @@ TEST_GROUP (FpgaGlobalTest)
  * Global FPGA session and status can be accessed correctly. Correct errors are
  * generated when trying to close or get status of session when none exists.
  */
-TEST (FpgaGlobalTest, GetSessionAndStatus)
+TEST (FPGASessionTest, GetSessionAndStatus)
 {
     NiFpga_Session session;
     NiFpga_Status status;
 
-    // No session open; trying to close or get status errs.
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (status));
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::closeSession ());
+    // No session open; trying to close errs.
+    CHECK_ERROR (E_FPGA_NO_SESSION, FPGASession::closeSession (status));
 
     // Create a new session.
-    CHECK_SUCCESS (Fpga::getSession (session));
-    CHECK_SUCCESS (Fpga::getStatus (status));
+    CHECK_SUCCESS (FPGASession::getSession (session, status));
     CHECK_EQUAL (NiFpga_Status_Success, status);
 
     // Getting another session returns the same session.
     NiFpga_Session oldSession = session;
-    CHECK_SUCCESS (Fpga::getSession (session));
+    CHECK_SUCCESS (FPGASession::getSession (session, status));
     CHECK_EQUAL (oldSession, session);
 
     // Close the session.
-    CHECK_SUCCESS (Fpga::closeSession ());
+    CHECK_SUCCESS (FPGASession::closeSession (status));
+    CHECK_EQUAL (NiFpga_Status_Success, status);
 
-    // No session open, closing or status queries again fail.
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::getStatus (status));
-    CHECK_ERROR (E_FPGA_NO_SESSION, Fpga::closeSession ());
+    // No session open, closing fails.
+    CHECK_ERROR (E_FPGA_NO_SESSION, FPGASession::closeSession (status));
 }

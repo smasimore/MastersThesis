@@ -7,7 +7,7 @@
 #include "DataVector.hpp"
 #include "Errors.hpp"
 #include "DigitalOutDevice.hpp"
-#include "Fpga.hpp"
+#include "FPGASession.hpp"
 
 #include "TestHelpers.hpp"
 
@@ -17,10 +17,8 @@
 #define INIT_SESSION_AND_DV                                                    \
     NiFpga_Session session;                                                    \
     NiFpga_Status status;                                                      \
-    CHECK_SUCCESS (Fpga::getSession (session));                                \
-    CHECK_SUCCESS (Fpga::getStatus (status));                                  \
+    CHECK_SUCCESS (FPGASession::getSession (session, status));                 \
     CHECK_EQUAL (NiFpga_Status_Success, status);                               \
-    TestHelpers::sleepMs (1000);                                               \
     DataVector::Config_t config =                                              \
     {                                                                          \
         {                                                                      \
@@ -223,5 +221,6 @@ TEST (DigitalOutDeviceTest, DigitalOutOn)
     }
 
     // 3) Close global FPGA session.
-    CHECK_SUCCESS (Fpga::closeSession ());
+    CHECK_SUCCESS (FPGASession::closeSession (status));
+    CHECK_EQUAL (NiFpga_Status_Success, status);
 }

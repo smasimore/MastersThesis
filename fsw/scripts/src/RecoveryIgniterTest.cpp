@@ -96,7 +96,7 @@
 #include <stdio.h>
 
 #include "DigitalOutDevice.hpp"
-#include "Fpga.hpp"
+#include "FPGASession.hpp"
 #include "RecoveryIgniterTest.hpp"
 #include "ScriptHelpers.hpp"
 #include "DataVector.hpp"
@@ -379,15 +379,14 @@ Error_t RecoveryIgniterTest::validateInput (int kAc, const char** kAv)
 Error_t initFpga ()
 {
     // Get the global FPGA session.
-    Error_t err = Fpga::getSession (gSession);
+    Error_t err = FPGASession::getSession (gSession, gStatus);
     if (err != E_SUCCESS)
     {
         return err;
     }
 
     // Check that the global status is success.
-    err = Fpga::getStatus (gStatus);
-    if (err != E_SUCCESS || gStatus != NiFpga_Status_Success)
+    if (gStatus != NiFpga_Status_Success)
     {
         return E_FPGA_INIT;
     }

@@ -1,6 +1,8 @@
 #include <cstdlib>
+#include <time.h>
+#include <iostream>
 
-#include "Fpga.hpp"
+#include "FPGASession.hpp"
 
 /**
  * Parent directory of FPGA bit file on sbRIO.
@@ -8,14 +10,9 @@
 #define BIT_FILE_PATH "/home/admin/FlightSoftware/"
 
 /**
- * Global session, accessible only through Fpga::getSession().
+ * Global session, accessible only through FPGASession::getSession().
  */
 static NiFpga_Session gFpgaSession;
-
-/**
- * Global status, accessible only through Fpga::getStatus().
- */
-static NiFpga_Status gFpgaStatus;
 
 /**
  * Whether or not a session is currently open.
@@ -32,14 +29,18 @@ static bool gNiFpgaInitialized = false;
  */
 static void finalizeFpgaAtExit ();
 
-Error_t Fpga::getSession (NiFpga_Session& kSessionRet)
+Error_t FPGASession::getSession (NiFpga_Session& kSessionRet,
+                                 NiFpga_Status& kStatusRet)
 {
+    // Zero the status to clear garbage.
+    kStatusRet = 0;
+
     // First call--initialize the FPGA API.
     if (!gNiFpgaInitialized)
     {
-        gFpgaStatus = NiFpga_Initialize ();
-        
-        if (gFpgaStatus != NiFpga_Status_Success)
+        kStatusRet = NiFpga_Initialize ();
+    
+        if (kStatusRet != NiFpga_Status_Success)
         {
             return E_FPGA_INIT;
         }
@@ -53,44 +54,38 @@ Error_t Fpga::getSession (NiFpga_Session& kSessionRet)
     // No session open--create one.
     if (!gSessionOpen)
     {
-        NiFpga_MergeStatus (&gFpgaStatus, NiFpga_Open (
+        NiFpga_MergeStatus (&kStatusRet, NiFpga_Open (
             BIT_FILE_PATH NiFpga_IO_Bitfile,
             NiFpga_IO_Signature, "RIO0", 0, &gFpgaSession));
 
-        if (gFpgaStatus != NiFpga_Status_Success)
+        if (kStatusRet != NiFpga_Status_Success)
         {
-            // Session init failed.
+            std::cout << kStatusRet << std::endl;
             return E_FPGA_SESSION_INIT;
         }
 
         gSessionOpen = true;
+
+        // Sleep for a bit while the physical FPGA initializes.
+        timespec timeToSleep = {};
+        timeToSleep.tv_sec = 1;
+        nanosleep (&timeToSleep, nullptr);
     }
 
     kSessionRet = gFpgaSession;
     return E_SUCCESS;
 }
 
-Error_t Fpga::getStatus (NiFpga_Status& kRet)
+Error_t FPGASession::closeSession (NiFpga_Status& kStatusRet)
 {
     if (!gSessionOpen)
     {
         return E_FPGA_NO_SESSION;
     }
 
-    kRet = gFpgaStatus;
-    return E_SUCCESS;
-}
-
-Error_t Fpga::closeSession ()
-{
-    if (!gSessionOpen)
-    {
-        return E_FPGA_NO_SESSION;
-    }
-
-    NiFpga_MergeStatus (&gFpgaStatus, NiFpga_Close (gFpgaSession, 0));
+    NiFpga_MergeStatus (&kStatusRet, NiFpga_Close (gFpgaSession, 0));
     gSessionOpen = false;
-    if (gFpgaStatus != NiFpga_Status_Success)
+    if (kStatusRet != NiFpga_Status_Success)
     {
         return E_FPGA_CLOSE_SESSION;
     }
@@ -105,7 +100,8 @@ void finalizeFpgaAtExit ()
         // Potential errors are disregarded. The program is ending, so if
         // closing and finalizing the session fails, there is nothing to be
         // done.
-        Fpga::closeSession ();
-        NiFpga_MergeStatus (&gFpgaStatus, NiFpga_Finalize ());
+        NiFpga_Status status;
+        FPGASession::closeSession (status);
+        NiFpga_Finalize ();
     }
 }
