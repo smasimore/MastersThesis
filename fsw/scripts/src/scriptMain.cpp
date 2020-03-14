@@ -17,10 +17,14 @@
 #include "ProfileCopyBuffer.hpp"
 #include "ProfileLock.hpp"
 #include "RecoveryIgniterTest.hpp"
+#include "ClockSyncTest_Client.hpp"
+#include "ClockSyncTest_Server.hpp"
 
 int main (int ac, char** av)
 {
     // RecoveryIgniterTest::main (ac, (const char**) av);
     // ProfileCopyBuffer::main (ac, av);
     // ProfileLock::main (ac, av);
+    ClockSyncTest_Client::main (ac, av);
+    // ClockSyncTest_Server::main (ac, av);
 }

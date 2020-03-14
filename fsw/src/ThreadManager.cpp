@@ -1,7 +1,6 @@
 #include <dirent.h>
 #include <string.h>
 #include <string>
-#include <iostream>
 #include <fstream>
 #include <sched.h>
 #include <cstring>

@@ -10,7 +10,7 @@ Error_t TimeNs::getTimeSinceInit (TimeNs::TimeNs_t& kElapsedTimeRet)
      // Using CLOCK_MONOTONIC_RAW for time without NTP adjustments.
      // CLOCK_MONOTONIC (with NTP adjustments)
      // gives results with less standard deviation, but greater error overall
-    uint32_t success = clock_gettime (CLOCK_MONOTONIC_RAW, &monotonic);
+    uint32_t success = clock_gettime (CLOCK_REALTIME, &monotonic);
     if (success != 0)
     {
         return E_FAILED_TO_GET_TIME;
@@ -37,7 +37,7 @@ TimeNs::TimeNs (Error_t& kErrorRet)
 {
     kErrorRet = E_SUCCESS;
     struct timespec monotonic;
-    uint32_t success = clock_gettime (CLOCK_MONOTONIC_RAW, &monotonic);
+    uint32_t success = clock_gettime (CLOCK_REALTIME, &monotonic);
     kErrorRet = success != 0 ? E_FAILED_TO_GET_TIME : E_SUCCESS;
     
     // If less than one year from overflow, return error

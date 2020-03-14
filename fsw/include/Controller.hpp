@@ -73,7 +73,8 @@ class Controller
          * @ret    E_SUCCESS            Controller successfully created.
          *         E_DATA_VECTOR_NULL   Data Vector ptr null.
          *         E_INVALID_ELEM       Invalid DV mode elem.
-         *         [other]              Validation error returned by controller.
+         *         [other]              Initialization or validation error 
+         *                              returned by controller.
         */
         template <class T_Controller, class T_Config>
         static Error_t createNew (T_Config kConfig,

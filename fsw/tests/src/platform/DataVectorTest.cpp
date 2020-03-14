@@ -1782,13 +1782,9 @@ static void testLockAcquireSemantics (
     TestHelpers::sleepMs(100);
    
     // Wait for threads.
-    Error_t threadReturn;
-    ret = pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = pThreadManager->waitForThread (t2, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = pThreadManager->waitForThread (t3, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    WAIT_FOR_THREAD (t1, pThreadManager);
+    WAIT_FOR_THREAD (t2, pThreadManager);
+    WAIT_FOR_THREAD (t3, pThreadManager);
 
     // Build expected log.
     for (uint32_t i = 0; i < expected.size (); i++)
@@ -1861,11 +1857,8 @@ static void testLockReleaseSemantics (
     TestHelpers::sleepMs (100);
    
     // Wait for threads.
-    Error_t threadReturn;
-    pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = pThreadManager->waitForThread (t2, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    WAIT_FOR_THREAD (t1, pThreadManager);
+    WAIT_FOR_THREAD (t2, pThreadManager);
 
     // Build expected log.
     for (uint32_t i = 0; i < expected.size (); i++)
@@ -2076,9 +2069,7 @@ TEST (DataVector_threadSynchronization, WriteBlocked)
     TestHelpers::sleepMs (100);
    
     // Wait for thread.
-    Error_t threadReturn;
-    pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    WAIT_FOR_THREAD (t1, pThreadManager);
     
     // Verify value is now 2.
     pDv->read (DV_ELEM_TEST0, value);
@@ -2119,9 +2110,7 @@ TEST (DataVector_threadSynchronization, IncrementBlocked)
     TestHelpers::sleepMs (100);
    
     // Wait for thread.
-    Error_t threadReturn;
-    pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, threadReturn);
+    WAIT_FOR_THREAD (t1, pThreadManager);
     
     // Verify value is now 1.
     pDv->read (DV_ELEM_TEST0, value);
@@ -2203,9 +2192,7 @@ TEST (DataVector_threadSynchronization, WriteRegionBlocked)
     TestHelpers::sleepMs (100);
    
     // Wait for thread.
-    Error_t threadReturn;
-    pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    WAIT_FOR_THREAD (t1, pThreadManager);
     
     // Verify value is now 2.
     pDv->read (DV_ELEM_TEST0, value);
@@ -2287,9 +2274,7 @@ TEST (DataVector_threadSynchronization, WriteDataVectorBlocked)
     TestHelpers::sleepMs (100);
    
     // Wait for thread.
-    Error_t threadReturn;
-    pThreadManager->waitForThread (t1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    WAIT_FOR_THREAD (t1, pThreadManager);
     
     // Verify value is now 2.
     pDv->read (DV_ELEM_TEST0, value);

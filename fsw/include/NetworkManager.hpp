@@ -110,12 +110,12 @@ public:
     /**
      * Network Manager config.
      */
-    typedef struct NetworkManagerConfig
+    typedef struct Config
     {
         std::unordered_map<Node_t, IP_t, EnumClassHash> nodeToIp;
         std::vector<ChannelConfig_t>                    channels;
         Node_t                                          me;
-    } NetworkManagerConfig_t;
+    } Config_t;
 
     /**
      * Entry point for creating a new Network Manager. Validates the passed in 
@@ -123,25 +123,31 @@ public:
      * this is not enforced to facilitate testing.
      *
      * @param   kConfig                     Network Manager's config data.
-     * @param   kPNetworkManagerRet         Pointer to return Network Manager.
+     * @param   kPNmRet                     Pointer to return Network Manager.
      *
-     * @ret     E_SUCCESS                   Network Manager successfully 
-     *                                      created.
-     *          E_EMPTY_CONFIG              Config empty.
-     *          E_EMPTY_NODE_CONFIG         Empty node map.
-     *          E_EMPTY_CHANNEL_CONFIG      Empty channels list.
-     *          E_INVALID_ENUM              Invalid node enum.
-     *          E_DUPLICATE_IP              Duplicate IP in node map.
-     *          E_NON_NUMERIC_IP            Character in numeric region of IP.
-     *          E_INVALID_IP_REGION         Size of IP region greater than 1 
-     *                                      bytes.
-     *          E_INVALID_IP_SIZE           Invalid number of IP regions.
-     *          E_UNDEFINED_NODE_IN_CHANNEL Node in channel not in nodeToIp.
-     *          E_INVALID_PORT              Port not within permitted bounds.
-     *          E_UNDEFINED_ME_NODE         "Me" is not defined in nodeToIp.
+     * @ret     E_SUCCESS                      Network Manager successfully 
+     *                                         created.
+     *          E_EMPTY_CONFIG                 Config empty.
+     *          E_EMPTY_NODE_CONFIG            Empty node map.
+     *          E_EMPTY_CHANNEL_CONFIG         Empty channels list.
+     *          E_INVALID_ENUM                 Invalid node enum.
+     *          E_DUPLICATE_IP                 Duplicate IP in node map.
+     *          E_NON_NUMERIC_IP               Character in numeric region of 
+     *                                         IP.
+     *          E_INVALID_IP_REGION            Size of IP region greater than 1
+     *                                         bytes.
+     *          E_INVALID_IP_SIZE              Invalid number of IP regions.
+     *          E_UNDEFINED_NODE_IN_CHANNEL    Node in channel not in nodeToIp.
+     *          E_INVALID_PORT                 Port not within permitted bounds.
+     *          E_UNDEFINED_ME_NODE            "Me" is not defined in nodeToIp.
+     *          E_FAILED_TO_CREATE_SOCKET      Failed to create socket.
+     *          E_FAILED_TO_SET_SOCKET_OPTIONS Failed to set socket options.
+     *          E_FAILED_TO_BIND_TO_SOCKET     Failed to bind "me" info to 
+     *                                         socket. This can happen if IP 
+     *                                         assigned to "me" is not correct.
     */
-    static Error_t createNew (NetworkManagerConfig_t& kConfig, 
-                              std::shared_ptr<NetworkManager>& kPNetworkManagerRet);
+    static Error_t createNew (Config_t& kConfig, 
+                              std::shared_ptr<NetworkManager>& kPNmRet);
 
     /**
      * Send a message to a node. 
@@ -190,7 +196,8 @@ public:
      * @param   kBufsRet                    Buffers to fill with messages.
      * @param   kMsgReceivedRet             True if message received from node.
      *
-     * @ret     E_SUCCESS                   Message successfully received.
+     * @ret     E_SUCCESS                   Messages successfully received or
+     *                                      timeout expired.
      *          E_TIMEOUT_TOO_LARGE         Timeout greater than max.
      *          E_VECTORS_DIFF_SIZES        Vector params have different sizes.
      *          E_EMPTY_BUFFER              One or more of the buffers empty.
@@ -230,7 +237,7 @@ public:
      *          E_UNDEFINED_ME_NODE         "Me" is not defined in nodeToIp.
      *          E_DUPLICATE_CHANNEL         More than 1 channel per node pair.
      */
-    static Error_t verifyConfig (NetworkManagerConfig_t& kConfig);
+    static Error_t verifyConfig (Config_t& kConfig);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF NETWORK MANAGER
@@ -291,7 +298,7 @@ private:
      *                                                   info to socket.
      *                        
      */        
-    NetworkManager (NetworkManagerConfig_t& kConfig, Error_t& kRet);
+    NetworkManager (Config_t& kConfig, Error_t& kRet);
 
     /**
      * Create a socket to send and receive messages on. Socket is blocking.

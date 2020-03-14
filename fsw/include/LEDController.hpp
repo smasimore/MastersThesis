@@ -7,8 +7,6 @@
 #include <memory>
 
 #include "Controller.hpp"
-#include "DigitalOutDevice.hpp"
-#include "NiFpga.h"
 
 class LEDController final : public Controller
 {

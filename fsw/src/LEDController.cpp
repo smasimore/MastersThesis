@@ -1,4 +1,3 @@
-#include "Device.hpp"
 #include "LEDController.hpp"
 
 LEDController::LEDController (const LEDController::Config_t& kConf,

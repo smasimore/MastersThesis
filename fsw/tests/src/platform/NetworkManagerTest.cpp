@@ -22,7 +22,7 @@
 /*************************** VERIFY CONFIG TESTS ******************************/
 
 /* Valid config to use for verify config tests. */
-NetworkManager::NetworkManagerConfig_t gValidConfig =
+NetworkManager::Config_t gValidConfig =
 {
     // Nodes
     {
@@ -56,7 +56,7 @@ TEST (NetworkManager_verifyConfig, NoNodes)
         NetworkManager::IP_t, 
         EnumClassHash> emptyNodeToIP;
 
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp = emptyNodeToIP;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_EMPTY_NODE_CONFIG);
@@ -65,7 +65,7 @@ TEST (NetworkManager_verifyConfig, NoNodes)
 /* Test initializing with empty channels list. */
 TEST (NetworkManager_verifyConfig, NoChannels)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels = {};
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_EMPTY_CHANNEL_CONFIG);
@@ -74,7 +74,7 @@ TEST (NetworkManager_verifyConfig, NoChannels)
 /* Test initializing with invalid node enum. */
 TEST (NetworkManager_verifyConfig, InvalidNode)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::LAST] = "10.0.0.3";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_ENUM);
@@ -83,7 +83,7 @@ TEST (NetworkManager_verifyConfig, InvalidNode)
 /* Test initializing with duplicate IP's. */
 TEST (NetworkManager_verifyConfig, DupeIP)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_DUPLICATE_IP);
@@ -92,7 +92,7 @@ TEST (NetworkManager_verifyConfig, DupeIP)
 /* Test initializing with non-numeric IP. */
 TEST (NetworkManager_verifyConfig, NonNumericIP)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.a.0.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_NON_NUMERIC_IP);
@@ -101,7 +101,7 @@ TEST (NetworkManager_verifyConfig, NonNumericIP)
 /* Test initializing with IP region value too high. */
 TEST (NetworkManager_verifyConfig, InvalidIPRegion)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.256";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_REGION);
@@ -110,7 +110,7 @@ TEST (NetworkManager_verifyConfig, InvalidIPRegion)
 /* Test initializing with empty IP. */
 TEST (NetworkManager_verifyConfig, EmptyIP)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
@@ -119,7 +119,7 @@ TEST (NetworkManager_verifyConfig, EmptyIP)
 /* Test initializing with too few IP regions. */
 TEST (NetworkManager_verifyConfig, TooFewIPRegions)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
@@ -128,7 +128,7 @@ TEST (NetworkManager_verifyConfig, TooFewIPRegions)
 /* Test initializing with too many IP regions. */
 TEST (NetworkManager_verifyConfig, TooManyIPRegions)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
@@ -137,7 +137,7 @@ TEST (NetworkManager_verifyConfig, TooManyIPRegions)
 /* Test channel with undefined node1. */
 TEST (NetworkManager_verifyConfig, UndefinedNode1)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels[0].node1 = NetworkManager::Node_t::DEVICE_NODE_1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), 
@@ -147,7 +147,7 @@ TEST (NetworkManager_verifyConfig, UndefinedNode1)
 /* Test channel with undefined node2. */
 TEST (NetworkManager_verifyConfig, UndefinedNode2)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels[0].node2 = NetworkManager::Node_t::DEVICE_NODE_1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), 
@@ -157,7 +157,7 @@ TEST (NetworkManager_verifyConfig, UndefinedNode2)
 /* Test initializing with port below min. */
 TEST (NetworkManager_verifyConfig, InvalidPortMin)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels[0].port = NetworkManager::MIN_PORT - 1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_PORT);
@@ -166,7 +166,7 @@ TEST (NetworkManager_verifyConfig, InvalidPortMin)
 /* Test initializing with port above max. */
 TEST (NetworkManager_verifyConfig, InvalidPortMax)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels[0].port = NetworkManager::MAX_PORT + 1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_PORT);
@@ -175,7 +175,7 @@ TEST (NetworkManager_verifyConfig, InvalidPortMax)
 /* Test initializing with undefined "me" node. */
 TEST (NetworkManager_verifyConfig, UndefinedMeNode)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.me = NetworkManager::Node_t::DEVICE_NODE_1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config), E_UNDEFINED_ME_NODE);
@@ -184,7 +184,7 @@ TEST (NetworkManager_verifyConfig, UndefinedMeNode)
 /* Test multiple channels per node pair, same order. */
 TEST (NetworkManager_verifyConfig, DuplicateChannelSameOrder)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels.push_back ({NetworkManager::Node_t::CONTROL_NODE, 
                                NetworkManager::Node_t::DEVICE_NODE_0, 
                                NetworkManager::MIN_PORT});
@@ -195,7 +195,7 @@ TEST (NetworkManager_verifyConfig, DuplicateChannelSameOrder)
 /* Test multiple channels per node pair, different order. */
 TEST (NetworkManager_verifyConfig, DuplicateChannelDifferentOrder)
 {
-    NetworkManager::NetworkManagerConfig_t config = gValidConfig;
+    NetworkManager::Config_t config = gValidConfig;
     config.channels.push_back ({NetworkManager::Node_t::DEVICE_NODE_0, 
                                 NetworkManager::Node_t::CONTROL_NODE, 
                                 NetworkManager::MIN_PORT});
@@ -277,7 +277,7 @@ std::vector<NetworkManager::ChannelConfig_t> gLoopbackChannels =
 };
 
 /* Loopback config for Control Node to use for send/recv tests. */
-NetworkManager::NetworkManagerConfig_t gLoopbackConfigCtrl =
+NetworkManager::Config_t gLoopbackConfigCtrl =
 {
     gLoopbackNodes,
     gLoopbackChannels,
@@ -285,7 +285,7 @@ NetworkManager::NetworkManagerConfig_t gLoopbackConfigCtrl =
 };
 
 /* Loopback config for Device Node 0 to use for send/recv tests. */
-NetworkManager::NetworkManagerConfig_t gLoopbackConfigDev0 =
+NetworkManager::Config_t gLoopbackConfigDev0 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
@@ -293,7 +293,7 @@ NetworkManager::NetworkManagerConfig_t gLoopbackConfigDev0 =
 };
 
 /* Loopback config for Device Node 1 to use for send/recv tests. */
-NetworkManager::NetworkManagerConfig_t gLoopbackConfigDev1 =
+NetworkManager::Config_t gLoopbackConfigDev1 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
@@ -437,11 +437,17 @@ TEST (NetworkManager_SendRecv, SuccessTwoMessagesPerChannel)
 
 /**
  * Params to pass Network Manager to thread functions.
+ *
+ * NOTE: NetworkManager must be passed as a pointer and not a shared pointer.
+ *       Otherwise, on re-casting to a shared_ptr, a new shared_ptr with its
+ *       own reference count is created. On exiting the thread, it will free
+ *       the memory and then on exiting the main thread it will again attempt
+ *       to free the memory.
  */
 struct ThreadFuncArgs 
 {
     Log* log;
-    std::shared_ptr<NetworkManager> pNm;
+    NetworkManager* pNm;
 };
 
 /**
@@ -454,7 +460,7 @@ static void* threadFuncSend (void *rawArgs)
     // Parse args.
     struct ThreadFuncArgs* pArgs = (struct ThreadFuncArgs *) rawArgs;
     Log* log = pArgs->log;
-    std::shared_ptr<NetworkManager> pNmDev0 = pArgs->pNm;
+    NetworkManager* pNmDev0 = pArgs->pNm;
 
     log->logEvent (Log::LogEvent_t::CALLED_SEND, 0);    
     std::vector<uint8_t> sendBuf = {0xff};
@@ -471,7 +477,7 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     // Create send thread. Thread should not run until cpputest thread blocks,
     // since it is lower pri than the cpputest thread.
     pthread_t thread;
-    struct ThreadFuncArgs argsThread = {&testLog, pNmDev0}; 
+    struct ThreadFuncArgs argsThread = {&testLog, pNmDev0.get ()}; 
     ThreadManager::ThreadFunc_t *pThreadFuncSend = 
         (ThreadManager::ThreadFunc_t *) &threadFuncSend;
     CHECK_SUCCESS (pThreadManager->createThread (
@@ -498,10 +504,7 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     VERIFY_LOGS;
 
     // Clean up thread.
-    Error_t threadReturn;
-    ret = pThreadManager->waitForThread (thread, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    CHECK_EQUAL (E_SUCCESS, threadReturn);
+    WAIT_FOR_THREAD (thread, pThreadManager);
 }
 
 /* Group of tests to verify recvMult. */
@@ -898,8 +901,8 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     // since it is lower pri than the cpputest thread.
     pthread_t thread0;
     pthread_t thread1;
-    struct ThreadFuncArgs argsThread0 = {&testLog, pNmDev0}; 
-    struct ThreadFuncArgs argsThread1 = {&testLog, pNmDev1}; 
+    struct ThreadFuncArgs argsThread0 = {&testLog, pNmDev0.get ()}; 
+    struct ThreadFuncArgs argsThread1 = {&testLog, pNmDev1.get ()}; 
     ThreadManager::ThreadFunc_t *pThreadFuncSend = 
         (ThreadManager::ThreadFunc_t *) &threadFuncSend;
     CHECK_SUCCESS (pThreadManager->createThread (
@@ -943,11 +946,6 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     VERIFY_LOGS;
 
     // Clean up thread.
-    Error_t threadReturn;
-    ret = pThreadManager->waitForThread (thread0, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    CHECK_EQUAL (E_SUCCESS, threadReturn);
-    ret = pThreadManager->waitForThread (thread1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    CHECK_EQUAL (E_SUCCESS, threadReturn);
+    WAIT_FOR_THREAD (thread0, pThreadManager);
+    WAIT_FOR_THREAD (thread1, pThreadManager);
 }

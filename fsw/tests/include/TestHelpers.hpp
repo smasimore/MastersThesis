@@ -56,6 +56,15 @@
 }
 
 /**
+ * Initializes Thread Manager.
+ */
+#define INIT_THREAD_MANAGER                                                    \
+    Error_t ret = E_SUCCESS;                                                   \
+    ThreadManager *pTm = nullptr;                                              \
+    ret = ThreadManager::getInstance (&pTm);                                   \
+    CHECK_EQUAL(E_SUCCESS, ret);                                               \
+
+/**
  * Initializes pThreadManager, expectedLog, and actualLog as local variables to
  * be used in a test.
  */
@@ -91,8 +100,8 @@
  *
  * Note: llabs() used to get absolute value
  *
- * @param   kExp Expected value.
- * @param   kVal Actual value.
+ * @param   kExp   Expected value.
+ * @param   kVal   Actual value.
  * @param   kBound Bound
  */
 #define CHECK_IN_BOUND(kExp, kVal, kBound)                                     \
@@ -104,6 +113,22 @@
                                    std::to_string (kBound) + ")";              \
         FAIL (macroFailStr.c_str ());                                          \
     }                                                                          \
+}
+
+/**
+ * todo: update other places
+ * Wait for specified thread.
+ *
+ * @param  kThread  Thread to wait for.
+ * @param  kPTm     Pointer to Thread Manager.
+ *
+ */
+#define WAIT_FOR_THREAD(kThread, kPTm)                                         \
+{                                                                              \
+    Error_t threadReturn;                                                      \
+    ret = kPTm->waitForThread (kThread, threadReturn);                         \
+    CHECK_EQUAL (E_SUCCESS, ret);                                              \
+    CHECK_EQUAL (E_SUCCESS, threadReturn);                                     \
 }
 
 /******************************* FUNCTIONS ************************************/

@@ -1,7 +1,6 @@
 #include <set>
 #include <cstring>
 #include <algorithm>
-#include <iostream>
 
 #include "DataVectorLogger.hpp"
 

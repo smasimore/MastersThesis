@@ -15,8 +15,8 @@ const uint32_t NetworkManager::MAX_TIMEOUT_US = 999999;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
-Error_t NetworkManager::createNew (NetworkManager::NetworkManagerConfig_t& kConfig,
-                                std::shared_ptr<NetworkManager>& kPNetworkManagerRet)
+Error_t NetworkManager::createNew (NetworkManager::Config_t& kConfig,
+                                std::shared_ptr<NetworkManager>& kPNmRet)
 {
     Error_t ret = E_SUCCESS;
 
@@ -28,12 +28,12 @@ Error_t NetworkManager::createNew (NetworkManager::NetworkManagerConfig_t& kConf
     }
 
     // Create Network Manager.
-    kPNetworkManagerRet.reset (new NetworkManager (kConfig, ret));
+    kPNmRet.reset (new NetworkManager (kConfig, ret));
 
     // Check for error on construct and free memory if it failed.
     if (ret != E_SUCCESS)
     {
-        kPNetworkManagerRet.reset ();
+        kPNmRet.reset ();
         return ret;
     }
 
@@ -250,7 +250,7 @@ NetworkManager::~NetworkManager ()
 
 /**************************** PRIVATE FUNCTIONS *******************************/
 
-NetworkManager::NetworkManager (NetworkManager::NetworkManagerConfig_t& kConfig, 
+NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig, 
                                 Error_t& kRet)
 {
     // 1) Parse info from kConfig.
@@ -303,7 +303,7 @@ NetworkManager::NetworkManager (NetworkManager::NetworkManagerConfig_t& kConfig,
     }
 }
 
-Error_t NetworkManager::verifyConfig (NetworkManager::NetworkManagerConfig_t& kConfig)
+Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
 {
     std::unordered_map<Node_t, IP_t, EnumClassHash> nodeToIp = kConfig.nodeToIp;
     std::vector<NetworkManager::ChannelConfig_t> channelConfigs = 
@@ -456,7 +456,7 @@ Error_t NetworkManager::createSocket (uint32_t kMeIp, uint16_t kPort,
     {
         return E_FAILED_TO_CREATE_SOCKET;
     }
-    
+
     // 2) Bind socket to me address & port.
     struct sockaddr_in meAddr;
     memset ((void*) (&meAddr), 0, sizeof (meAddr));
