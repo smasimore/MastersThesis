@@ -101,7 +101,6 @@
 #include "ScriptHelpers.hpp"
 #include "DataVector.hpp"
 #include "ThreadManager.hpp"
-#include "TimeNs.hpp"
 
 /**
  * Pin number for igniter line. This should probably be different from the DIO

@@ -3,7 +3,7 @@
 #include <time.h>
 
 #include "ScriptHelpers.hpp"
-#include "TimeNs.hpp"
+#include "Time.hpp"
 
 void ScriptHelpers::sleepMs (uint32_t kMs)
 {
@@ -17,25 +17,25 @@ void ScriptHelpers::sleepMs (uint32_t kMs)
 
 double ScriptHelpers::timeS ()
 {
-    // Initialize the TimeNs module if this is the first call.
-    static TimeNs* pTimeNs(nullptr);
-    if (pTimeNs == nullptr)
+    // Initialize the Time module if this is the first call.
+    static Time* pTime(nullptr);
+    if (pTime == nullptr)
     {
-        Error_t err = TimeNs::getInstance (pTimeNs);
+        Error_t err = Time::getInstance (pTime);
         if (err != E_SUCCESS)
         {
             ERROR ("Error: ScriptHelpers::timeS failed to create timekeeper");
         }
     }
 
-    // Get timestamp from TimeNs.
-    TimeNs::TimeNs_t time;
-    Error_t err = pTimeNs->getTimeSinceInit (time);
+    // Get timestamp from Time.
+    Time::TimeNs_t timeNs;
+    Error_t err = pTime->getTimeNs (timeNs);
     if (err != E_SUCCESS)
     {
         ERROR ("Error: ScriptHelpers::timeS failed to generate timestamp");
     }
 
     // Compute elapsed seconds and return.
-    return time * 1.0 / TimeNs::NS_IN_SECOND;
+    return timeNs * 1.0 / Time::NS_IN_SECOND;
 }

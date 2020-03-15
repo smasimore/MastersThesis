@@ -4,7 +4,7 @@
 
 #include "Errors.hpp"
 #include "NetworkManager.hpp"
-#include "TimeNs.hpp"
+#include "Time.hpp"
 #include "EnumClassHash.hpp"
 
 #include "TestHelpers.hpp"
@@ -252,7 +252,7 @@ TEST (NetworkManager_ipConvert, Success)
  * Measured select call overhead to use for defined timeout vs. actual time
  * taken assertions.
  */
-static const TimeNs::TimeNs_t SELECT_OVERHEAD_NS = 250000;
+static const Time::TimeNs_t SELECT_OVERHEAD_NS = 250000;
 
 /* Loopback nodes to use for send/recv tests. */
 std::unordered_map<NetworkManager::Node_t, 
@@ -682,8 +682,8 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     INIT_NETWORK_MANAGERS
 
     // Init Time Module to measure time recvMult takes.
-    TimeNs* pTime;
-    TimeNs::getInstance (pTime);
+    Time* pTime;
+    Time::getInstance (pTime);
 
     // Set up params.
     std::vector<NetworkManager::Node_t> nodes =
@@ -704,12 +704,12 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
-    TimeNs::TimeNs_t startNs;
-    TimeNs::TimeNs_t endNs;
-    pTime->getTimeSinceInit (startNs);
+    Time::TimeNs_t startNs;
+    Time::TimeNs_t endNs;
+    pTime->getTimeNs (startNs);
     CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
                                       bufs, msgsReceived));
-    pTime->getTimeSinceInit (endNs);
+    pTime->getTimeNs (endNs);
 
     // Verify buffers match.
     CHECK (bufs[0] == sendBuf0);
@@ -731,8 +731,8 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     INIT_NETWORK_MANAGERS
 
     // Init Time Module to measure time recvMult takes.
-    TimeNs* pTime;
-    TimeNs::getInstance (pTime);
+    Time* pTime;
+    Time::getInstance (pTime);
 
     // Set up params.
     const uint32_t TIMEOUT_US = 1000;
@@ -748,16 +748,16 @@ TEST (NetworkManager_RecvMult, NoMsgs)
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
-    TimeNs::TimeNs_t startNs;
-    TimeNs::TimeNs_t endNs;
-    pTime->getTimeSinceInit (startNs);
+    Time::TimeNs_t startNs;
+    Time::TimeNs_t endNs;
+    pTime->getTimeNs (startNs);
     pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
-    pTime->getTimeSinceInit (endNs);
+    pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
-    TimeNs::TimeNs_t elapsedNs = endNs - startNs;
-    TimeNs::TimeNs_t timeoutNs = TIMEOUT_US * TimeNs::NS_IN_US;
+    Time::TimeNs_t elapsedNs = endNs - startNs;
+    Time::TimeNs_t timeoutNs = TIMEOUT_US * Time::NS_IN_US;
     CHECK (elapsedNs > timeoutNs);
     CHECK_IN_BOUND (timeoutNs, elapsedNs, SELECT_OVERHEAD_NS);
 
@@ -774,8 +774,8 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     INIT_NETWORK_MANAGERS
 
     // Init Time Module to measure time recvMult takes.
-    TimeNs* pTime;
-    TimeNs::getInstance (pTime);
+    Time* pTime;
+    Time::getInstance (pTime);
 
     // Set up params.
     std::vector<NetworkManager::Node_t> nodes =
@@ -799,12 +799,12 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
-    TimeNs::TimeNs_t startNs;
-    TimeNs::TimeNs_t endNs;
-    pTime->getTimeSinceInit (startNs);
+    Time::TimeNs_t startNs;
+    Time::TimeNs_t endNs;
+    pTime->getTimeNs (startNs);
     CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
                                       bufs, msgsReceived));
-    pTime->getTimeSinceInit (endNs);
+    pTime->getTimeNs (endNs);
 
     // Verify buffers match.
     CHECK (bufs[0] == sendBuf0);
@@ -826,8 +826,8 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     INIT_NETWORK_MANAGERS
 
     // Init Time Module to measure time recvMult takes.
-    TimeNs* pTime;
-    TimeNs::getInstance (pTime);
+    Time* pTime;
+    Time::getInstance (pTime);
 
     // Set up params.
     const uint32_t TIMEOUT_US = 1000;
@@ -848,16 +848,16 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
-    TimeNs::TimeNs_t startNs;
-    TimeNs::TimeNs_t endNs;
-    pTime->getTimeSinceInit (startNs);
+    Time::TimeNs_t startNs;
+    Time::TimeNs_t endNs;
+    pTime->getTimeNs (startNs);
     pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
-    pTime->getTimeSinceInit (endNs);
+    pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
-    TimeNs::TimeNs_t elapsedNs = endNs - startNs;
-    TimeNs::TimeNs_t timeoutNs = TIMEOUT_US * TimeNs::NS_IN_US;
+    Time::TimeNs_t elapsedNs = endNs - startNs;
+    Time::TimeNs_t timeoutNs = TIMEOUT_US * Time::NS_IN_US;
     CHECK (elapsedNs > timeoutNs);
     CHECK_IN_BOUND (timeoutNs, elapsedNs, SELECT_OVERHEAD_NS);
 
@@ -871,9 +871,9 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
-    pTime->getTimeSinceInit (startNs);
+    pTime->getTimeNs (startNs);
     pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
-    pTime->getTimeSinceInit (endNs);
+    pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
@@ -894,8 +894,8 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     INIT_NETWORK_MANAGERS
 
     // Init Time Module to measure time recvMult takes.
-    TimeNs* pTime;
-    TimeNs::getInstance (pTime);
+    Time* pTime;
+    Time::getInstance (pTime);
 
     // Create send threads. Thread should not run until cpputest thread blocks,
     // since it is lower pri than the cpputest thread.

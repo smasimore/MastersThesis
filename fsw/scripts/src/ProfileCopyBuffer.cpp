@@ -42,21 +42,21 @@ static const uint32_t BUF_SIZE = 2000;
 /**
  * Measure time to copy buf to a vector initialized with buf size.
  */
-uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
-                                      uint16_t runIdx)
+Time::TimeNs_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
+                                            uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
 
     // Create another vector with size initialized and copy the buffer to it.
     std::vector<uint8_t> bufCopy (BUF_SIZE);
     bufCopy = buf;
 
     // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    uint64_t elapsedNs = endNs - startNs;
+    Time::TimeNs_t elapsedNs = endNs - startNs;
 
     // Print results.
     if (gDebugPrint == true)
@@ -72,11 +72,11 @@ uint64_t measureCopyTime_InitVecSize (std::vector<uint8_t>& buf,
 /**
  * Measure time to copy buf to a vector without an initial size.
  */
-uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
-                                        uint16_t runIdx)
+Time::TimeNs_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
+                                              uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
 
     // Create another vector without initializing it size, and copy the buffer
     // to it.
@@ -84,10 +84,10 @@ uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
     bufCopy = buf;
 
     // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
-    uint64_t elapsedNs = endNs - startNs;
+    Time::TimeNs_t elapsedNs = endNs - startNs;
 
     // Print results.
     if (gDebugPrint == true)
@@ -103,17 +103,18 @@ uint64_t measureCopyTime_NoInitVecSize (std::vector<uint8_t>& buf,
 /**
  * Measure time to copy buf to a vector initialized with buf size.
  */
-uint64_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, uint16_t runIdx)
+Time::TimeNs_t measureCopyTime_StaticVec (std::vector<uint8_t>& buf, 
+                                          uint16_t runIdx)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
 
     // Create another vector with size initialized and copy the buffer to it.
     static std::vector<uint8_t> bufCopy (BUF_SIZE);
     bufCopy = buf;
 
     // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
     uint64_t elapsedNs = endNs - startNs;
@@ -136,10 +137,10 @@ void ProfileCopyBuffer::main (int ac, char** av)
 
     std::vector<uint8_t> buf (BUF_SIZE, BUF_FILL);
 
-    std::vector<uint64_t> results_Baseline      (NUM_TIMES_TO_RUN);
-    std::vector<uint64_t> results_InitVecSize   (NUM_TIMES_TO_RUN);
-    std::vector<uint64_t> results_NoInitVecSize (NUM_TIMES_TO_RUN);
-    std::vector<uint64_t> results_StaticVec     (NUM_TIMES_TO_RUN);
+    std::vector<Time::TimeNs_t> results_Baseline      (NUM_TIMES_TO_RUN);
+    std::vector<Time::TimeNs_t> results_InitVecSize   (NUM_TIMES_TO_RUN);
+    std::vector<Time::TimeNs_t> results_NoInitVecSize (NUM_TIMES_TO_RUN);
+    std::vector<Time::TimeNs_t> results_StaticVec     (NUM_TIMES_TO_RUN);
 
     // Do in 2 separate for loops so that individual run prints are grouped.
     for (uint16_t i = 0; i < NUM_TIMES_TO_RUN; i++)

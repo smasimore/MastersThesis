@@ -27,14 +27,14 @@ static const uint32_t NUM_TIMES_TO_RUN = 10000;
 uint64_t measureLockTime (uint16_t runIdx, std::shared_ptr<DataVector>& pDv)
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
 
     // Acquire lock.
     pDv->acquireLock ();
     pDv->releaseLock ();
 
     // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
     // Return elapsed.
     return abs (endNs - startNs);

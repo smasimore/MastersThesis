@@ -39,26 +39,34 @@ void ProfileHelpers::setThreadPriAndAffinity ()
     }   
 }
 
-uint64_t ProfileHelpers::getTimeNs ()
+Time::TimeNs_t ProfileHelpers::getTimeNs ()
 {
-    static const uint32_t NS_IN_S = 1000000000;
-
-    struct timespec ts;
-    if (clock_gettime (CLOCK_MONOTONIC_RAW, &ts) != 0)
+    static Time* pTime = nullptr;
+    if (pTime == nullptr)
     {
-        throw std::runtime_error ("Failed to get time.");
+        Error_t ret = Time::getInstance (pTime);
+        if (ret != E_SUCCESS)
+        {
+            throw std::runtime_error ("Failed to init Time");
+        }
     }
 
-    return (((uint64_t) ts.tv_sec) * NS_IN_S) + ts.tv_nsec;
+    Time::TimeNs_t timeNs;
+    if (pTime->getTimeNs (timeNs) != E_SUCCESS)
+    {
+        throw std::runtime_error ("Failed to get time");
+    }
+
+    return timeNs;
 }
 
 uint64_t ProfileHelpers::measureBaseline ()
 {
     // Start time.
-    uint64_t startNs = ProfileHelpers::getTimeNs ();    
+    Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();    
 
     // End time.
-    uint64_t endNs = ProfileHelpers::getTimeNs ();
+    Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed.
     return endNs - startNs;

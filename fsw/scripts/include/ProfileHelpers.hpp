@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "Time.hpp"
+
 namespace ProfileHelpers
 {
 
@@ -19,7 +21,7 @@ namespace ProfileHelpers
     /**
      * Get current time in ns.
      */
-    uint64_t getTimeNs ();
+    Time::TimeNs_t getTimeNs ();
 
     /**
      * Returns baseline time elapsed. This is overhead of calling clock_gettime.

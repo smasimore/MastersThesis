@@ -4,6 +4,8 @@
 # ifndef SCRIPT_HELPERS_HPP
 # define SCRIPT_HELPERS_HPP
 
+#include <cstdint>
+
 /**
  * Kills the program with a message.
  *
@@ -26,8 +28,7 @@ namespace ScriptHelpers
     void sleepMs (uint32_t kMs);
 
     /**
-     * Gets the current time. This uses TimeNs under the hood, so should return
-     * ~0 on the first call if the module was not already initialized.
+     * Gets the current time. 
      *
      * @ret     Current time in seconds.
      */
