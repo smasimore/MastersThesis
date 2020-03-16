@@ -91,8 +91,9 @@ void ProfileHelpers::printProcessStats ()
 void ProfileHelpers::printVectorStats (std::vector<uint64_t>& results, 
                                        std::string header)
 {
-    uint64_t avg =  std::accumulate (results.begin (), results.end (), 0)
-                        / results.size ();
+    // Type last input to accumulate to be uint64_t to prevent overflow.
+    uint64_t avg =  std::accumulate (results.begin (), results.end (), 
+                                     (uint64_t) 0) / results.size ();
     uint64_t min = *std::min_element (results.begin (), results.end ());
     uint64_t max = *std::max_element (results.begin (), results.end ());
 
