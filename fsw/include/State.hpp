@@ -1,7 +1,10 @@
 /**
- * State class that will be created and manipulated by the StateMachine
- * Each state must be initialized with important data, such as associated
- * transition and target states.
+ * State object that encapsulates the data used to defined a state:
+ *   
+ *   1) State ID
+ *   2) Actions to execute when in the State
+ *   3) Transitions to check and execute when in the State.
+ *
  */
 
 #ifndef STATE_HPP
@@ -11,97 +14,91 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <vector>
-#include <string>
 #include <map>
 
 #include "Errors.hpp"
+#include "StateMachineEnums.hpp"
+#include "Transitions.hpp"
+#include "Actions.hpp"
+#include "DataVector.hpp"
 
-class State
+class State final
 {
 public:
 
     /**
-     * Struct containing the necessary elements of an action 
+     * Config for a State in the State Machine.
      */
-    typedef struct Action
+    typedef struct Config
     {
-        uint32_t timestamp;
-        Error_t (*func) (int32_t);
-        int32_t param;
-    } Action_t;
+        StateId_t id;
+        Actions::Config_t actions;
+        Transitions::Config_t transitions;
+    } Config_t;
 
     /**
-     * Constructor for a state with more complex State data, tentative
+     * Constructor for a State containing name, transitions, and actions.
      *
-     * @param   stateName           string containing the state name
-     * @param   validTransitions    vector of strings representing valid states
-     *
-     * @ret     State               State class with data from params
-     */
-    State (std::string stateName, 
-           const std::vector<std::string> &validTransitions);
-
-    /**
-     * Constructor for a State containing name, transitions, and actions
-     *
-     * @param   stateName           string containing the state name
-     * @param   validTransitions    vector of strings representing valid states
-     * @param   actionList          vector of Action_t containing timestamp,
+     * @param   kStateId            Enum containing the state ID.
+     * @param   kTransitionsConfig  Transitions config.
+     * @param   kActionList         Vector of Action_t containing timestamp,
      *                              pointer to function, and function param.
+     * @param   kStateElem          Data Vector elem storing current state.
+     * @param   kRet                Param to store return value in.
      *
-     * @ret     State               State class with data from params
+     * @ret     E_SUCCESS           Successfully created state.
+     *          [other]             Transitions or Actions initialization error.
      */
-    State (std::string stateName, 
-           const std::vector<std::string> &validTransitions, 
-           const std::vector<Action_t> &actionList);
+    State (std::shared_ptr<DataVector> kPDataVector,
+           StateId_t kStateId,
+           const Transitions::Config_t& kTransitionsConfig,
+           const Actions::Config_t& kActionsConfig,
+           DataVectorElement_t kStateElem,
+           Error_t& kRet);
 
     /**
-     * Get the State name
+     * Get the State ID.
      *
-     * @param   result      Reference to String type to store State name in
+     * @param   kIdRet      Param to store state's ID in.
      *
-     * @ret     E_SUCCESS   Successfully stored State name in result
+     * @ret     E_SUCCESS   Successfully stored state ID.
      */
-    Error_t getName (std::string **ppResult);
+    Error_t getId (StateId_t& kIdRet);
 
     /**
      * Get the State's valid transitions
      *
-     * @param   result      Reference to vector of type string to store data in
+     * @param   kPTransitionsRet  Pointer to state's transitions object.
      *
-     * @ret     E_SUCCESS   Successfully stored State transitions in result
+     * @ret     E_SUCCESS         Successfully stored Transitions.
      */
-    Error_t getTransitions (std::vector<std::string> **ppResult);
+    Error_t getTransitions (std::shared_ptr<Transitions>& kPTransitionsRet);
 
     /**
-     * Get the State's action sequence
+     * Get the State's Actions.
      *
      * @param   result      Reference to map of timestamps and corresponding
      *                      pointers to functions and params, to store sequence
      *
      * @ret     E_SUCCESS   Successfully stored State action sequence in result
      */
-    Error_t getActionSequence (
-        std::map<int32_t, std::vector<Action_t>> **ppResult);
+    Error_t getActions (std::shared_ptr<Actions>& kPActionsRet);
 
 private:
 
     /**
-     * The name of the State, for identification and mapping purposes
+     * State ID.
      */
-    std::string mStateName;
+    StateId_t mStateId;
 
     /**
-     * The valid transitions of the State, vector of type String representing 
-     * the name of the valid states for a transition
+     * State's actions to execute.
      */
-    std::vector<std::string> mValidTransitions;
+    std::shared_ptr<Actions> mActions;
 
     /**
-     * The old iteration of the action sequence of the State. Ordered map
-     * containing vector of tuples, using timestamp as the key. Tuples in the
-     * vector contain the pointer to function, and the parameter.
+     * State's transitions.
      */
-    std::map<int32_t, std::vector<Action_t>> mActionSequence;
+    std::shared_ptr<Transitions> mTransitions;
 };
 #endif

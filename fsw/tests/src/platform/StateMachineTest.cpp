@@ -3,479 +3,643 @@
 #include "StateMachine.hpp"
 #include "Errors.hpp"
 #include "Log.hpp"
-#include "ThreadManager.hpp"
 
-#include "CppUTest/TestHarness.h"
+#include "TestHelpers.hpp"
 
-/************************** TESTER FUNCTIONS **********************************/
+/**
+ * Default initial time for initialising SM.
+ */
+#define INITIAL_TIME_NS 0
 
-// global variable for use with tester functions
-volatile int32_t gVar1;
-
-Error_t multiplyParam1 (int32_t param)
-{
-    gVar1 = gVar1 * param;
-    return E_SUCCESS;
+/**
+ * Check DV state against expected.
+ *
+ * @param  kExpState  State expected in DV.
+ */
+#define CHECK_STATE(kExpState)                                                 \
+{                                                                              \
+    uint32_t actualState = STATE_LAST;                                         \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_STATE, actualState));                    \
+    CHECK_EQUAL (kExpState, actualState);                                      \
 }
 
-Error_t addParam1 (int32_t param)
-{
-    gVar1 = gVar1 + param;
-    return E_SUCCESS;
+/**
+ * Step the SM and check the Data Vector values.
+ * values.
+ *
+ * @param  kTimeNs   Time in nanoseconds to use as current time.
+ * @param  kExpVals  Struct of values expected for each DV elem.
+ */
+#define STEP_AND_CHECK_DV(kTimeNs, kExpVals)                                    \
+{                                                                              \
+    CHECK_SUCCESS (pSm->step (kTimeNs));                                        \
+    DvVals actualVals = {STATE_A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};            \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_STATE,  actualVals.state));              \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST0,  actualVals.u8));                 \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST1,  actualVals.u16));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST2,  actualVals.u32));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST3,  actualVals.u64));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST4,  actualVals.i8));                 \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST5,  actualVals.i16));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST6,  actualVals.i32));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST7,  actualVals.i64));                \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST8,  actualVals.fl));                 \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST9,  actualVals.db));                 \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST10, actualVals.bl));                 \
+    CHECK_EQUAL (kExpVals.state, actualVals.state);                            \
+    CHECK_EQUAL (kExpVals.u8,  actualVals.u8);                                 \
+    CHECK_EQUAL (kExpVals.u16, actualVals.u16);                                \
+    CHECK_EQUAL (kExpVals.u32, actualVals.u32);                                \
+    CHECK_EQUAL (kExpVals.u64, actualVals.u64);                                \
+    CHECK_EQUAL (kExpVals.i8,  actualVals.i8);                                 \
+    CHECK_EQUAL (kExpVals.i16, actualVals.i16);                                \
+    CHECK_EQUAL (kExpVals.i32, actualVals.i32);                                \
+    CHECK_EQUAL (kExpVals.i64, actualVals.i64);                                \
+    CHECK_EQUAL (kExpVals.fl,  actualVals.fl);                                 \
+    CHECK_EQUAL (kExpVals.db,  actualVals.db);                                 \
+    CHECK_EQUAL (kExpVals.bl,  actualVals.bl);                                 \
 }
 
-Error_t subtractParam1 (int32_t param)
+/**
+ * Struct to store DV vals for verification.
+ */
+struct DvVals
 {
-    gVar1 = gVar1 - param;
-    return E_SUCCESS;
-}
+    uint32_t state;
+    uint8_t  u8;
+    uint16_t u16;
+    uint32_t u32;
+    uint64_t u64;
+    int8_t   i8;
+    int16_t  i16;
+    int32_t  i32;
+    int64_t  i64;
+    float    fl;
+    double   db;
+    bool     bl;
+};
 
-Error_t fail (int32_t param)
+/**
+ * DV config to go with gSmConfig.
+ */
+static DataVector::Config_t gDvConfig =
 {
-    return E_TEST_ERROR;
-}
-
-// Implement periodic with thread manager
-volatile bool gThreadStopped;
-
-Error_t stateThreadFunc (std::shared_ptr<StateMachine> pSM)
-{
-    Error_t ret;
-    while (!gThreadStopped)
     {
-        ret = pSM->periodic ();
-        if (ret != E_SUCCESS)
+        {DV_REG_TEST0,
         {
-            gThreadStopped = true;
-            return ret;
-        }
+            DV_ADD_UINT32 (DV_ELEM_STATE,  STATE_A),
+            DV_ADD_UINT8  (DV_ELEM_TEST0,  0      ),
+            DV_ADD_UINT16 (DV_ELEM_TEST1,  0      ),
+            DV_ADD_UINT32 (DV_ELEM_TEST2,  0      ),
+            DV_ADD_UINT64 (DV_ELEM_TEST3,  0      ),
+            DV_ADD_INT8   (DV_ELEM_TEST4,  0      ),
+            DV_ADD_INT16  (DV_ELEM_TEST5,  0      ),
+            DV_ADD_INT32  (DV_ELEM_TEST6,  0      ),
+            DV_ADD_INT64  (DV_ELEM_TEST7,  0      ),
+            DV_ADD_FLOAT  (DV_ELEM_TEST8,  0      ),
+            DV_ADD_DOUBLE (DV_ELEM_TEST9,  0      ),
+            DV_ADD_BOOL   (DV_ELEM_TEST10, false  ),
+        }},
     }
-    return E_SUCCESS;
-}
+};
 
-/******************************** TESTS ***************************************/
+static StateMachine::Config_t gSmConfig =
+{
+    //////////////////////////////// STATE_A ///////////////////////////////////
+    // ID
+    {STATE_A,
+    // ACTIONS
+    {{0 * Time::NS_IN_SECOND,
+         {ACT_CREATE_UINT8  (DV_ELEM_TEST0,  1),
+          ACT_CREATE_UINT16 (DV_ELEM_TEST1,  1)}},
+     {1 * Time::NS_IN_SECOND,
+         {ACT_CREATE_UINT32 (DV_ELEM_TEST2,  1),
+          ACT_CREATE_UINT8  (DV_ELEM_TEST0,  2)}}},
+    // TRANSITIONS
+    {TR_CREATE_UINT8  ( DV_ELEM_TEST0,   CMP_EQUALS,               2,  STATE_B),
+     TR_CREATE_UINT16 ( DV_ELEM_TEST1,   CMP_GREATER_THAN,         1,  STATE_C), 
+     TR_CREATE_UINT32 ( DV_ELEM_TEST2,   CMP_GREATER_EQUALS_THAN,  2,  STATE_D)}},
 
-TEST_GROUP (StateMachines)
+
+    //////////////////////////////// STATE_B ///////////////////////////////////
+    // ID
+    {STATE_B,
+    // ACTIONS
+    {{0 * Time::NS_IN_SECOND,
+         {ACT_CREATE_UINT64 (DV_ELEM_TEST3,  1),
+          ACT_CREATE_INT8   (DV_ELEM_TEST4,  2)}},
+     {.5 * Time::NS_IN_SECOND,
+         {ACT_CREATE_INT16  (DV_ELEM_TEST5,  3),
+          ACT_CREATE_INT8   (DV_ELEM_TEST4,  0)}}},
+    // TRANSITIONS
+    {TR_CREATE_UINT64 ( DV_ELEM_TEST3,   CMP_LESS_THAN,            1,  STATE_A),
+     TR_CREATE_INT8   ( DV_ELEM_TEST4,   CMP_LESS_EQUALS_THAN,     1,  STATE_C),
+     TR_CREATE_INT16  ( DV_ELEM_TEST5,   CMP_EQUALS,               1,  STATE_D)}},
+
+
+    //////////////////////////////// STATE_C ///////////////////////////////////
+    // ID
+    {STATE_C,
+    // ACTIONS
+    {{1 * Time::NS_IN_SECOND,
+         {ACT_CREATE_INT32  (DV_ELEM_TEST6,  1)}},
+     {2 * Time::NS_IN_SECOND,
+         {ACT_CREATE_INT64  (DV_ELEM_TEST7, -1),
+          ACT_CREATE_FLOAT  (DV_ELEM_TEST8, -1.1)}}},
+    // TRANSITIONS
+    {TR_CREATE_INT32  ( DV_ELEM_TEST6,   CMP_GREATER_THAN,         1,  STATE_A),
+     TR_CREATE_INT64  ( DV_ELEM_TEST7,   CMP_GREATER_EQUALS_THAN,  1,  STATE_B),
+     TR_CREATE_FLOAT  ( DV_ELEM_TEST8,   CMP_LESS_THAN,           -1,  STATE_D)}},
+
+
+    //////////////////////////////// STATE_D ///////////////////////////////////
+    // ID
+    {STATE_D,
+    // ACTIONS
+    {{0 * Time::NS_IN_SECOND,
+         {ACT_CREATE_BOOL   (DV_ELEM_TEST10, true)}},
+     {1 * Time::NS_IN_SECOND,
+         {ACT_CREATE_DOUBLE (DV_ELEM_TEST9, -1)}}},
+    // TRANSITIONS
+    {TR_CREATE_DOUBLE ( DV_ELEM_TEST9,   CMP_LESS_EQUALS_THAN,    -1,  STATE_A),
+     TR_CREATE_BOOL   ( DV_ELEM_TEST10,  CMP_EQUALS,           false,  STATE_D)}},
+};
+
+/***************************** CONFIG TESTS ***********************************/
+
+/* Tests to verify error handling of SM config. */
+TEST_GROUP (StateMachine_Config)
 {
 };
 
-/* Test to create a State Machine from existing vector of states.
-   This creates the StateMachine immediately with the necessary states
-   instead of having to add states after the object is constructed. */
-TEST (StateMachines, DefinedStateCase)
+/* Test null DV ptr. */
+TEST (StateMachine_Config, DvNull)
 {
-    // Create basic loop transitions for the states
-    std::vector<std::string> transitionsA = { "StateB" };
-    std::vector<std::string> transitionsB = { "StateC" };
-    std::vector<std::string> transitionsC = { "StateA" };
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (gSmConfig, nullptr, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_DATA_VECTOR_NULL);
+}
+
+/* Test invalid state elem. */
+TEST (StateMachine_Config, InvalidStateElem)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (gSmConfig, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_TEST11, pSm),
+                 E_INVALID_ELEM);
+}
+
+/* Test non-uint32_t state elem. */
+TEST (StateMachine_Config, IncorrectStateElemType)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (gSmConfig, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_TEST0, pSm),
+                 E_INCORRECT_TYPE);
+}
+
+/* Test config with no states. */
+TEST (StateMachine_Config, EmptyConfig)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    StateMachine::Config_t config = {};
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_NO_STATES);
+}
+
+/* Test config with dupe state ID. */
+TEST (StateMachine_Config, DupeState)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    StateMachine::Config_t config = {{STATE_A, {}, {}}, {STATE_A, {}, {}}};
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_DUPLICATE_STATE);
+}
+
+/* Test config with invalid transition target state. */
+TEST (StateMachine_Config, InvalidTransition)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    StateMachine::Config_t config = 
+    {
+        {STATE_A, 
+         {},
+         {TR_CREATE_UINT8  ( DV_ELEM_TEST0,   CMP_EQUALS,  1,  STATE_B)}},
+    };
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_INVALID_TRANSITION);
+}
+
+/* Test config with invalid state ID. */
+TEST (StateMachine_Config, InvalidStateId)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    StateMachine::Config_t config = {{STATE_LAST, {}, {}}};
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_INVALID_ENUM);
+}
+
+/* Test initial state in DV invalid. */
+TEST (StateMachine_Config, InvalidInitialState)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    StateMachine::Config_t config = {{STATE_B, {}, {}}};
+
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_ERROR (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                          DV_ELEM_STATE, pSm),
+                 E_STATE_NOTFOUND);
+}
+
+/* Test with an action attempting to change the state. */
+TEST (StateMachine_Config, InvalidAction)
+{
+    DataVector::Config_t dvConfig = {
+        {
+            {DV_REG_TEST0,
+            {
+                DV_ADD_INT16  ( DV_ELEM_TEST0,  0       ),
+                DV_ADD_BOOL   ( DV_ELEM_TEST1,  false   ),
+                DV_ADD_UINT64 ( DV_ELEM_TEST2,  0       ),
+                DV_ADD_UINT32 ( DV_ELEM_STATE,  STATE_A ),
+            }},
+        }
+    };
+
+    Actions::Config_t actionsConfigA =
+    {
+        {0 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST0,    1),
+                ACT_CREATE_UINT64 ( DV_ELEM_TEST2,    1)
+            }},
+
+        {1 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_BOOL   ( DV_ELEM_TEST1,    true),
+            }},
+    };
+
+    // Create Actions config with an transition overwriting state elem.
+    Actions::Config_t actionsConfigB =
+    {
+        {0 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST0,    2),
+                ACT_CREATE_BOOL   ( DV_ELEM_TEST1,    false)
+            }},
+
+        {1 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_UINT64   ( DV_ELEM_TEST2,  2),
+                ACT_CREATE_UINT32   ( DV_ELEM_STATE,  STATE_B)
+            }},
+    };
 
     // Create vector of states for createNew function
-    std::vector<StateMachine::State_t> stateVec 
-        = { {"StateA", transitionsA, {}},
-            {"StateB", transitionsB, {}},
-            {"StateC", transitionsC, {}} };
+    StateMachine::Config_t smConfig =
+    {
+        {STATE_A, actionsConfigA, {}},
+        {STATE_B, actionsConfigB, {}}
+    };
 
-    // Create State Machine from vector of States
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::createNew (pSM, stateVec);
+    // Init other components
+    INIT_DATA_VECTOR (dvConfig);
+    Time::TimeNs_t timeNs = 0;
 
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Attempt to call function to find states
-    std::shared_ptr<State> stateResult (nullptr);
-    ret = pSM->findState (stateResult, "StateA");
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (stateResult != nullptr);
-
-    // Access data of found state
-    std::vector<std::string> *pDataResult;
-    ret = stateResult->getTransitions (&pDataResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsA == *pDataResult);
-
-    // Attempt to find an invalid state
-    ret = pSM->findState (stateResult, "StateD");
-    CHECK_TRUE (E_NAME_NOTFOUND == ret);
-
-    // Get the current State info (StateA, since first in vector)
-    std::string nameResult;
-    ret = pSM->getCurrentStateName (nameResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (nameResult == "StateA");
-
-    std::vector<std::string> transitionsResult;
-    ret = pSM->getCurrentStateTransitions (transitionsResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == transitionsA);
-
-    // Force a valid transition from StateA to StateB
-    ret = pSM->switchState ("StateB");
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // Check if current State is StateB
-    ret = pSM->getCurrentStateName (nameResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (nameResult == "StateB");
-
-    ret = pSM->getCurrentStateTransitions (transitionsResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == transitionsB);
-
-    // Attempt to force an invalid transition from StateB to StateA
-    ret = pSM->switchState ("StateA");
-    CHECK_TRUE (E_INVALID_TRANSITION == ret);
-
-    // Check if current State is still StateB
-    ret = pSM->getCurrentStateName (nameResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (nameResult == "StateB");
-
-    ret = pSM->getCurrentStateTransitions (transitionsResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitionsResult == transitionsB);
+    // Attempt to create State Machine, should fail due to invalid action.
+    std::unique_ptr<StateMachine> pSm (nullptr);
+    CHECK_ERROR (StateMachine::createNew (smConfig, pDv, timeNs, DV_ELEM_STATE, 
+                                          pSm),
+                 E_INVALID_ACTION);
 }
 
-/* Test to manage States with action sequences within the StateMachine */
-TEST (StateMachines, ManageActionSequence)
+/* Test valid config. */
+TEST (StateMachine_Config, Success)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam1;
-    Error_t (*pFuncA) (int32_t) = addParam1;
-    Error_t (*pFuncS) (int32_t) = subtractParam1;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    // create actions from timestamp, function, and params
-    State::Action_t actionM { 1, pFuncM, 3 };
-    State::Action_t actionA { 2, pFuncA, 5 };
-    State::Action_t actionS { 3, pFuncS, 3 };
-
-    // create corresponding vectors of actions
-    std::vector<State::Action_t> actionsA = { actionM };
-    std::vector<State::Action_t> actionsB = { actionA };
-    std::vector<State::Action_t> actionsC = { actionS };
-
-    // Create basic loop transitions for the states
-    std::vector<std::string> transitionsA = { "StateB" };
-    std::vector<std::string> transitionsB = { "StateC" };
-    std::vector<std::string> transitionsC = { "StateA" };
-
-    // Create storage vector for constructor
-    std::vector<StateMachine::State_t> stateVec
-        = { {"StateA", transitionsA, actionsA},
-            {"StateB", transitionsB, actionsB},
-            {"StateC", transitionsC, actionsC} };
-
-    // Create State Machine from vector of States
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::createNew (pSM, stateVec);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Create local map and search iterator
-    std::map<int32_t, std::vector<State::Action_t>>
-        localMap;
-    std::map<int32_t, std::vector<State::Action_t>>
-        ::const_iterator search;
-
-    // First state is StateA, retrieve its action sequence
-    ret = pSM->getCurrentActionSequence (localMap);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // At timestamp 1, action sequence contains multiply function and param 3
-    search = localMap.find (1);
-    CHECK_EQUAL (search->first, 1);
-    CHECK_EQUAL (search->second[0].func, pFuncM);
-    CHECK_EQUAL (search->second[0].param, 3);
-
-    // Transition to StateB, then retrieve its action sequence
-    ret = pSM->switchState ("StateB");
-    CHECK_TRUE (E_SUCCESS == ret);
-    ret = pSM->getCurrentActionSequence (localMap);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // At timestamp 2, action sequence contains addition function and param 5
-    search = localMap.find (2);
-    CHECK_EQUAL (search->first, 2);
-    CHECK_EQUAL (search->second[0].func, pFuncA);
-    CHECK_EQUAL (search->second[0].param, 5);
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_SUCCESS (StateMachine::createNew (gSmConfig, pDv, INITIAL_TIME_NS, 
+                                            DV_ELEM_STATE, pSm));
 }
 
-/* Test to arbitrarily execute the action sequences in StateMachine */
-TEST (StateMachines, ExecuteActionSequence)
+/****************************** STEP TESTS ************************************/
+
+TEST_GROUP (StateMachine_Step)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam1;
-    Error_t (*pFuncA) (int32_t) = addParam1;
-    Error_t (*pFuncS) (int32_t) = subtractParam1;
-    Error_t (*pFuncF) (int32_t) = fail;
+};
 
-    // create tuples of timestamp, function pointer, and param
-    State::Action_t actionM { 0, pFuncM, 3 };
-    State::Action_t actionA { 0, pFuncA, 5 };
-    State::Action_t actionS { 0, pFuncS, 3 };
-    State::Action_t actionF { 1, pFuncF, 3 };
+/* Test invalid current time. */
+TEST (StateMachine_Step, InvalidTime)
+{
+    INIT_DATA_VECTOR (gDvConfig);
 
-
-    // create corresponding input vector of tuples
-    std::vector<State::Action_t> vecInA = { actionM, actionA };
-    std::vector<State::Action_t> vecInB = { actionA, actionS };
-    std::vector<State::Action_t> vecInC = { actionM, actionF };
-
-    // Create basic loop transitions for the states
-    std::vector<std::string> transitionsA = { "StateB" };
-    std::vector<std::string> transitionsB = { "StateC" };
-    std::vector<std::string> transitionsC = { "StateA" };
-
-    // Create storage vector for constructor
-    std::vector<StateMachine::State_t> stateVec
-        = { { "StateA", transitionsA, vecInA },
-            { "StateB", transitionsB, vecInB },
-            { "StateC", transitionsC, vecInC } };
-
-    // Create State Machine from vector of States
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::createNew (pSM, stateVec);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Set global variable for testing
-    gVar1 = 3;
-
-    // First state is StateA; action sequence multiplies by 3 then adds 5
-    ret = pSM->executeCurrentSequence ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 14);
-
-    // Switch to StateB; action sequence adds 5 then subtracts 3
-    ret = pSM->switchState ("StateB");
-    CHECK_TRUE (E_SUCCESS == ret);
-    ret = pSM->executeCurrentSequence ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 16);
-
-    // Switch to StateC; action sequence multiplies by 3 then fails
-    ret = pSM->switchState ("StateC");
-    CHECK_TRUE (E_SUCCESS == ret);
-    ret = pSM->executeCurrentSequence ();
-    CHECK_TRUE (E_TEST_ERROR == ret);
-    CHECK_EQUAL (gVar1, 48);
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_SUCCESS (StateMachine::createNew (gSmConfig, pDv, INITIAL_TIME_NS + 1, 
+                                            DV_ELEM_STATE, pSm));
+    CHECK_ERROR (pSm->step (INITIAL_TIME_NS), E_INVALID_TIME);
 }
 
-/* Test the periodic function with a basic placeholder time variable */
-TEST (StateMachines, ExecuteActionsPeriodic)
+/* Test no actions or transitions. */
+TEST (StateMachine_Step, NoActionsOrTransitions)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam1;
-    Error_t (*pFuncA) (int32_t) = addParam1;
-    Error_t (*pFuncS) (int32_t) = subtractParam1;
-    Error_t (*pFuncF) (int32_t) = fail;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    // create tuples of ascending timestamps, function pointer, and param
-    State::Action_t actionM { 2, pFuncM, 3 };
-    State::Action_t actionA { 4, pFuncA, 5 };
-    State::Action_t actionS { 6, pFuncS, 3 };
-    State::Action_t actionF { 8, pFuncF, 3 };
+    StateMachine::Config_t config = {{STATE_A, {}, {}}};
 
-    // create a corresponding input vector of tuples
-    std::vector<State::Action_t> actionsA = 
-        { actionM, actionA, actionS, actionF };
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_SUCCESS (StateMachine::createNew (config, pDv, INITIAL_TIME_NS, 
+                                            DV_ELEM_STATE, pSm));
 
-    // Create basic loop transitions for the states
-    std::vector<std::string> transitionsA = { "StateB" };
-    std::vector<std::string> transitionsB = { "StateA" };
-
-    // Create storage vector for constructor, using the same action sequence
-    std::vector<StateMachine::State_t> stateVec
-        = { {"StateA", transitionsA, actionsA},
-            {"StateB", transitionsB, actionsA} };
-
-    // Create State Machine from vector of States
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::createNew (pSM, stateVec);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
-
-    // Set global variable for testing
-    gVar1 = 3;
-
-    // Set time variable to 0
-    pSM->timeElapsed = 0;
-    // Call periodic function; global variable should be unchanged
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 3);
-
-    // Set time to 2
-    pSM->timeElapsed = 2;
-    // Call periodic function; global variable should multiply by 3
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 9);
-
-    // Set time to 4
-    pSM->timeElapsed = 4;
-    // Call periodic function; global variable should add by 5
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 14);
-
-    // Set time to 6
-    pSM->timeElapsed = 6;
-    // Call periodic function; global variable should subtract by 3
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 11);
-
-    // Set time to 8
-    pSM->timeElapsed = 8;
-    // Call periodic function; function should fail
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_TEST_ERROR == ret);
-    CHECK_EQUAL (gVar1, 11);
-
-    // Action sequence ends after 8s; call periodic to check behavior
-    // Action iterator should still be pointing to the failing function
-    pSM->timeElapsed = 9;
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_TEST_ERROR == ret);
-    CHECK_EQUAL (gVar1, 11);
-
-    // Switch to StateB; StateB action sequence is the same as StateA
-    pSM->switchState ("StateB");
-
-    // Reset global variable and time
-    gVar1 = 3;
-    pSM->timeElapsed = 0;
-
-    // Call periodic function; global variable should be unchanged
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 3);
-
-    // Set time to 2
-    pSM->timeElapsed = 2;
-    // Call periodic function; global variable should multiply by 3
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 9);
-
-    // Set time to 4
-    pSM->timeElapsed = 4;
-    // Call periodic function; global variable should add by 5
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 14);
-
-    // Set time to 6
-    pSM->timeElapsed = 6;
-    // Call periodic function; global variable should subtract by 3
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_EQUAL (gVar1, 11);
-
-    // Set time to 8
-    pSM->timeElapsed = 8;
-    // Call periodic function; function should fail
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_TEST_ERROR == ret);
-    CHECK_EQUAL (gVar1, 11);
-
-    // Action sequence ends after 8s; call periodic to check behavior
-    // Action iterator should still be pointing to failing function
-    pSM->timeElapsed = 9;
-    ret = pSM->periodic ();
-    CHECK_TRUE (E_TEST_ERROR == ret);
-    CHECK_EQUAL (gVar1, 11);
+    DvVals expVals = {STATE_A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
 }
 
-/* Test a periodic thread with the action sequence */
-TEST (StateMachines, ExecutePeriodicThread)
+/* Test iterator reset. */
+TEST (StateMachine_Step, ActionsIteratorReset)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam1;
-    Error_t (*pFuncA) (int32_t) = addParam1;
-    Error_t (*pFuncS) (int32_t) = subtractParam1;
-    Error_t (*pFuncF) (int32_t) = fail;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    // create tuples of ascending timestamps, function pointer, and param
-    State::Action_t actionM {2, pFuncM, 3};
-    State::Action_t actionA {4, pFuncA, 5};
-    State::Action_t actionS {6, pFuncS, 3};
-    State::Action_t actionF {8, pFuncF, 3};
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_SUCCESS (StateMachine::createNew (gSmConfig, pDv, 
+                                            INITIAL_TIME_NS, DV_ELEM_STATE, 
+                                            pSm));
 
+    // Expect first set of STATE_A's actions to have run.
+    DvVals expVals = {STATE_A, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
 
-    // create a corresponding input vector of tuples
-    std::vector<State::Action_t> vecInA =
-    { actionM, actionA, actionS, actionF };
+    // Expect second set of STATE_A's actions to have run and to remain in 
+    // STATE_A since the transition check runs before actions are executed. 
+    expVals = {STATE_A, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (1 * Time::NS_IN_SECOND, expVals);
 
-    // Create basic loop transitions for the states
-    std::vector<std::string> transitionsA = { "StateB" };
-    std::vector<std::string> transitionsB = { "StateA" };
+    // Expect transition to STATE_B and for STATE_B's first set of actions to 
+    // have run. 
+    expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (2 * Time::NS_IN_SECOND, expVals);
+    
+    // Reset first set of DV values set by STATE_A.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST0, (uint8_t) 0));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST1, (uint16_t) 0));
 
-    // Create storage vector for constructor, using the same action sequence
-    std::vector<StateMachine::State_t> stateVec
-        = { {"StateA", transitionsA, vecInA},
-            {"StateB", transitionsB, vecInA} };
+    // Trigger transition back to STATE_A. Expect 2nd set of STATE_B actions to
+    // not run, and expect first set of STATE_A's first set of actions to have 
+    // run again.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST3, (uint64_t) 0));
+    expVals = {STATE_A, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (3 * Time::NS_IN_SECOND, expVals);
+}
 
-    // Create State Machine from vector of States
-    std::unique_ptr<StateMachine> pSM (nullptr);
-    Error_t ret = StateMachine::createNew (pSM, stateVec);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pSM != nullptr);
+/* Cycle through every state and action. */
+TEST (StateMachine_Step, Success)
+{
 
-    // Initialize ThreadManager
-    ThreadManager *pThreadManager = nullptr;
-    ret = ThreadManager::getInstance (&pThreadManager);
-    CHECK_TRUE (E_SUCCESS == ret);
+    INIT_DATA_VECTOR (gDvConfig);
 
-    pthread_t stateThread;
-    gThreadStopped = false;
+    std::unique_ptr<StateMachine> pSm;
+    CHECK_SUCCESS (StateMachine::createNew (gSmConfig, pDv, 
+                                            INITIAL_TIME_NS, DV_ELEM_STATE, 
+                                            pSm));
 
-    ThreadManager::ThreadFunc_t *pStateThreadFunc =
-        (ThreadManager::ThreadFunc_t *) &stateThreadFunc;
+    // Expect first set of STATE_A's actions to have run.
+    DvVals expVals = {STATE_A, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
 
-    // Create the the threads
-    ret = pThreadManager->createThread (stateThread, pStateThreadFunc,
-                                        &pSM, sizeof (pSM),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_TRUE (E_SUCCESS == ret);
+    // Expect second set of STATE_A's actions to have run and to remain in 
+    // STATE_A since the transition check runs before actions are executed. 
+    expVals = {STATE_A, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (1 * Time::NS_IN_SECOND, expVals);
 
-    // Set global variable for testing
-    gVar1 = 3;
+    // Expect transition to STATE_B and for STATE_B's first set of actions to 
+    // have run. 
+    expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (2 * Time::NS_IN_SECOND, expVals);
 
-    // Set time variable to 0, global variable should be unchanged
-    pSM->timeElapsed = 0;
-    usleep (10);
-    CHECK_EQUAL (gVar1, 3);
+    // Expect no change.
+    expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (2.25 * Time::NS_IN_SECOND, expVals);
 
-    // Set time to 2, global variable should multiply by 3
-    pSM->timeElapsed = 2;
-    usleep (10);
-    CHECK_EQUAL (gVar1, 9);
+    // Expect second set of STATE_B's actions to have run. 
+    expVals = {STATE_B, 2, 1, 1, 1, 0, 3, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (2.5 * Time::NS_IN_SECOND, expVals);
 
-    // Set time to 4, global variable should add by 5
-    pSM->timeElapsed = 4;
-    usleep (10);
-    CHECK_EQUAL (gVar1, 14);
+    // Expect transition to STATE_C and for no STATE_C actions to have run. 
+    expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 0, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (3 * Time::NS_IN_SECOND, expVals);
 
-    // Set time to 6, global variable should subtract by 3
-    pSM->timeElapsed = 6;
-    usleep (10);
-    CHECK_EQUAL (gVar1, 11);
+    // Expect STATE_C's first set of actions to have run. 
+    expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 1, 0, 0, 0, false};
+    STEP_AND_CHECK_DV (4 * Time::NS_IN_SECOND, expVals);
 
-    // Set time to 8, function should fail and thread should stop
-    pSM->timeElapsed = 8;
-    usleep (10);
-    CHECK_EQUAL (gVar1, 11);
+    // Expect STATE_C's second set of actions to have run. 
+    expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, 0, false};
+    STEP_AND_CHECK_DV (5 * Time::NS_IN_SECOND, expVals);
 
-    // Sleep to allow state thread to run
-    usleep (10);
+    // Expect transition to STATE_D and for STATE_D's first set of actions to 
+    // have run. 
+    expVals = {STATE_D, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, 0, true};
+    STEP_AND_CHECK_DV (6 * Time::NS_IN_SECOND, expVals);
 
-    // Check that the thread finished
-    CHECK_TRUE (gThreadStopped);
-    Error_t threadRet;
-    ret = pThreadManager->waitForThread (stateThread, threadRet);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (E_TEST_ERROR == threadRet);
+    // Expect STATE_D's second set of actions to have run. 
+    expVals = {STATE_D, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, -1, true};
+    STEP_AND_CHECK_DV (7 * Time::NS_IN_SECOND, expVals);
+
+    // Expect transition back to STATE_A and for STATE_A's first set of actions
+    // to run again.
+    expVals = {STATE_A, 1, 1, 1, 1, 0, 3, 1, -1, -1.1, -1, true};
+    STEP_AND_CHECK_DV (7 * Time::NS_IN_SECOND, expVals);
+}
+
+/* Test State Machine integration with State, Transitions, and Time classes. */
+TEST (StateMachine_Step, Transitions)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    // Set initial state.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST5, (int16_t) 18));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST10, (bool) false));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST3, (uint64_t) 16));
+
+    Transitions::Config_t transitionsA =
+    {
+        TR_CREATE_BOOL   ( DV_ELEM_TEST10,  CMP_EQUALS,        true,  STATE_B),
+        TR_CREATE_UINT64 ( DV_ELEM_TEST3,   CMP_GREATER_THAN,  16,    STATE_C)
+    };
+    Transitions::Config_t transitionsB =
+    {
+        TR_CREATE_INT16  ( DV_ELEM_TEST5,   CMP_EQUALS,        19,    STATE_A),
+        TR_CREATE_UINT64 ( DV_ELEM_TEST3,   CMP_GREATER_THAN,  16,    STATE_C)
+    };
+    Transitions::Config_t transitionsC =
+    {
+        TR_CREATE_INT16  ( DV_ELEM_TEST5,   CMP_EQUALS,        19,    STATE_A),
+        TR_CREATE_BOOL   ( DV_ELEM_TEST10,  CMP_EQUALS,        true,  STATE_B),
+    };
+
+    // Create config.
+    StateMachine::Config_t smConfig
+        = {{STATE_A, {}, transitionsA},
+           {STATE_B, {}, transitionsB},
+           {STATE_C, {}, transitionsC}};
+
+    // Init State Machine and Time. 
+    Time* pTime = nullptr;
+    Time::TimeNs_t timeNs = 0;
+    std::unique_ptr<StateMachine> pSm (nullptr);
+    CHECK_SUCCESS (Time::getInstance (pTime));
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    CHECK_SUCCESS (StateMachine::createNew (smConfig, pDv, timeNs,
+                                            DV_ELEM_STATE, pSm));
+
+    // Verify initial state.
+    CHECK_STATE (STATE_A);
+
+    // Step SM and expect no change in state.
+    pSm->step (timeNs);
+    CHECK_STATE (STATE_A);
+
+    // Transition to StateC.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST3, (uint64_t) 17));
+    CHECK_SUCCESS (pSm->step (timeNs));
+    CHECK_STATE (STATE_C);
+
+    // Transition to StateA.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST5, (int16_t) 19));
+    CHECK_SUCCESS (pSm->step (timeNs));
+    CHECK_STATE (STATE_A);
+
+    // Remain in StateA.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST3, (uint64_t) 15));
+    CHECK_SUCCESS (pSm->step (timeNs));
+    CHECK_STATE (STATE_A);
+
+    // Transition to StateB.
+    CHECK_SUCCESS (pDv->write (DV_ELEM_TEST10, (bool) true));
+    CHECK_SUCCESS (pSm->step (timeNs));
+    CHECK_STATE (STATE_B);
+}
+
+/* Test State Machine integration with State, Actions, and Time classes. */
+TEST (StateMachine_Step, Actions)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    Actions::Config_t actionsConfigA =
+    {
+        {0 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST5,    1),
+                ACT_CREATE_UINT64 ( DV_ELEM_TEST3,    1)
+            }},
+
+        {1 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_BOOL   ( DV_ELEM_TEST10,    true),
+            }},
+    };
+
+    Actions::Config_t actionsConfigB =
+    {
+        {0 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST5,    2),
+                ACT_CREATE_BOOL  ( DV_ELEM_TEST10,    false)
+            }},
+
+        {1 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_UINT64   ( DV_ELEM_TEST3,  2),
+            }},
+    };
+
+    // Create vector of states for createNew function
+    StateMachine::Config_t smConfig =
+    {
+        {STATE_A, actionsConfigA, {}},
+        {STATE_B, actionsConfigB, {}}
+    };
+
+    // Init State Machine and Data Vector.
+    Time* pTime = nullptr;
+    Time::TimeNs_t timeNs = 0;
+    std::unique_ptr<StateMachine> pSm (nullptr);
+    CHECK_SUCCESS (Time::getInstance (pTime));
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    CHECK_SUCCESS (StateMachine::createNew (smConfig, pDv, timeNs,
+                                            DV_ELEM_STATE, pSm));
+
+    // Execute A's actions (expect first set of actions to execute);
+    DvVals expVals = {STATE_A, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, false};
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
+
+    // Execute A's actions (expect no change).
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
+
+    // Sleep for 1s.
+    sleep (1);
+
+    // Execute A's actions (expect 2nd set to run).
+    expVals.bl = true;
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
+
+    // Switch to B.
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    CHECK_SUCCESS (pSm->switchState (STATE_B, timeNs));
+
+    // Sleep for 1s.
+    sleep (1);
+
+    // Execute B's actions (expect all to run)
+    expVals.state = STATE_B;
+    expVals.u64 = 2;
+    expVals.bl = false;
+    expVals.i16 = 2;
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
+
+    // Switch back to A to verify actions will re-run.
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    CHECK_SUCCESS (pSm->switchState (STATE_A, timeNs));
+
+    // First expect only first set of actions to run.
+    expVals.state = STATE_A;
+    expVals.u64 = 1;
+    expVals.i16 = 1;
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
+
+    // Sleep for 1s.
+    sleep (1);
+
+    // Expect remaining actions to run.
+    expVals.bl = true;
+    CHECK_SUCCESS (pTime->getTimeNs (timeNs));
+    STEP_AND_CHECK_DV (timeNs, expVals);
 }

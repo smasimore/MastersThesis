@@ -116,7 +116,6 @@
 }
 
 /**
- * todo: update other places
  * Wait for specified thread.
  *
  * @param  kThread  Thread to wait for.

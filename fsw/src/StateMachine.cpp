@@ -2,238 +2,267 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-
-Error_t StateMachine::createNew (std::unique_ptr<StateMachine> &rSM,
-                                 const std::vector<State_t> &stateList)
+Error_t StateMachine::createNew (Config_t& kConfig,
+                                 std::shared_ptr<DataVector> kPDataVector,
+                                 Time::TimeNs_t kTimeNs,
+                                 DataVectorElement_t kDvStateElem,
+                                 std::unique_ptr<StateMachine> &kPSmRet)
 {
-    rSM.reset (new StateMachine ());
-    for (State_t state : stateList)
+
+    // Initialize SM.
+    Error_t ret = E_SUCCESS;
+    kPSmRet.reset (new StateMachine (kConfig, kPDataVector, kTimeNs, 
+                                     kDvStateElem, ret));
+
+    // Free object if failed.
+    if (ret != E_SUCCESS)
     {
-        Error_t retState = rSM->addState (state);
-        if (retState != E_SUCCESS)
-        {
-            // on failure, free the StateMachine
-            rSM.reset ();
-            return E_DUPLICATE_NAME;
-        }
+        kPSmRet.reset ();
+        return ret;
     }
+
     return E_SUCCESS;
 }
 
-Error_t StateMachine::addState (State_t stateIn)
+Error_t StateMachine::step (Time::TimeNs_t kTimeNs)
 {
-    // Allocate the state from parameter data, and create shared pointer
-    std::shared_ptr<State> pNewState (new State (stateIn.name, 
-                                                 stateIn.transitions,
-                                                 stateIn.actions));
-
-    // Check if pointer to current state is null; if so, then set as current
-    if (mPStateCurrent == nullptr)
+    // 1) Verify current time not less than current state's start time.
+    if (kTimeNs < mStateStartTimeNs)
     {
-        // overwrite memory of current state
-        mPStateCurrent = pNewState;
-        // Reset the iterator from the State's action sequence
-        std::map<int32_t, std::vector<State::Action_t> > *pTempMap;
-        Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
-        if (ret != E_SUCCESS)
-        {
-            return ret;
-        }
-        mActionIter = pTempMap->begin ();
-        mActionEnd = pTempMap->end ();
-    }
-    // Insert returns pair containing bool; true if inserted, false if not.
-    // Will not insert if there exists a duplicate key, aka duplicate name
-    bool resultBool = (this->mStateMap).
-        insert (std::make_pair (stateIn.name, pNewState)).second;
-    if (resultBool)
-    {
-        return E_SUCCESS;
-    }
-    else
-    {
-        return E_DUPLICATE_NAME;
-    }
-}
-
-Error_t StateMachine::findState (std::shared_ptr<State> &rState,
-                                 std::string stateName)
-{
-    // search the unordered map
-    std::unordered_map <std::string, std::shared_ptr<State> > ::const_iterator 
-        search = mStateMap.find (stateName);
-    // if element is not found, will point to end of the map
-    if (search == mStateMap.end ())
-    {
-        return E_NAME_NOTFOUND;
-    }
-    else
-    {
-        rState = search->second;
-        return E_SUCCESS;
-    }
-}
-
-Error_t StateMachine::getCurrentStateName (std::string &result)
-{
-    if (mPStateCurrent == nullptr)
-    {
-        return E_NO_STATES;
-    }
-    std::string *pName;
-    Error_t ret = mPStateCurrent->getName (&pName);
-    result = *pName;
-    return ret;    
-}
-
-Error_t StateMachine::getCurrentStateTransitions (std::vector<std::string> 
-                                                  &result)
-{
-    if (mPStateCurrent == nullptr)
-    {
-        return E_NO_STATES;
-    }
-    std::vector<std::string> *pTrans;
-    Error_t ret = mPStateCurrent->getTransitions (&pTrans);
-    result = *pTrans;
-    return ret;
-}
-
-Error_t StateMachine::getCurrentActionSequence (std::map<int32_t,
-                                                std::vector<State::Action_t>> 
-                                                &result)
-{
-    if (mPStateCurrent == nullptr)
-    {
-        return E_NO_STATES;
-    }
-    std::map<int32_t, std::vector<State::Action_t>>
-        *pSequence;
-    Error_t ret = mPStateCurrent->getActionSequence (&pSequence);
-    result = *pSequence;
-    return ret;
-}
-
-Error_t StateMachine::executeCurrentSequence ()
-{
-    if (mPStateCurrent == nullptr)
-    {
-        return E_NO_STATES;
+        return E_INVALID_TIME;
     }
 
-    // Create a temp pointer to map, then point to address of action sequence
-    std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
-    Error_t ret = mPStateCurrent->getActionSequence (&pTempMap);
+    // 2) Get current state's transitions.
+    std::shared_ptr<Transitions> pTransitions = nullptr; 
+    Error_t ret = mPStateCurrent->getTransitions (pTransitions);
     if (ret != E_SUCCESS)
     {
         return ret;
     }
 
-    // Iterate through map; guaranteed ordered by timestamp
-    for (std::pair<int32_t, std::vector<State::Action_t>> actionPair : 
-         *pTempMap)
-    {
-        for (State::Action_t action : actionPair.second)
-        {
-            // call function in pointer with implicit dereference
-            ret = (action.func) (action.param);
-            // catch failure points in action sequence
-            if (ret != E_SUCCESS)
-            {
-                return ret;
-            }
-        }
-    }
-    return E_SUCCESS;
-}
-
-Error_t StateMachine::switchState(std::string transitionState)
-{
-    if (mPStateCurrent == nullptr)
-    {
-        return E_NO_STATES;
-    }
-
-    // Get the valid transitions (using intermediate function)
-    std::vector<std::string> *pValidTrans;
-    Error_t ret = mPStateCurrent->getTransitions (&pValidTrans);
-
-    // getter function only returns E_SUCCESS for now, if block for future use
+    // 3) Check if a transition should occur.
+    bool shouldTransition = false;
+    StateId_t targetState;
+    ret = pTransitions->checkTransitions (shouldTransition, targetState);    
     if (ret != E_SUCCESS)
     {
         return ret;
     }
 
-    // Check if valid transitions contains the target state
-    if (std::find (pValidTrans->begin (), pValidTrans->end (), transitionState) 
-        != pValidTrans->end())
-    {   
-        // if not equal to end, transition is valid; switch the current state
-        // create a temporary empty state
-        std::shared_ptr<State> stateResult;
-        // get the target state from the state map and check if found
-        Error_t ret = findState (stateResult, transitionState);
-        if (ret != E_SUCCESS)
-        {
-            return E_NAME_NOTFOUND;
-        }
-
-        // overwrite current state with the target state
-        mPStateCurrent = stateResult;
-        // Reset the iterator from the new State's action sequence
-        std::map<int32_t, std::vector<State::Action_t>> *pTempMap;
-        ret = mPStateCurrent->getActionSequence (&pTempMap);
+    // 4) Transition if condition met.
+    if (shouldTransition == true)
+    {
+        ret = this->switchState (targetState, kTimeNs);
         if (ret != E_SUCCESS)
         {
             return ret;
         }
-
-        mActionIter = pTempMap->begin ();
-        mActionEnd = pTempMap->end ();
-        return E_SUCCESS;
     }
 
-    else
+    // 5) Calculate elapsed time in State.
+    Time::TimeNs_t timeElapsedNs = kTimeNs - mStateStartTimeNs;
+
+    // 6) Get current state's actions.
+    std::shared_ptr<Actions> pActions;
+    ret = mPStateCurrent->getActions (pActions);
+    if (ret != E_SUCCESS)
     {
-        // otherwise, transition is invalid; cannot switch to the new state
-        return E_INVALID_TRANSITION;
+        return ret;
     }
+
+    // 7) Get actions that should be executed.
+    std::vector<std::shared_ptr<Actions::ActionBase>> actionsToExecute;
+    ret = pActions->checkActions (timeElapsedNs, actionsToExecute);
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // 8) Execute actions.
+    for (std::shared_ptr<Actions::ActionBase> action : actionsToExecute)
+    {
+        ret = action->execute (mPDataVector);
+        if (ret != E_SUCCESS)
+        {
+            return ret;
+        }
+    }
+
+    return E_SUCCESS;
 }
 
-Error_t StateMachine::periodic ()
+Error_t StateMachine::switchState (StateId_t kTargetState, 
+                                   Time::TimeNs_t kTimeNs)
 {
-    if (mPStateCurrent == nullptr)
+    Error_t ret = E_SUCCESS;
+
+    // 1) Get target state object from map.
+    std::shared_ptr<State> stateResult;
+    ret = this->findState (kTargetState, stateResult);
+    if (ret != E_SUCCESS)
     {
-        return E_NO_STATES;
+        return E_STATE_NOTFOUND;
     }
 
-    // Begin a loop, to ensure all actions are being completed. There might be
-    // more than one timestamp that must be executed given a current time. As
-    // long as there are still actions to complete and timestamps are met, keep
-    // executing the actions necessary.
-    while (mActionIter != mActionEnd && mActionIter->first <= timeElapsed)
-    {
-        // Timestamp met, execute all functions in the vector
-        for (State::Action_t action : mActionIter->second)
-        {
-            // call each function in pointer with implicit dereference
-            Error_t ret = (action.func) (action.param);
-            // catch failure points in action sequence, and break out
-            if (ret != E_SUCCESS)
-            {
-                return ret;
-            }
-        }
+    // 2) Overwrite current state and start time with new state and time.
+    mPStateCurrent = stateResult;
+    mStateStartTimeNs = kTimeNs;
 
-        // Increment the iterator to the next vector of actions
-        ++mActionIter;     
+    // 3) Reset the iterator for the new state's action sequence.
+    std::shared_ptr<Actions> pActions = nullptr;
+    ret = mPStateCurrent->getActions (pActions);
+    if (ret != E_SUCCESS)
+    {
+        return ret;
     }
+    ret = pActions->resetActionIterator ();
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // 4) Write new state to Data Vector.
+    if (mPDataVector->write (mDvStateElem, (uint32_t) kTargetState) !=
+            E_SUCCESS)
+    {
+        return E_DATA_VECTOR_WRITE;
+    }
+
     return E_SUCCESS;
 }
 
 /******************** PRIVATE FUNCTIONS **************************/
 
-StateMachine::StateMachine ()
+StateMachine::StateMachine (Config_t& kConfig, 
+                            std::shared_ptr<DataVector> kPDataVector,
+                            Time::TimeNs_t kTimeNs,
+                            DataVectorElement_t kDvStateElem, 
+                            Error_t& kRet) :
+    mPDataVector (kPDataVector),
+    mStateStartTimeNs (0),
+    mPStateCurrent (nullptr),
+    mDvStateElem (kDvStateElem)
 {
-    mPStateCurrent = nullptr;
+    // 1) Verify kPDataVector is not null.
+    if (kPDataVector == nullptr)
+    {
+        kRet = E_DATA_VECTOR_NULL;
+        return;
+    }
+    
+    // 2) Verify kDvStateElem exists in DV.
+    if (kPDataVector->elementExists (kDvStateElem) != E_SUCCESS)
+    {
+        kRet = E_INVALID_ELEM;
+        return;
+    }
+    
+    // 3) Verify kDvStateElem type is a uint32_t.
+    DataVectorElementType_t type = DV_T_LAST;
+    if (kPDataVector->getElementType (kDvStateElem, type) != E_SUCCESS)
+    {
+        kRet = E_DATA_VECTOR_READ;
+        return;
+    }
+    if (type != DV_T_UINT32)
+    {
+        kRet = E_INCORRECT_TYPE;
+        return;
+    }
+
+    // 4) Verify states list is not empty.
+    if (kConfig.empty ())
+    {
+        kRet = E_NO_STATES;
+        return;
+    }
+
+    // 5) Add States.
+    for (State::Config_t stateConfig : kConfig)
+    {
+        kRet = this->addState (kPDataVector, stateConfig);
+        if (kRet != E_SUCCESS)
+        {
+            return;
+        }
+    }
+
+    // 6) Verify each transition target state is valid. In a separate loop to 
+    //    use mStateIdToStateMap, which is built by previous step.
+    for (State::Config_t stateConfig : kConfig)
+    {
+        for (std::shared_ptr<Transitions::TransitionBase> transition : 
+                stateConfig.transitions)
+        {
+            if (mStateIdToStateMap.find (transition->mTargetState) == 
+                    mStateIdToStateMap.end ())
+            {
+                kRet = E_INVALID_TRANSITION;
+                return;
+            }
+        }
+    }
+    
+    // 7) Set up initial State.
+    uint32_t initialState;
+    if (kPDataVector->read (mDvStateElem, initialState) != E_SUCCESS)
+    {
+        kRet = E_DATA_VECTOR_READ;
+        return;
+    }
+    kRet = this->switchState ((StateId_t) initialState, kTimeNs);
+    if (kRet != E_SUCCESS)
+    {
+        return;
+    }
+}
+
+Error_t StateMachine::addState (std::shared_ptr<DataVector> kPDataVector,
+                                State::Config_t kStateConfig)
+{
+    // Verify state ID is valid.
+    if (kStateConfig.id >= STATE_LAST)
+    {
+        return E_INVALID_ENUM;
+    }
+
+    // Create State object.
+    Error_t ret = E_SUCCESS;
+    std::shared_ptr<State> pNewState (new State (kPDataVector,
+                                                 kStateConfig.id, 
+                                                 kStateConfig.transitions,
+                                                 kStateConfig.actions, 
+                                                 mDvStateElem,
+                                                 ret));
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // Insert state into map. Insert call returns pair containing bool; true if 
+    // inserted, false if not. Will return false if key already exists.
+    bool resultBool = mStateIdToStateMap.insert (
+                                         std::make_pair (kStateConfig.id, 
+                                                         pNewState)).second;
+    if (resultBool == false)
+    {
+        return E_DUPLICATE_STATE;
+    }
+        
+    return E_SUCCESS;
+}
+
+Error_t StateMachine::findState (StateId_t kStateId, 
+                                 std::shared_ptr<State> &kPStateRet)
+{
+    // If element is not found, will point to end of the map.
+    if (mStateIdToStateMap.find (kStateId) == mStateIdToStateMap.end ())
+    {
+        return E_STATE_NOTFOUND;
+    }
+    else
+    {
+        kPStateRet = mStateIdToStateMap[kStateId];
+        return E_SUCCESS;
+    }
 }

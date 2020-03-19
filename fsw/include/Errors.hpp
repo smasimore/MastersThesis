@@ -32,7 +32,6 @@ enum Error_t : uint32_t
     E_DATA_VECTOR_NULL,
     E_DATA_VECTOR_READ,
     E_DATA_VECTOR_WRITE,
-    E_INVALID_ELEM,
     E_FAILED_TO_OPEN_FILE,
 
     /* Testing */
@@ -91,16 +90,18 @@ enum Error_t : uint32_t
     E_SELECT_FAILED,
 
     /* State Machine */
-    E_INVALID_TRANSITION = 100,
-    E_DUPLICATE_NAME,
-    E_NAME_NOTFOUND,
+    E_DUPLICATE_STATE = 100,
+    E_STATE_NOTFOUND,
     E_NO_STATES,
+    E_INVALID_ACTION,
+    E_INVALID_TRANSITION,
 
     /* Data Vector */
     E_EMPTY_CONFIG = 125,
     E_EMPTY_ELEMS,
     E_DUPLICATE_REGION,
     E_DUPLICATE_ELEM,
+    E_INVALID_ELEM,
     E_INVALID_REGION,
     E_INVALID_TYPE,
     E_INCORRECT_TYPE,
@@ -130,6 +131,7 @@ enum Error_t : uint32_t
     E_FAILED_TO_GET_TIME = 175,
     E_FAILED_TO_INIT_TIME,
     E_OVERFLOW_IMMINENT,
+    E_INVALID_TIME,
 
     /* Clock Sync */
     E_NETWORK_MANAGER_NULL = 180,

@@ -1,151 +1,108 @@
-#include "State.hpp"
-#include "Errors.hpp"
 #include <unordered_map>
 
-#include "CppUTest/TestHarness.h"
+#include "State.hpp"
+#include "DataVector.hpp"
+#include "Errors.hpp"
 
-/************************** TESTER FUNCTIONS **********************************/
+#include "TestHelpers.hpp"
 
-// global variable for use with tester functions
-int32_t gVar;
-
-Error_t multiplyParam (int32_t param)
-{
-    gVar = gVar * param;
-    return E_SUCCESS;
-}
-
-Error_t addParam (int32_t param)
-{
-    gVar = gVar + param;
-    return E_SUCCESS;
-}
-
-Error_t subtractParam (int32_t param)
-{
-    gVar = gVar - param;
-    return E_SUCCESS;
-}
+/**
+ * Global DV config.
+ */
+static DataVector::Config_t gDvConfig =                      
+{                                                    
+    {DV_REG_TEST0,                               
+    {                                            
+        DV_ADD_INT16   ( DV_ELEM_TEST0,  0     ),
+        DV_ADD_BOOL    ( DV_ELEM_TEST1,  false ),
+        DV_ADD_UINT64  ( DV_ELEM_TEST2,  0     ),
+    }},                                          
+};                                                   
 
 /******************************** TESTS ***************************************/
 
+/* Tests to create States with data and successfully access the data */
 TEST_GROUP (States) 
 {
 };
 
-/* Test to create a State with data, then try to access the State's data */
-TEST (States, AccessData)
+/* Create and access ID of State */
+TEST (States, AccessID)
 {
-    // Create the State's name data
-    std::string name = "StateA";
-    // Create the State's valid transitions data
-    std::vector<std::string> transitions = { "StateB", "StateC" };
+    INIT_DATA_VECTOR (gDvConfig);
+
+    // Create the State's ID
+    StateId_t id = STATE_A;
+
     // Create the State
-    State S = State (name, transitions);
+    Error_t ret = E_SUCCESS;
+    State state = State (pDv, id, {}, {}, DV_ELEM_STATE, ret);
+    CHECK_SUCCESS (ret);
 
-    // Access the State's name data
-    std::string *pNameResult;
-    Error_t ret = S.getName (&pNameResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (pNameResult->compare (name) == 0);
-
-    // Access the State's transition data
-    std::vector<std::string> *pTransitionsResult;
-    ret = S.getTransitions (&pTransitionsResult);
-    CHECK_TRUE (E_SUCCESS == ret);
-    CHECK_TRUE (transitions == *pTransitionsResult);
+    // Access the State's ID
+    StateId_t result;
+    CHECK_SUCCESS (state.getId (result));
+    CHECK_TRUE (result == id);
 }
 
-/* Create an action sequence with unique timestamps per function */
-TEST (States, UniqueActions)
+/* Create and access Transitions of State */
+TEST (States, AccessTransitions)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam;
-    Error_t (*pFuncA) (int32_t) = addParam;
-    Error_t (*pFuncS) (int32_t) = subtractParam;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    // create actions with timestamp, function pointer, and param
-    State::Action_t actionM {0, pFuncM, 3};
-    State::Action_t actionA {1, pFuncA, 5};
-    State::Action_t actionS {2, pFuncS, 3};
+    // Create the State's ID and Transitions class
+    StateId_t id = STATE_A;
+    Transitions::Config_t transitionsA =
+    {
+        TR_CREATE_BOOL   ( DV_ELEM_TEST1,  CMP_EQUALS,        true,  STATE_B),
+        TR_CREATE_UINT64 ( DV_ELEM_TEST2,  CMP_GREATER_THAN,  16,    STATE_C)
+    };
+    std::shared_ptr<Transitions> pT (nullptr);
+    CHECK_SUCCESS (Transitions::createNew (transitionsA, pDv, pT));
 
-    // create corresponding input vector of actions
-    std::vector<State::Action_t> actionsIn = { actionM, actionA, actionS };
+    // Create the State
+    Error_t ret = E_SUCCESS;
+    State state = State (pDv, id, transitionsA, {}, DV_ELEM_STATE, ret);
 
-    // construct a state with input vector
-    State S = State ("", {} , actionsIn);
+    // Access the State's Transitions class
+    std::shared_ptr<Transitions> pResult (nullptr);
+    CHECK_SUCCESS (state.getTransitions (pResult));
 
-    // retrieve the Action Sequence
-    std::map<int32_t, std::vector<State::Action_t>>
-        *pLocalMap;
-    Error_t ret = S.getActionSequence (&pLocalMap);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // search the map
-    std::map<int32_t, std::vector<State::Action_t>>
-        ::const_iterator search;
-
-    // at key 0, vector of tuple of pointer to function multiply and param 3
-    search = pLocalMap->find (0);
-    CHECK_EQUAL (search->first, 0);
-    CHECK_EQUAL (search->second[0].func, pFuncM);
-    CHECK_EQUAL (search->second[0].param, 3);
-
-    // at key 1, vector of tuple of pointer to function add and param 5
-    search = pLocalMap->find (1);
-    CHECK_EQUAL (search->first, 1);
-    CHECK_EQUAL (search->second[0].func, pFuncA);
-    CHECK_EQUAL (search->second[0].param, 5);
-
-    // at key 2, tuple of pointer to function subtract and param 3
-    search = pLocalMap->find (2);
-    CHECK_EQUAL (search->first, 2);
-    CHECK_EQUAL (search->second[0].func, pFuncS);
-    CHECK_EQUAL (search->second[0].param, 3);
+    CHECK_TRUE (*pResult == *pT);
 }
 
-/* Create an action sequence with a shared timestamp between functions */
-TEST (States, SharedActions)
+/* Create and access actions of State */
+TEST (States, AccessActions)
 {
-    // set up function pointers
-    Error_t (*pFuncM) (int32_t) = multiplyParam;
-    Error_t (*pFuncA) (int32_t) = addParam;
-    Error_t (*pFuncS) (int32_t) = subtractParam;
+    INIT_DATA_VECTOR (gDvConfig);
 
-    // create tuples of timestamp, function pointer, and param
-    State::Action_t actionM {0, pFuncM, 3};
-    State::Action_t actionA {0, pFuncA, 5};
-    State::Action_t actionS {0, pFuncS, 3};
+    // Create the State's ID and Actions class
+    StateId_t id = STATE_A;
+    Actions::Config_t actionsA =
+    {
+        {0 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST0,  1    ),
+                ACT_CREATE_BOOL   ( DV_ELEM_TEST1,  true ),
+                ACT_CREATE_UINT64 ( DV_ELEM_TEST2,  1    )
+            }},
 
-    // create corresponding input vector of tuples
-    std::vector<State::Action_t> actionsIn = { actionM, actionA, actionS };
+        {.5 * Time::NS_IN_SECOND,
+            {
+                ACT_CREATE_INT16  ( DV_ELEM_TEST0,  2     ),
+                ACT_CREATE_BOOL   ( DV_ELEM_TEST1,  false ),
+                ACT_CREATE_UINT64 ( DV_ELEM_TEST2,  2     )
+            }},
+    };
+    std::shared_ptr<Actions> pA (nullptr);
+    CHECK_SUCCESS (Actions::createNew (actionsA, pDv, DV_ELEM_STATE, pA));
 
-    // construct a state with input vector
-    State S = State ("", {}, actionsIn);
+    // Create the State
+    Error_t ret = E_SUCCESS;
+    State S = State (pDv, id, {}, actionsA, DV_ELEM_STATE, ret);
 
-    // retrieve the Action Sequence
-    std::map < int32_t, std::vector < State::Action_t >>
-        *pLocalMap;
-    Error_t ret = S.getActionSequence (&pLocalMap);
-    CHECK_TRUE (E_SUCCESS == ret);
-
-    // search the map
-    std::map<int32_t, std::vector<State::Action_t>>
-        ::const_iterator search;
-
-    // at timestamp 0, a vector of three tuples: multiply/3, add/5, subtract/3
-    search = pLocalMap->find (0);
-    CHECK_EQUAL (search->first, 0);
-
-    // verify first element of vector
-    CHECK_EQUAL (search->second[0].func, pFuncM);
-    CHECK_EQUAL (search->second[0].param, 3);
-
-    // verify second element of vector
-    CHECK_EQUAL (search->second[1].func, pFuncA);
-    CHECK_EQUAL (search->second[1].param, 5);
-
-    // verify third element of vector
-    CHECK_EQUAL (search->second[2].func, pFuncS);
-    CHECK_EQUAL (search->second[2].param, 3);
+    // Access the State's Actions class
+    std::shared_ptr<Actions> pResult (nullptr);
+    CHECK_SUCCESS (S.getActions (pResult));
+    CHECK_TRUE (*pResult == *pA);
 }

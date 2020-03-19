@@ -80,7 +80,7 @@
                     -1 * std::numeric_limits<double>::infinity ()));           \
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST12, (bool) true));
 
-DataVector::Config_t gDvConfig =
+static DataVector::Config_t gDvConfig =
 // Regions
 {
     ////////////////////////////////////////////////////////////////////////////

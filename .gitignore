@@ -62,7 +62,5 @@ libs/cpputest/test-driver
 libs/include/
 /Profile_lock/
 .ycm_extra_conf.py
-/IntegrationTests_PlatformLEDTest_FC/
-/IntegrationTests_PlatformLEDTest_RIO0/
 /Script/
 /Test_Platform/

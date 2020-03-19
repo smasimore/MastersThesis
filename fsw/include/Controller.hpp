@@ -136,9 +136,6 @@ class Controller
         /**
          * Verify config.
          *
-         * @param     configValidRet  Set to true if config valid, false if
-         *                            invalid.
-         *
          * @ret       E_SUCCESS       Config was correct.
          *            [other]         Error indicating why config was incorrect.
          */

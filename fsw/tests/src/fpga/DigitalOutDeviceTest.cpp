@@ -37,7 +37,7 @@ TEST_GROUP (DigitalOutDeviceTest)
 {
 };
 
-/* Test null State Vector pointer on init. */
+/* Test null Data Vector pointer on init. */
 TEST (DigitalOutDeviceTest, NullStateVector)
 {
     INIT_SESSION_AND_DV;
@@ -77,7 +77,7 @@ TEST (DigitalOutDeviceTest, InvalidPinNumber)
                  E_OUT_OF_BOUNDS); 
 }
 
-/* Test invalid State Vector elements config. */
+/* Test invalid Data Vector elements config. */
 TEST (DigitalOutDeviceTest, InvalidSVElems)
 {
     INIT_SESSION_AND_DV;

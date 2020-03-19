@@ -432,7 +432,6 @@ static Time::TimeNs_t measureAnalogInRead (NiFpga_Session& kSession)
     static uint8_t idx = 0;
     NiFpga_Status status = NiFpga_Status_Success;
     uint32_t pinValueFxp = 0;
-    float pinValueFloat = 0;
 
     // Start time.
     Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
@@ -449,8 +448,8 @@ static Time::TimeNs_t measureAnalogInRead (NiFpga_Session& kSession)
 
     // Convert fxp to float. This is included in time measurement since it is
     // expected to occur every analog read.
-    pinValueFloat = NiFpga_ConvertFromFxpToFloat (AIN_FXP_INFO_VEC[idx],
-                                                  (uint64_t) pinValueFxp);
+    NiFpga_ConvertFromFxpToFloat (AIN_FXP_INFO_VEC[idx],
+                                  (uint64_t) pinValueFxp);
 
     // End time.
     Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();

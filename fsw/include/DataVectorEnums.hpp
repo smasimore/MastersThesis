@@ -96,6 +96,8 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_TEST45,
     DV_ELEM_TEST46,
 
+    DV_ELEM_STATE,
+
     /* Test Controller */
     DV_ELEM_TEST_CONTROLLER_MODE,
 

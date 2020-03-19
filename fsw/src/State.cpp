@@ -2,44 +2,47 @@
 
 /******************** PUBLIC FUNCTIONS **************************/
 
-State::State (std::string stateName,
-              const std::vector<std::string> &validTransitions)
+State::State (std::shared_ptr<DataVector> kPDataVector,
+              StateId_t kStateId,
+              const Transitions::Config_t &kTransitionsConfig,
+              const Actions::Config_t &kActionsConfig,
+              DataVectorElement_t kStateElem,
+              Error_t& kRet)
 {
-    this->mStateName = stateName;
-    this->mValidTransitions = validTransitions;
-}
+    kRet = E_SUCCESS;
+    this->mStateId = kStateId;
 
-State::State (std::string stateName,
-              const std::vector<std::string> &validTransitions,
-              const std::vector<State::Action_t> &actionList)
-{
-    this->mStateName = stateName;
-    this->mValidTransitions = validTransitions;
-    // Parser would likely process each of the action sequence line by line.
-    // Hence, there should be some intermediate logic to group the timestamps
-    // such as how the action sequence is stored in a state.
-    for (State::Action action : actionList)
+    // Create Transitions from config.
+    kRet = Transitions::createNew (kTransitionsConfig, kPDataVector,
+                                   mTransitions);
+    if (kRet != E_SUCCESS)
     {
-        // access the vector corresponding to the timestamp, then insert tuple
-        this->mActionSequence[action.timestamp].push_back (action);
+        return;
+    }
+
+    // Create Actions from config.
+    kRet = Actions::createNew (kActionsConfig, kPDataVector, kStateElem, 
+                               mActions);
+    if (kRet != E_SUCCESS)
+    {
+        return;
     }
 }
 
-Error_t State::getName (std::string **ppResult)
+Error_t State::getId (StateId_t& kIdRet)
 {
-    *ppResult = &mStateName;
+    kIdRet = mStateId;
     return E_SUCCESS;
 }
 
-Error_t State::getTransitions (std::vector<std::string> **ppResult)
+Error_t State::getTransitions (std::shared_ptr<Transitions> &kPTransitionsRet)
 {
-    *ppResult = &mValidTransitions;
+    kPTransitionsRet = mTransitions;
     return E_SUCCESS;
 }
 
-Error_t State::getActionSequence (std::map<int32_t, std::vector<Action_t>>
-                                  **ppResult)
+Error_t State::getActions (std::shared_ptr<Actions>& kPActionsRet)
 {
-    *ppResult = &mActionSequence;
+    kPActionsRet = mActions;
     return E_SUCCESS;
 }
