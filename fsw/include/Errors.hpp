@@ -146,6 +146,9 @@ enum Error_t : uint32_t
     E_CLIENT_FAILED_TO_SYNC_AND_TX_MSG,
     E_SYNCD_OFFSET_OVER_MAX,
 
+    /* Command Handler */
+    E_INVALID_CMD = 200,
+
     /* Scripts */
     E_WRONG_ARGC,
     E_INVALID_ARGUMENT,
