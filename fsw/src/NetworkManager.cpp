@@ -16,19 +16,20 @@ const uint32_t NetworkManager::MAX_TIMEOUT_US = 999999;
 /*************************** PUBLIC FUNCTIONS *********************************/
 
 Error_t NetworkManager::createNew (NetworkManager::Config_t& kConfig,
-                                std::shared_ptr<NetworkManager>& kPNmRet)
+                                   std::shared_ptr<DataVector> kPDv,
+                                   std::shared_ptr<NetworkManager>& kPNmRet)
 {
     Error_t ret = E_SUCCESS;
 
     // Verify config.
-    ret = NetworkManager::verifyConfig (kConfig);
+    ret = NetworkManager::verifyConfig (kConfig, kPDv);
     if (ret != E_SUCCESS)
     {
         return ret;
     }
 
     // Create Network Manager.
-    kPNmRet.reset (new NetworkManager (kConfig, ret));
+    kPNmRet.reset (new NetworkManager (kConfig, kPDv, ret));
 
     // Check for error on construct and free memory if it failed.
     if (ret != E_SUCCESS)
@@ -77,6 +78,12 @@ Error_t NetworkManager::send (NetworkManager::Node_t kNode,
     {
         return E_UNEXPECTED_SEND_SIZE;
     }
+
+    // 6) Increment message sent counter.
+    if (mPDataVector->increment (mDvElemMsgTxCount) != E_SUCCESS)
+    {
+        return E_DATA_VECTOR_WRITE;
+    }
     
     return E_SUCCESS;
 }
@@ -98,7 +105,7 @@ Error_t NetworkManager::recv (NetworkManager::Node_t kNode,
     NetworkManager::Channel_t channel = mNodeToChannel[kNode];
 
     // 3) Receive message. MSG_TRUNC causes recv to return the total size of 
-    // the received packet even if it is larger than the buffer supplied.
+    //    the received packet even if it is larger than the buffer supplied.
     int32_t numBytesRecvd = ::recv (channel.socketFd, kBufRet.data (), 
                                     kBufRet.size (), MSG_TRUNC);
     if (numBytesRecvd == -1)
@@ -108,6 +115,12 @@ Error_t NetworkManager::recv (NetworkManager::Node_t kNode,
     else if (numBytesRecvd != (int32_t) kBufRet.size ())
     {
         return E_UNEXPECTED_RECV_SIZE;
+    }
+
+    // 4) Increment message received counter.
+    if (mPDataVector->increment (mDvElemMsgRxCount) != E_SUCCESS)
+    {
+        return E_DATA_VECTOR_WRITE;
     }
 
     return E_SUCCESS;
@@ -183,8 +196,8 @@ Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
         //
         //     NOTE: Calling select has up to 250us of overhead.
         fd_set readFdsMutated = readFds;
-        int32_t selectRet = select (FD_SETSIZE, &readFdsMutated, nullptr, nullptr,
-                                    &timeout);
+        int32_t selectRet = select (FD_SETSIZE, &readFdsMutated, nullptr, 
+                                    nullptr, &timeout);
         if (selectRet < 0)
         {
             return E_SELECT_FAILED;
@@ -220,11 +233,17 @@ Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
                     return E_UNEXPECTED_RECV_SIZE;
                 }
 
-                // 6b iii) Remove socket from readFds, since message successfully
-                //        received.
+                // 6b iii) Increment message received counter.
+                if (mPDataVector->increment (mDvElemMsgRxCount) != E_SUCCESS)
+                {
+                    return E_DATA_VECTOR_WRITE;
+                }
+
+                // 6b iv) Remove socket from readFds, since message 
+                //         successfully received.
                 FD_CLR (channel.socketFd, &readFds);
 
-                // 6b iv) Set msg received flag to true.
+                // 6b v) Set msg received flag to true.
                 kMsgReceivedRet[i] = true;
                 numMsgsReceived++;
             }
@@ -251,7 +270,11 @@ NetworkManager::~NetworkManager ()
 /**************************** PRIVATE FUNCTIONS *******************************/
 
 NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig, 
-                                Error_t& kRet)
+                                std::shared_ptr<DataVector> kPDv,
+                                Error_t& kRet) :
+    mPDataVector (kPDv),
+    mDvElemMsgTxCount (kConfig.dvElemMsgTxCount),
+    mDvElemMsgRxCount (kConfig.dvElemMsgRxCount)
 {
     // 1) Parse info from kConfig.
     std::vector<NetworkManager::ChannelConfig_t> channelConfigs = 
@@ -293,7 +316,8 @@ NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig,
         channel.socketFd = socketFd;
         channel.toPort = channelConfig.port; 
         
-        kRet = this->convertIPStringToUInt32 (kConfig.nodeToIp[toNode], channel.toIP);
+        kRet = this->convertIPStringToUInt32 (kConfig.nodeToIp[toNode], 
+                                              channel.toIP);
         if (kRet != E_SUCCESS)
         {
             return;
@@ -303,13 +327,20 @@ NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig,
     }
 }
 
-Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
+Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig,
+                                      std::shared_ptr<DataVector> kPDv)
 {
     std::unordered_map<Node_t, IP_t, EnumClassHash> nodeToIp = kConfig.nodeToIp;
     std::vector<NetworkManager::ChannelConfig_t> channelConfigs = 
         kConfig.channels;
 
-    // 1) Verify kConfig not empty.
+    // 1) Verify kPDv not null.
+    if (kPDv == nullptr)
+    {
+        return E_DATA_VECTOR_NULL;
+    }
+
+    // 2) Verify kConfig not empty.
     if (nodeToIp.size () == 0)
     {
         return E_EMPTY_NODE_CONFIG;
@@ -319,7 +350,14 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
         return E_EMPTY_CHANNEL_CONFIG;
     }
 
-    // 2) Verify nodes valid & IP's are valid and unique. Can't have duplicate
+    // 3) Verify msg rx/tx counter elems exist in Data Vector.
+    if (kPDv->elementExists (kConfig.dvElemMsgTxCount) != E_SUCCESS ||
+        kPDv->elementExists (kConfig.dvElemMsgRxCount) != E_SUCCESS)
+    {
+        return E_INVALID_ELEM;
+    }
+
+    // 4) Verify nodes valid & IP's are valid and unique. Can't have duplicate
     //    nodes at this point, since stored in a map.
     std::set<std::string> ipSet;
     for (std::pair<NetworkManager::Node_t, std::string> element : nodeToIp)
@@ -327,19 +365,19 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
         NetworkManager::Node_t node = element.first;
         std::string ip              = element.second;
 
-        // 2a) Verify valid node enum.
+        // 4a) Verify valid node enum.
         if (node >= NetworkManager::Node_t::LAST)
         {
             return E_INVALID_ENUM;
         }
 
-        // 2b) Verify unique ip.
+        // 4b) Verify unique ip.
         if (ipSet.insert (ip).second == false)
         {
             return E_DUPLICATE_IP;
         }
     
-        // 2c) Verify valid ip.
+        // 4c) Verify valid ip.
         uint32_t _unused;
         Error_t ret = NetworkManager::convertIPStringToUInt32 (ip, _unused);
         if (ret != E_SUCCESS)
@@ -348,14 +386,14 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
         }
     }
 
-    // 3) Verify channels reference defined nodes, use valid port numbers, and
+    // 5) Verify channels reference defined nodes, use valid port numbers, and
     //    only 1 channel per node pair.
     std::set<std::set<NetworkManager::Node_t>> nodePairSet;
     for (uint32_t i = 0; i < channelConfigs.size (); i++)
     {
         NetworkManager::ChannelConfig_t channelConfig = channelConfigs[i];
 
-        // 3a) Verify unique node pair.
+        // 5a) Verify unique node pair.
         std::set<NetworkManager::Node_t> nodePair = {channelConfig.node1,
                                                      channelConfig.node2};
         if (nodePairSet.insert (nodePair).second == false)
@@ -363,14 +401,14 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
             return E_DUPLICATE_CHANNEL;
         }
 
-        // 3b) Verify nodes defined.
+        // 5b) Verify nodes defined.
         if (nodeToIp.find (channelConfig.node1) == nodeToIp.end () ||
             nodeToIp.find (channelConfig.node2) == nodeToIp.end ())
         {
             return E_UNDEFINED_NODE_IN_CHANNEL;
         }
 
-        // 3c) Verify valid port number.
+        // 5c) Verify valid port number.
         if (channelConfig.port < NetworkManager::MIN_PORT || 
             channelConfig.port > NetworkManager::MAX_PORT)
         {
@@ -378,7 +416,7 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig)
         }
     }
 
-    // 4) Verify "me" is a defined node.
+    // 6) Verify "me" is a defined node.
     if (nodeToIp.find (kConfig.me) == nodeToIp.end ())
     {
         return E_UNDEFINED_ME_NODE;
@@ -403,18 +441,20 @@ Error_t NetworkManager::convertIPStringToUInt32 (std::string kIpStr,
     {
         // Get next region.
         ipRegionEnd = kIpStr.find (DELIMITER, ipRegionStart);
-        ipRegionStr = kIpStr.substr (ipRegionStart, ipRegionEnd - ipRegionStart);
+        ipRegionStr = kIpStr.substr (ipRegionStart, 
+                                     ipRegionEnd - ipRegionStart);
         ipRegionStart = ipRegionEnd + 1;
         numIpRegions++;
 
         // Verify all characters in IP region are digits.
-        if (std::all_of (ipRegionStr.begin(), ipRegionStr.end(), ::isdigit) == false)
+        if (std::all_of (ipRegionStr.begin(), ipRegionStr.end(), ::isdigit) 
+                == false)
         {
             return E_NON_NUMERIC_IP;
         }
 
-        // Convert region to a uint32, verify no bigger than max uint8, and store
-        // in byte array.
+        // Convert region to a uint32, verify no bigger than max uint8, and 
+        // store in byte array.
         uint32_t byteUInt32 = std::stoul (ipRegionStr);
         if (byteUInt32 > UINT8_MAX)
         {

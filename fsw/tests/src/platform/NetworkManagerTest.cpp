@@ -10,19 +10,68 @@
 #include "TestHelpers.hpp"
 
 /********************************* MACROS *************************************/
+
+/**
+ * Initialize 3 Network Managers, one for each simulated node.
+ */
 #define INIT_NETWORK_MANAGERS                                                  \
+    INIT_DATA_VECTOR (gDvConfig);                                              \
     std::shared_ptr<NetworkManager> pNmCtrl;                                   \
     std::shared_ptr<NetworkManager> pNmDev0;                                   \
     std::shared_ptr<NetworkManager> pNmDev1;                                   \
-    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigCtrl, pNmCtrl));  \
-    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigDev0, pNmDev0));  \
-    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigDev1, pNmDev1));
+    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigCtrl, pDv,        \
+                                              pNmCtrl));                       \
+    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigDev0, pDv,        \
+                                              pNmDev0));                       \
+    CHECK_SUCCESS (NetworkManager::createNew (gLoopbackConfigDev1, pDv,        \
+                                              pNmDev1));                       
+
+/**
+ * Check Data Vector values.
+ *
+ * @param  kX  DV_ELEM_TESTX expected value.
+ */
+#define CHECK_DV(k0, k1, k2, k3, k4, k5)                                       \
+{                                                                              \
+    uint32_t act0 = 0;                                                         \
+    uint32_t act1 = 0;                                                         \
+    uint32_t act2 = 0;                                                         \
+    uint32_t act3 = 0;                                                         \
+    uint32_t act4 = 0;                                                         \
+    uint32_t act5 = 0;                                                         \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST0, act0));                           \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST1, act1));                           \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST2, act2));                           \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST3, act3));                           \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST4, act4));                           \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_TEST5, act5));                           \
+    CHECK_EQUAL (k0, act0);                                                    \
+    CHECK_EQUAL (k1, act1);                                                    \
+    CHECK_EQUAL (k2, act2);                                                    \
+    CHECK_EQUAL (k3, act3);                                                    \
+    CHECK_EQUAL (k4, act4);                                                    \
+    CHECK_EQUAL (k5, act5);                                                    \
+}
 
 
 /*************************** VERIFY CONFIG TESTS ******************************/
 
-/* Valid config to use for verify config tests. */
-NetworkManager::Config_t gValidConfig =
+/* Valid DV config to use for verify config tests. */
+static DataVector::Config_t gDvConfig =
+{
+    {DV_REG_TEST0,
+    {
+        DV_ADD_UINT32 (DV_ELEM_TEST0, 0),
+        DV_ADD_UINT32 (DV_ELEM_TEST1, 0),
+        DV_ADD_UINT32 (DV_ELEM_TEST2, 0),
+        DV_ADD_UINT32 (DV_ELEM_TEST3, 0),
+        DV_ADD_UINT32 (DV_ELEM_TEST4, 0),
+        DV_ADD_UINT32 (DV_ELEM_TEST5, 0),
+    }},
+};
+
+/* Valid NM config to use for verify config tests. */
+static NetworkManager::Config_t gNmConfig =
 {
     // Nodes
     {
@@ -39,6 +88,12 @@ NetworkManager::Config_t gValidConfig =
 
     // Me
     NetworkManager::Node_t::CONTROL_NODE,
+
+    // Msg tx count dv elem
+    DV_ELEM_TEST0,
+
+    // Msg rx count dv elem
+    DV_ELEM_TEST1,
 };
 
 /* Group of tests verifying verifyConfig method. */
@@ -47,166 +102,233 @@ TEST_GROUP (NetworkManager_verifyConfig)
 
 };
 
+/* Test initializing with null DV pointer. */
+TEST (NetworkManager_verifyConfig, DvNull)
+{
+    CHECK_ERROR (NetworkManager::verifyConfig (gNmConfig, nullptr), 
+                 E_DATA_VECTOR_NULL);
+}
+
 /* Test initializing with empty node map. */
 TEST (NetworkManager_verifyConfig, NoNodes)
 {
+    INIT_DATA_VECTOR (gDvConfig);
+
     // Explicitly initialize empty node mpa.
     std::unordered_map<
         NetworkManager::Node_t, 
         NetworkManager::IP_t, 
         EnumClassHash> emptyNodeToIP;
 
-    NetworkManager::Config_t config = gValidConfig;
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp = emptyNodeToIP;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_EMPTY_NODE_CONFIG);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_EMPTY_NODE_CONFIG);
 }
 
 /* Test initializing with empty channels list. */
 TEST (NetworkManager_verifyConfig, NoChannels)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels = {};
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_EMPTY_CHANNEL_CONFIG);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_EMPTY_CHANNEL_CONFIG);
 }
 
 /* Test initializing with invalid node enum. */
 TEST (NetworkManager_verifyConfig, InvalidNode)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::LAST] = "10.0.0.3";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_ENUM);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_INVALID_ENUM);
 }
 
 /* Test initializing with duplicate IP's. */
 TEST (NetworkManager_verifyConfig, DupeIP)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_DUPLICATE_IP);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_DUPLICATE_IP);
 }
 
 /* Test initializing with non-numeric IP. */
 TEST (NetworkManager_verifyConfig, NonNumericIP)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.a.0.1";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_NON_NUMERIC_IP);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_NON_NUMERIC_IP);
 }
 
 /* Test initializing with IP region value too high. */
 TEST (NetworkManager_verifyConfig, InvalidIPRegion)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.256";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_REGION);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_INVALID_IP_REGION);
 }
 
 /* Test initializing with empty IP. */
 TEST (NetworkManager_verifyConfig, EmptyIP)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_INVALID_IP_SIZE);
 }
 
 /* Test initializing with too few IP regions. */
 TEST (NetworkManager_verifyConfig, TooFewIPRegions)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_IP_SIZE);
 }
 
 /* Test initializing with too many IP regions. */
 TEST (NetworkManager_verifyConfig, TooManyIPRegions)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1.1";
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_IP_SIZE);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_IP_SIZE);
 }
 
 /* Test channel with undefined node1. */
 TEST (NetworkManager_verifyConfig, UndefinedNode1)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels[0].node1 = NetworkManager::Node_t::DEVICE_NODE_1;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), 
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_UNDEFINED_NODE_IN_CHANNEL);
 }
 
 /* Test channel with undefined node2. */
 TEST (NetworkManager_verifyConfig, UndefinedNode2)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels[0].node2 = NetworkManager::Node_t::DEVICE_NODE_1;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), 
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_UNDEFINED_NODE_IN_CHANNEL);
 }
 
 /* Test initializing with port below min. */
 TEST (NetworkManager_verifyConfig, InvalidPortMin)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels[0].port = NetworkManager::MIN_PORT - 1;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_PORT);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_PORT);
 }
 
 /* Test initializing with port above max. */
 TEST (NetworkManager_verifyConfig, InvalidPortMax)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels[0].port = NetworkManager::MAX_PORT + 1;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_INVALID_PORT);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_PORT);
 }
 
 /* Test initializing with undefined "me" node. */
 TEST (NetworkManager_verifyConfig, UndefinedMeNode)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.me = NetworkManager::Node_t::DEVICE_NODE_1;
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_UNDEFINED_ME_NODE);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_UNDEFINED_ME_NODE);
 }
 
 /* Test multiple channels per node pair, same order. */
 TEST (NetworkManager_verifyConfig, DuplicateChannelSameOrder)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels.push_back ({NetworkManager::Node_t::CONTROL_NODE, 
                                NetworkManager::Node_t::DEVICE_NODE_0, 
                                NetworkManager::MIN_PORT});
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_DUPLICATE_CHANNEL);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_DUPLICATE_CHANNEL);
 }
 
 /* Test multiple channels per node pair, different order. */
 TEST (NetworkManager_verifyConfig, DuplicateChannelDifferentOrder)
 {
-    NetworkManager::Config_t config = gValidConfig;
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
     config.channels.push_back ({NetworkManager::Node_t::DEVICE_NODE_0, 
                                 NetworkManager::Node_t::CONTROL_NODE, 
                                 NetworkManager::MIN_PORT});
 
-    CHECK_ERROR (NetworkManager::verifyConfig (config), E_DUPLICATE_CHANNEL);
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_DUPLICATE_CHANNEL);
+}
+
+/* Test using DV elems not in DV. */
+TEST (NetworkManager_verifyConfig, InvalidElems)
+{
+    INIT_DATA_VECTOR (gDvConfig);
+
+    NetworkManager::Config_t config = gNmConfig;
+    config.dvElemMsgTxCount = DV_ELEM_TEST6;
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_INVALID_ELEM);
+
+    config.dvElemMsgTxCount = DV_ELEM_TEST5;
+    config.dvElemMsgRxCount = DV_ELEM_TEST6;
+    CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
+                 E_INVALID_ELEM);
 }
 
 /* Test initializing with valid config. */
 TEST (NetworkManager_verifyConfig, Success)
 {
-    CHECK_SUCCESS (NetworkManager::verifyConfig (gValidConfig));
+    INIT_DATA_VECTOR (gDvConfig);
+
+    CHECK_SUCCESS (NetworkManager::verifyConfig (gNmConfig, pDv));
 }
 
 /*********************** IP STRING TO UINT32 TESTS ***************************/
@@ -282,6 +404,8 @@ NetworkManager::Config_t gLoopbackConfigCtrl =
     gLoopbackNodes,
     gLoopbackChannels,
     NetworkManager::Node_t::CONTROL_NODE,
+    DV_ELEM_TEST0,
+    DV_ELEM_TEST1,
 };
 
 /* Loopback config for Device Node 0 to use for send/recv tests. */
@@ -290,6 +414,8 @@ NetworkManager::Config_t gLoopbackConfigDev0 =
     gLoopbackNodes,
     gLoopbackChannels,
     NetworkManager::Node_t::DEVICE_NODE_0,
+    DV_ELEM_TEST2,
+    DV_ELEM_TEST3,
 };
 
 /* Loopback config for Device Node 1 to use for send/recv tests. */
@@ -298,6 +424,8 @@ NetworkManager::Config_t gLoopbackConfigDev1 =
     gLoopbackNodes,
     gLoopbackChannels,
     NetworkManager::Node_t::DEVICE_NODE_1,
+    DV_ELEM_TEST4,
+    DV_ELEM_TEST5,
 };
 
 /* Group of tests to verify send and recv functions. */
@@ -314,6 +442,9 @@ TEST (NetworkManager_SendRecv, SendEmptyBuffer)
     std::vector<uint8_t> sendBuf;
     CHECK_ERROR (pNmCtrl->send (NetworkManager::Node_t::CONTROL_NODE, 
                                 sendBuf), E_EMPTY_BUFFER);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test sending with invalid node. */
@@ -324,6 +455,9 @@ TEST (NetworkManager_SendRecv, SendInvalidNode)
     std::vector<uint8_t> sendBuf = {0xff};
     CHECK_ERROR (pNmCtrl->send (NetworkManager::Node_t::DEVICE_NODE_2, 
                             sendBuf), E_INVALID_NODE);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test recv'ing with empty buffer. */
@@ -334,6 +468,9 @@ TEST (NetworkManager_SendRecv, RecvEmptyBuffer)
     std::vector<uint8_t> recvBuf;
     CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::CONTROL_NODE, 
                             recvBuf), E_EMPTY_BUFFER);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test recv'ing with invalid node. */
@@ -344,6 +481,9 @@ TEST (NetworkManager_SendRecv, RecvInvalidNode)
     std::vector<uint8_t> recvBuf (1);
     CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_2, 
                             recvBuf), E_INVALID_NODE);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test receiving a message bigger than expected. */
@@ -358,6 +498,9 @@ TEST (NetworkManager_SendRecv, RecvBufferTooSmall)
                    sendBuf));
     CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, recvBuf), 
                             E_UNEXPECTED_RECV_SIZE);
+
+    // Expect 1 msg sent from dn0.
+    CHECK_DV (0, 0, 1, 0, 0, 0);
 }
 
 /* Test receiving a message smaller than expected. */
@@ -372,6 +515,9 @@ TEST (NetworkManager_SendRecv, RecvBufferTooBig)
                    sendBuf));
     CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, recvBuf), 
                             E_UNEXPECTED_RECV_SIZE);
+
+    // Expect 1 msg sent from dn0.
+    CHECK_DV (0, 0, 1, 0, 0, 0);
 }
 
 /* Send and receive a message successfully. */
@@ -395,6 +541,9 @@ TEST (NetworkManager_SendRecv, SuccessOneMessagePerChannel)
     CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_1, 
                    recvBuf));
     CHECK (sendBuf1 == recvBuf);
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 2, 1, 0, 1, 0);
 }
 
 /* Send and receive two messages successfully. */
@@ -433,6 +582,9 @@ TEST (NetworkManager_SendRecv, SuccessTwoMessagesPerChannel)
     CHECK (sendBuf0Msg2 == recvBuf0Msg2);
     CHECK (sendBuf1Msg1 == recvBuf1Msg1);
     CHECK (sendBuf1Msg2 == recvBuf1Msg2);
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 4, 2, 0, 2, 0);
 }
 
 /**
@@ -505,6 +657,9 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
 
     // Clean up thread.
     WAIT_FOR_THREAD (thread, pThreadManager);
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 1, 1, 0, 0, 0);
 }
 
 /* Group of tests to verify recvMult. */
@@ -540,6 +695,9 @@ TEST (NetworkManager_RecvMult, DiffVectorSizes)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, bufs, 
                                     msgsReceived),
                  E_VECTORS_DIFF_SIZES);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test timeout too large. */
@@ -555,6 +713,9 @@ TEST (NetworkManager_RecvMult, LargeTimeout)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US + 1, nodes, 
                                     bufs, msgsReceived),
                  E_TIMEOUT_TOO_LARGE);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test empty buffers. */
@@ -580,6 +741,9 @@ TEST (NetworkManager_RecvMult, EmptyBuffer)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
                                     bufsSecondEmpty, msgsReceived),
                  E_EMPTY_BUFFER);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test invalid nodes. */
@@ -607,6 +771,9 @@ TEST (NetworkManager_RecvMult, InvalidNode)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodesSecondInvalid, bufs, msgsReceived),
                  E_INVALID_NODE);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test buffer size smaller than received message. */
@@ -640,6 +807,10 @@ TEST (NetworkManager_RecvMult, BufferSizeTooSmall)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsSecondTooSmall, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
+
+    // Expect all msgs tx'd but only 1 rx'd before recvMult fails during the
+    // second call.
+    CHECK_DV (0, 1, 2, 0, 2, 0);
 }
 
 /* Test buffer size larger than received message. */
@@ -674,6 +845,10 @@ TEST (NetworkManager_RecvMult, BufferSizeTooLarge)
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsSecondTooLarge, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
+
+    // Expect all msgs tx'd but only 1 rx'd before recvMult fails during the
+    // second call.
+    CHECK_DV (0, 1, 2, 0, 2, 0);
 }
 
 /* Test receiving two messages sent before recvMult called. */
@@ -723,6 +898,9 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     {
         CHECK (msgsReceived[i]);
     }
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 2, 1, 0, 1, 0);
 }
 
 /* Test receiving no messages. */
@@ -766,6 +944,9 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     {
         CHECK_FALSE (msgsReceived[i]);
     }
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test sending multiple messages on one channel. Expect to only recv first. */
@@ -818,9 +999,12 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     {
         CHECK (msgsReceived[i]);
     }
+
+    // Expect all msgs tx'd and only 2/3 rx'd.
+    CHECK_DV (0, 2, 2, 0, 1, 0);
 }
 
-/* Test receiving one message one one channel and none on the other. */
+/* Test receiving one message on one channel and none on the other. */
 TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 {
     INIT_NETWORK_MANAGERS
@@ -866,6 +1050,9 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     CHECK (msgsReceived[0]);
     CHECK_FALSE (msgsReceived[1]);
 
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 1, 1, 0, 0, 0);
+
     // Send message to Control Node from Device Node 1.
     CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf1));
 
@@ -885,6 +1072,9 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     CHECK (sendBuf1 == bufs[1]);
     CHECK (msgsReceived[1]);
     CHECK_FALSE (msgsReceived[0]);
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 2, 1, 0, 1, 0);
 }
 
 /* Verify can receive multiple msgs after recvMult called. */
@@ -948,4 +1138,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     // Clean up thread.
     WAIT_FOR_THREAD (thread0, pThreadManager);
     WAIT_FOR_THREAD (thread1, pThreadManager);
+
+    // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 2, 1, 0, 1, 0);
 }

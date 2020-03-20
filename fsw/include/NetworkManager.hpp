@@ -54,6 +54,7 @@
 #include <cstring>
 
 #include "EnumClassHash.hpp"
+#include "DataVector.hpp"
 #include "Errors.hpp"
 
 class NetworkManager final 
@@ -97,8 +98,8 @@ public:
     typedef std::string IP_t;
 
     /**
-     * Struct to represent a communication channel config. Each channel gets 
-     * converted to a socket on initialization.
+     * Struct to represent a communication channel config. Each channel is 
+     * bidirectional and gets converted to a socket on initialization.
      */
     typedef struct ChannelConfig
     {
@@ -112,9 +113,27 @@ public:
      */
     typedef struct Config
     {
+        /**
+         * Map from all nodes in the network to their IP.
+         */
         std::unordered_map<Node_t, IP_t, EnumClassHash> nodeToIp;
+        /**
+         * All channels.
+         */
         std::vector<ChannelConfig_t>                    channels;
+        /**
+         * Node config is for.
+         */
         Node_t                                          me;
+        /**
+         * Data Vector element to log number of messages successfully sent to.
+         */
+        DataVectorElement_t                             dvElemMsgTxCount;
+        /**
+         * Data Vector element to log number of messages successfully received
+         * to.
+         */
+        DataVectorElement_t                             dvElemMsgRxCount;
     } Config_t;
 
     /**
@@ -122,12 +141,16 @@ public:
      * config. This should only be called once per compute node, although
      * this is not enforced to facilitate testing.
      *
-     * @param   kConfig                     Network Manager's config data.
-     * @param   kPNmRet                     Pointer to return Network Manager.
+     * @param   kConfig                        Network Manager's config data.
+     * @param   kPDv                           Pointer to Data Vector.
+     * @param   kPNmRet                        Pointer to return Network 
+     *                                         Manager.
      *
      * @ret     E_SUCCESS                      Network Manager successfully 
      *                                         created.
+     *          E_DATA_VECTOR_NULL             kPDv null.
      *          E_EMPTY_CONFIG                 Config empty.
+     *          E_INVALID_ELEM                 Count DV elems do not exist.
      *          E_EMPTY_NODE_CONFIG            Empty node map.
      *          E_EMPTY_CHANNEL_CONFIG         Empty channels list.
      *          E_INVALID_ENUM                 Invalid node enum.
@@ -145,12 +168,14 @@ public:
      *          E_FAILED_TO_BIND_TO_SOCKET     Failed to bind "me" info to 
      *                                         socket. This can happen if IP 
      *                                         assigned to "me" is not correct.
-    */
+     */
     static Error_t createNew (Config_t& kConfig, 
+                              std::shared_ptr<DataVector> kPDv,
                               std::shared_ptr<NetworkManager>& kPNmRet);
 
     /**
-     * Send a message to a node. 
+     * Send a message to a node. Increments message send count on successful
+     * send.
      *
      * @param   kNode                       Node to send message to.
      * @param   kBuf                        Data to send.
@@ -160,7 +185,9 @@ public:
      *          E_INVALID_NODE              No channel for node.
      *          E_FAILED_TO_SEND_MSG        Failed to send message.
      *          E_UNEXPECTED_SEND_SIZE      Message send length != kBuf size.
-    */
+     *          E_DATA_VECTOR_WRITE         Failed to increment msgs sent 
+     *                                      counter.
+     */
     Error_t send (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBuf);
 
     /**
@@ -178,7 +205,9 @@ public:
      *          E_INVALID_NODE              No channel for node.
      *          E_FAILED_TO_RECV_MSG        Failed to receive message.
      *          E_UNEXPECTED_RECV_SIZE      Message recv length != kBuf size.
-    */
+     *          E_DATA_VECTOR_WRITE         Failed to increment msgs rx'd
+     *                                      counter.
+     */
     Error_t recv (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBufRet);
 
     /**
@@ -210,7 +239,9 @@ public:
      *          E_UNEXPECTED_RECV_SIZE      Message recv length != kBuf size for
      *                                      one or more nodes. Returns as soon 
      *                                      as failure occurs.
-    */
+     *          E_DATA_VECTOR_WRITE         Failed to increment msgs rx'd
+     *                                      counter.
+     */
     Error_t recvMult (uint32_t kTimeoutUs,
                       std::vector<NetworkManager::Node_t> kNodes, 
                       std::vector<std::vector<uint8_t>>& kBufsRet, 
@@ -222,8 +253,11 @@ public:
      * Verify provided config.
      *
      * @param   kConfig                     Config to check.
+     * @param   kPDv                        Pointer to Data Vector.
+     *
      *
      * @ret     E_SUCCESS                   Config valid.
+     *          E_DATA_VECTOR_NULL          kPDv null.
      *          E_EMPTY_NODE_CONFIG         Empty node map.
      *          E_EMPTY_CHANNEL_CONFIG      Empty channels list.
      *          E_INVALID_ENUM              Invalid node enum.
@@ -237,7 +271,8 @@ public:
      *          E_UNDEFINED_ME_NODE         "Me" is not defined in nodeToIp.
      *          E_DUPLICATE_CHANNEL         More than 1 channel per node pair.
      */
-    static Error_t verifyConfig (Config_t& kConfig);
+    static Error_t verifyConfig (Config_t& kConfig, 
+                                 std::shared_ptr<DataVector> kPDv);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF NETWORK MANAGER
@@ -279,9 +314,25 @@ private:
     std::unordered_map<Node_t, Channel_t, EnumClassHash> mNodeToChannel;
 
     /**
+     * Data Vector.
+     */
+    std::shared_ptr<DataVector> mPDataVector;
+
+    /**
+     * Data Vector element storing messages sent counter.
+     */
+    DataVectorElement_t mDvElemMsgTxCount;
+
+    /**
+     * Data Vector element storing messages received counter.
+     */
+    DataVectorElement_t mDvElemMsgRxCount;
+
+    /**
      * Constructor. 
      *
      * @param    kConfig  Network Manager config.
+     * @param    kPDv     Pointer to Data Vector.
      * @param    kRet     E_SUCCESS                      Successfully created
      *                                                   Network Manager.
      *                    E_NON_NUMERIC_IP               Character in numeric 
@@ -298,7 +349,8 @@ private:
      *                                                   info to socket.
      *                        
      */        
-    NetworkManager (Config_t& kConfig, Error_t& kRet);
+    NetworkManager (Config_t& kConfig, std::shared_ptr<DataVector> kPDv, 
+                    Error_t& kRet);
 
     /**
      * Create a socket to send and receive messages on. Socket is blocking.
