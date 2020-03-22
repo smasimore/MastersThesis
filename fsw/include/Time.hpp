@@ -55,6 +55,11 @@ public:
     static const uint64_t NS_IN_US = 1000;
 
     /**
+     * Unsigned long long used to convert milliseconds to microseconds
+     */
+    static const uint64_t US_IN_MS = 1000;
+
+    /**
      * Returns current time in nanoseconds.
      *
      * @param   KTimeNsRet                 Time in nanoseconds.

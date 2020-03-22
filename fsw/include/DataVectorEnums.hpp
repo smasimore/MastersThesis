@@ -34,10 +34,24 @@ enum DataVectorElementType_t : uint8_t
  */
 enum DataVectorRegion_t : uint32_t
 {
+
+///////////////////////////////// TEST REGIONS /////////////////////////////////
+
     /* Test Regions */
     DV_REG_TEST0,
     DV_REG_TEST1,
     DV_REG_TEST2,
+
+///////////////////////////////// FSW REGIONS //////////////////////////////////
+
+    DV_REG_CN,
+    DV_REG_DN0_TO_CN,
+    DV_REG_DN1_TO_CN,
+    DV_REG_DN2_TO_CN,
+    DV_REG_GROUND_TO_CN,
+    DV_REG_CN_TO_DN0,
+    DV_REG_CN_TO_DN1,
+    DV_REG_CN_TO_DN2,
 
     DV_REG_LAST
 };
@@ -47,7 +61,10 @@ enum DataVectorRegion_t : uint32_t
  */
 enum DataVectorElement_t : uint32_t
 {
-    /* Test Elements */
+
+///////////////////////////////// TEST ELEMENTS ////////////////////////////////
+
+    /* Generic Test Elements */
     DV_ELEM_TEST0,
     DV_ELEM_TEST1,
     DV_ELEM_TEST2,
@@ -96,10 +113,11 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_TEST45,
     DV_ELEM_TEST46,
 
-    DV_ELEM_STATE,
-
-    /* Test Controller */
+    /* Test Controllers */
     DV_ELEM_TEST_CONTROLLER_MODE,
+    DV_ELEM_DN_RESP_CTRL_MODE,
+    DV_ELEM_ERROR_CTRL_MODE,
+    DV_ELEM_THREAD_KILL_CTRL_MODE,
 
     /* RCS Controller */
     DV_ELEM_RCS_CONTROLLER_MODE,
@@ -109,9 +127,34 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_LED_CONTROL_VAL,
     DV_ELEM_LED_FEEDBACK_VAL,
 
-    /* Recovery igniter test script */
+    /* Recovery Igniter Test Script */
     DV_ELEM_RECIGNTEST_CONTROL_VAL,
     DV_ELEM_RECIGNTEST_FEEDBACK_VAL,
+
+///////////////////////////////// FSW ELEMENTS /////////////////////////////////
+
+    /* Health Counters */
+    DV_ELEM_CN_LOOP_COUNT,
+    DV_ELEM_CN_ERROR_COUNT,
+    DV_ELEM_CN_MSG_TX_COUNT,
+    DV_ELEM_CN_MSG_RX_COUNT,
+    DV_ELEM_DN0_MSG_TX_COUNT,
+    DV_ELEM_DN0_MSG_RX_COUNT,
+    DV_ELEM_DN1_MSG_TX_COUNT,
+    DV_ELEM_DN1_MSG_RX_COUNT,
+    DV_ELEM_DN2_MSG_TX_COUNT,
+    DV_ELEM_DN2_MSG_RX_COUNT,
+    DV_ELEM_GROUND_MSG_TX_COUNT,
+    DV_ELEM_GROUND_MSG_RX_COUNT,
+    DV_ELEM_DN0_RX_MISS_COUNT,
+    DV_ELEM_DN1_RX_MISS_COUNT,
+    DV_ELEM_DN2_RX_MISS_COUNT,
+
+    /* Time */
+    DV_ELEM_CN_TIME_NS,
+
+    /* State Machine */
+    DV_ELEM_STATE,
 
     /* Command Handler */
     DV_ELEM_CMD_REQ,

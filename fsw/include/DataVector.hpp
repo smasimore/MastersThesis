@@ -38,7 +38,7 @@
  *                 d) Setting initialVal = -2   for an unsigned element (e.g.
  *                    DV_T_UINT32).
  *
- *     2) Call DataVector::createNew (yourConfig).
+ *     2) Call DataVector::createNew (yourConfig, pDv).
  *     3) Use the read and write methods to interact with elements in the Data
  *        Vector. Note, elements cannot be added to the Data Vector after it 
  *        has been constructed.
@@ -242,8 +242,8 @@ public:
      * passed in config. This should only be called once per compute node, although
      * this is not enforced to facilitate testing.
      *
-     * @param   kConfig             Data Vector's config data.
-     * @param   kPDataVectorRet    Pointer to return Data Vector.
+     * @param   kConfig               Data Vector's config data.
+     * @param   kPDataVectorRet       Pointer to return Data Vector.
      *
      * @ret     E_SUCCESS             Data Vector successfully created.
      *          E_EMPTY_CONFIG        Config empty.
