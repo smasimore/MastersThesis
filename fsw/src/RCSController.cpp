@@ -138,7 +138,7 @@ Error_t RCSController::setRate (float kRate)
 }
 
 Error_t RCSController::getResponse (RCSController::Response_t& moment) {
-    Controller::Mode_t mode;
+    Mode_t mode;
     Error_t result = this->getMode (mode);
 
     if (result != E_SUCCESS)
@@ -147,7 +147,7 @@ Error_t RCSController::getResponse (RCSController::Response_t& moment) {
     }
 
     // If the controller is not enabled, return NO_FIRE
-    if (mode != Controller::Mode_t::ENABLED)
+    if (mode != MODE_ENABLED)
     {
         mCurrentResponse = RCSController::Response_t::NO_FIRE;
     }

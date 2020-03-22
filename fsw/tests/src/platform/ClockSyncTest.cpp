@@ -124,35 +124,35 @@ static DataVector::Config_t gDvConfig =
 /**
  * Vector of clients.
  */
-static std::vector<NetworkManager::Node_t> gClients =
+static std::vector<Node_t> gClients =
 {
-    NetworkManager::Node_t::DEVICE_NODE_0,
-    NetworkManager::Node_t::DEVICE_NODE_1,
-    NetworkManager::Node_t::DEVICE_NODE_2,
+    NODE_DEVICE0,
+    NODE_DEVICE1,
+    NODE_DEVICE2,
 };
 
 /* Loopback nodes to use for send/recv tests. */
-static std::unordered_map<NetworkManager::Node_t, 
+static std::unordered_map<Node_t, 
                           NetworkManager::IP_t, 
                           EnumClassHash> gLoopbackNodes =
 {
-    {NetworkManager::Node_t::CONTROL_NODE,  "127.0.0.1"},
-    {NetworkManager::Node_t::DEVICE_NODE_0, "127.0.0.2"},
-    {NetworkManager::Node_t::DEVICE_NODE_1, "127.0.0.3"},
-    {NetworkManager::Node_t::DEVICE_NODE_2, "127.0.0.4"},
+    {NODE_CONTROL,  "127.0.0.1"},
+    {NODE_DEVICE0, "127.0.0.2"},
+    {NODE_DEVICE1, "127.0.0.3"},
+    {NODE_DEVICE2, "127.0.0.4"},
 };
 
 /* Loopback channels to use for send/recv tests. */
 static std::vector<NetworkManager::ChannelConfig_t> gLoopbackChannels =
 {
-    {NetworkManager::Node_t::CONTROL_NODE, 
-     NetworkManager::Node_t::DEVICE_NODE_0, 
+    {NODE_CONTROL, 
+     NODE_DEVICE0, 
      static_cast<uint16_t> (NetworkManager::MIN_PORT)},
-    {NetworkManager::Node_t::CONTROL_NODE, 
-     NetworkManager::Node_t::DEVICE_NODE_1, 
+    {NODE_CONTROL, 
+     NODE_DEVICE1, 
      static_cast<uint16_t> (NetworkManager::MIN_PORT + 1)},
-    {NetworkManager::Node_t::CONTROL_NODE, 
-     NetworkManager::Node_t::DEVICE_NODE_2, 
+    {NODE_CONTROL, 
+     NODE_DEVICE2, 
      static_cast<uint16_t> (NetworkManager::MIN_PORT + 2)},
 };
 
@@ -161,7 +161,7 @@ static NetworkManager::Config_t gLoopbackConfigCtrl =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::CONTROL_NODE,
+    NODE_CONTROL,
     DV_ELEM_TEST0,
     DV_ELEM_TEST1,
 };
@@ -171,7 +171,7 @@ static NetworkManager::Config_t gLoopbackConfigDev0 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::DEVICE_NODE_0,
+    NODE_DEVICE0,
     DV_ELEM_TEST2,
     DV_ELEM_TEST3,
 };
@@ -181,7 +181,7 @@ static NetworkManager::Config_t gLoopbackConfigDev1 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::DEVICE_NODE_1,
+    NODE_DEVICE1,
     DV_ELEM_TEST4,
     DV_ELEM_TEST5,
 };
@@ -191,7 +191,7 @@ static NetworkManager::Config_t gLoopbackConfigDev2 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::DEVICE_NODE_2,
+    NODE_DEVICE2,
     DV_ELEM_TEST6,
     DV_ELEM_TEST7,
 };
@@ -235,7 +235,7 @@ TEST (ClockSyncServerTest, NoClients)
 {
     INIT_NETWORK_MANAGERS;
 
-    std::vector<NetworkManager::Node_t> clients = {};
+    std::vector<Node_t> clients = {};
 
     CHECK_ERROR (ClockSync::syncServer (pNmCtrl, clients),
                  E_NO_CLIENTS);
@@ -248,34 +248,34 @@ TEST (ClockSyncServerTest, NmTxFail)
 {
     INIT_DATA_VECTOR (gDvConfig);
 
-    std::unordered_map<NetworkManager::Node_t, 
+    std::unordered_map<Node_t, 
                        NetworkManager::IP_t, 
                        EnumClassHash> nodes =
     {
-        {NetworkManager::Node_t::CONTROL_NODE,  "127.0.0.1"},
-        {NetworkManager::Node_t::DEVICE_NODE_0, "127.0.0.2"},
+        {NODE_CONTROL,  "127.0.0.1"},
+        {NODE_DEVICE0, "127.0.0.2"},
     };
     std::vector<NetworkManager::ChannelConfig_t> channels =
     {
-        {NetworkManager::Node_t::CONTROL_NODE, 
-         NetworkManager::Node_t::DEVICE_NODE_0, 
+        {NODE_CONTROL, 
+         NODE_DEVICE0, 
          static_cast<uint16_t> (NetworkManager::MIN_PORT)},
     };
     NetworkManager::Config_t config =
     {
         nodes,
         channels,
-        NetworkManager::Node_t::CONTROL_NODE,
+        NODE_CONTROL,
         DV_ELEM_TEST0,
         DV_ELEM_TEST1,
     };
     std::shared_ptr<NetworkManager> pNm;
     CHECK_SUCCESS (NetworkManager::createNew (config, pDv, pNm));
 
-    std::vector<NetworkManager::Node_t> clients =
+    std::vector<Node_t> clients =
     {
-        NetworkManager::Node_t::DEVICE_NODE_0,
-        NetworkManager::Node_t::DEVICE_NODE_1,
+        NODE_DEVICE0,
+        NODE_DEVICE1,
     };
 
     CHECK_ERROR (ClockSync::syncServer (pNm, clients),
@@ -313,7 +313,7 @@ static void* threadFuncClientSendSuccess (void *rawArgs)
     // Rx server ready cmd from CN.
     std::vector<uint8_t> rxBuf (1);
     std::vector<uint8_t> expectedRxBuf = {ClockSync::Msg_t::SERVER_READY};
-    ret = pNm->recv (NetworkManager::Node_t::CONTROL_NODE, rxBuf);
+    ret = pNm->recv (NODE_CONTROL, rxBuf);
     if (ret != E_SUCCESS)
     {
         return (void *) ret;
@@ -325,7 +325,7 @@ static void* threadFuncClientSendSuccess (void *rawArgs)
 
     // Tx success msg.
     std::vector<uint8_t> txBuf = {ClockSync::Msg_t::CLIENT_SYNC_SUCCESS};
-    ret = pNm->send (NetworkManager::Node_t::CONTROL_NODE, txBuf);
+    ret = pNm->send (NODE_CONTROL, txBuf);
     return (void *) ret;
 }
 
@@ -343,7 +343,7 @@ static void* threadFuncClientSendFail (void *rawArgs)
     // Rx server ready cmd from CN.
     std::vector<uint8_t> rxBuf (1);
     std::vector<uint8_t> expectedRxBuf = {ClockSync::Msg_t::SERVER_READY};
-    ret = pNm->recv (NetworkManager::Node_t::CONTROL_NODE, rxBuf);
+    ret = pNm->recv (NODE_CONTROL, rxBuf);
     if (ret != E_SUCCESS)
     {
         return (void *) ret;
@@ -355,7 +355,7 @@ static void* threadFuncClientSendFail (void *rawArgs)
 
     // Tx fail msg.
     std::vector<uint8_t> sendBuf = {ClockSync::Msg_t::CLIENT_SYNC_FAIL};
-    ret = pNm->send (NetworkManager::Node_t::CONTROL_NODE, sendBuf);
+    ret = pNm->send (NODE_CONTROL, sendBuf);
     return (void *) ret;
 }
 
@@ -422,7 +422,7 @@ TEST (ClockSyncClientTest, NullNm)
 
     std::shared_ptr<NetworkManager> pNm = nullptr;
     CHECK_ERROR (ClockSync::syncClient (pNm, 
-                                        NetworkManager::Node_t::CONTROL_NODE, 
+                                        NODE_CONTROL, 
                                         "127.0.0.1"),
                  E_NETWORK_MANAGER_NULL);
 
@@ -435,24 +435,24 @@ TEST (ClockSyncClientTest, NmRxFail)
 {
     INIT_DATA_VECTOR (gDvConfig);
 
-    std::unordered_map<NetworkManager::Node_t, 
+    std::unordered_map<Node_t, 
                        NetworkManager::IP_t, 
                        EnumClassHash> nodes =
     {
-        {NetworkManager::Node_t::DEVICE_NODE_0, "127.0.0.2"},
-        {NetworkManager::Node_t::DEVICE_NODE_1, "127.0.0.3"},
+        {NODE_DEVICE0, "127.0.0.2"},
+        {NODE_DEVICE1, "127.0.0.3"},
     };
     std::vector<NetworkManager::ChannelConfig_t> channels =
     {
-        {NetworkManager::Node_t::DEVICE_NODE_0, 
-         NetworkManager::Node_t::DEVICE_NODE_1, 
+        {NODE_DEVICE0, 
+         NODE_DEVICE1, 
          static_cast<uint16_t> (NetworkManager::MIN_PORT)},
     };
     NetworkManager::Config_t config =
     {
         nodes,
         channels,
-        NetworkManager::Node_t::DEVICE_NODE_0,
+        NODE_DEVICE0,
         DV_ELEM_TEST2,
         DV_ELEM_TEST3,
     };
@@ -460,7 +460,7 @@ TEST (ClockSyncClientTest, NmRxFail)
     CHECK_SUCCESS (NetworkManager::createNew (config, pDv, pNm));
 
     CHECK_ERROR (ClockSync::syncClient (pNm, 
-                                        NetworkManager::Node_t::CONTROL_NODE, 
+                                        NODE_CONTROL, 
                                         "127.0.0.1"),
                  E_NETWORK_MANAGER_RX_FAIL);
 
@@ -475,12 +475,12 @@ TEST (ClockSyncClientTest, InvalidServerMsg)
 
     // Send server ready msg to client.
     std::vector<uint8_t> readyMsg = {ClockSync::Msg_t::LAST};
-    CHECK_SUCCESS (pNmCtrl->send (NetworkManager::Node_t::DEVICE_NODE_0, 
+    CHECK_SUCCESS (pNmCtrl->send (NODE_DEVICE0, 
                                   readyMsg));
 
     // Sync client.
     CHECK_ERROR (ClockSync::syncClient (pNmDev0, 
-                                        NetworkManager::Node_t::CONTROL_NODE, 
+                                        NODE_CONTROL, 
                                         "127.0.0.1"),
                  E_INVALID_SERVER_MSG);
 
@@ -495,12 +495,12 @@ TEST (ClockSyncClientTest, FailToSync)
 
     // Send server ready msg to client.
     std::vector<uint8_t> readyMsg = {ClockSync::Msg_t::SERVER_READY};
-    CHECK_SUCCESS (pNmCtrl->send (NetworkManager::Node_t::DEVICE_NODE_0, 
+    CHECK_SUCCESS (pNmCtrl->send (NODE_DEVICE0, 
                    readyMsg));
 
     // Sync client.
     CHECK_ERROR (ClockSync::syncClient (pNmDev0, 
-                                        NetworkManager::Node_t::CONTROL_NODE, 
+                                        NODE_CONTROL, 
                                         "127.0.0.1"),
                  E_CLIENT_FAILED_TO_SYNC);
 

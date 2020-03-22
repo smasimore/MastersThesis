@@ -70,7 +70,7 @@ namespace ClockSync
      *          E_FAILED_TO_STOP_NTPD     Failed to stop ntp daemon.
      */
     Error_t syncServer (std::shared_ptr<NetworkManager>& kPNm, 
-                        std::vector<NetworkManager::Node_t> kClientNodes);
+                        std::vector<Node_t> kClientNodes);
 
     /**
      * Wait for a message from the server node that it is ready, then sync to
@@ -98,7 +98,7 @@ namespace ClockSync
      *                                             server above max allowed.
      */
     Error_t syncClient (std::shared_ptr<NetworkManager>& kPNm, 
-                        NetworkManager::Node_t kServerNode,
+                        Node_t kServerNode,
                         NetworkManager::IP_t kServerNodeIp);
 
     /**

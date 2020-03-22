@@ -36,22 +36,23 @@
  *
  */
 
+/**
+ * Controller's mode. This determines which run function (runEnabled
+ * vs. runSafed) is called. Defined outside of class to enable more 
+ * succinct usage.
+ */
+enum Mode_t : uint8_t
+{
+	MODE_SAFED,
+	MODE_ENABLED,
+
+	MODE_LAST
+};
+
 class Controller
 {
 
     public:
-
-        /**
-         * Controller's mode. This determines which run function (runEnabled
-         * vs. runSafed) is called.
-         */
-        enum Mode_t : uint8_t
-        {
-            SAFED,
-            ENABLED,
-
-            LAST
-        };
 
         /**
          * Destructor.

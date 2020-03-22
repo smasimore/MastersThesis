@@ -33,7 +33,7 @@ namespace ClockSyncTest_Config
     /**
      * Nodes used to initialize Network Manager.
      */
-    extern std::unordered_map<NetworkManager::Node_t, 
+    extern std::unordered_map<Node_t, 
                               NetworkManager::IP_t, 
                               EnumClassHash> mNodes;
     /**

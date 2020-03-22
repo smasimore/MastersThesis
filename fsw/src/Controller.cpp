@@ -6,7 +6,7 @@ Controller::~Controller () {}
 
 Error_t Controller::run ()
 {
-    Mode_t mode = Controller::Mode_t::SAFED;
+    Mode_t mode = MODE_SAFED;
     Error_t ret = this->getMode (mode);
     if (ret != E_SUCCESS)
     {
@@ -15,16 +15,16 @@ Error_t Controller::run ()
 
     switch (mode)
     {
-        case Controller::Mode_t::SAFED:
+        case MODE_SAFED:
             return runSafed();
-        case Controller::Mode_t::ENABLED:
+        case MODE_ENABLED:
             return runEnabled();
         default:
             return E_INVALID_ENUM;
     }
 }
 
-Error_t Controller::getMode (Controller::Mode_t& kModeRet)
+Error_t Controller::getMode (Mode_t& kModeRet)
 {
     uint8_t mode;
     if (mPDataVector->read (mDvModeElem, mode) != E_SUCCESS)

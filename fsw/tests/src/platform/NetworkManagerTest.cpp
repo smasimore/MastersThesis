@@ -75,19 +75,19 @@ static NetworkManager::Config_t gNmConfig =
 {
     // Nodes
     {
-        {NetworkManager::Node_t::CONTROL_NODE,  "10.0.0.1"},
-        {NetworkManager::Node_t::DEVICE_NODE_0, "10.0.0.2"},
+        {NODE_CONTROL,  "10.0.0.1"},
+        {NODE_DEVICE0, "10.0.0.2"},
     },
 
     // Channels
     {
-        {NetworkManager::Node_t::CONTROL_NODE, 
-         NetworkManager::Node_t::DEVICE_NODE_0, 
+        {NODE_CONTROL, 
+         NODE_DEVICE0, 
          NetworkManager::MIN_PORT},
     },
 
     // Me
-    NetworkManager::Node_t::CONTROL_NODE,
+    NODE_CONTROL,
 
     // Msg tx count dv elem
     DV_ELEM_TEST0,
@@ -115,10 +115,9 @@ TEST (NetworkManager_verifyConfig, NoNodes)
     INIT_DATA_VECTOR (gDvConfig);
 
     // Explicitly initialize empty node mpa.
-    std::unordered_map<
-        NetworkManager::Node_t, 
-        NetworkManager::IP_t, 
-        EnumClassHash> emptyNodeToIP;
+    std::unordered_map<Node_t, 
+                       NetworkManager::IP_t, 
+                       EnumClassHash> emptyNodeToIP;
 
     NetworkManager::Config_t config = gNmConfig;
     config.nodeToIp = emptyNodeToIP;
@@ -145,7 +144,7 @@ TEST (NetworkManager_verifyConfig, InvalidNode)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::LAST] = "10.0.0.3";
+    config.nodeToIp[NODE_LAST] = "10.0.0.3";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_INVALID_ENUM);
@@ -157,7 +156,7 @@ TEST (NetworkManager_verifyConfig, DupeIP)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1";
+    config.nodeToIp[NODE_DEVICE0] = "10.0.0.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_DUPLICATE_IP);
@@ -169,7 +168,7 @@ TEST (NetworkManager_verifyConfig, NonNumericIP)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.a.0.1";
+    config.nodeToIp[NODE_DEVICE0] = "10.a.0.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_NON_NUMERIC_IP);
@@ -181,7 +180,7 @@ TEST (NetworkManager_verifyConfig, InvalidIPRegion)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.256";
+    config.nodeToIp[NODE_DEVICE0] = "10.0.0.256";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_INVALID_IP_REGION);
@@ -193,7 +192,7 @@ TEST (NetworkManager_verifyConfig, EmptyIP)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "";
+    config.nodeToIp[NODE_DEVICE0] = "";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_INVALID_IP_SIZE);
@@ -205,7 +204,7 @@ TEST (NetworkManager_verifyConfig, TooFewIPRegions)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0";
+    config.nodeToIp[NODE_DEVICE0] = "10.0.0";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_IP_SIZE);
 }
@@ -216,7 +215,7 @@ TEST (NetworkManager_verifyConfig, TooManyIPRegions)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.nodeToIp[NetworkManager::Node_t::DEVICE_NODE_0] = "10.0.0.1.1";
+    config.nodeToIp[NODE_DEVICE0] = "10.0.0.1.1";
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), E_INVALID_IP_SIZE);
 }
@@ -227,7 +226,7 @@ TEST (NetworkManager_verifyConfig, UndefinedNode1)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.channels[0].node1 = NetworkManager::Node_t::DEVICE_NODE_1;
+    config.channels[0].node1 = NODE_DEVICE1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_UNDEFINED_NODE_IN_CHANNEL);
@@ -239,7 +238,7 @@ TEST (NetworkManager_verifyConfig, UndefinedNode2)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.channels[0].node2 = NetworkManager::Node_t::DEVICE_NODE_1;
+    config.channels[0].node2 = NODE_DEVICE1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_UNDEFINED_NODE_IN_CHANNEL);
@@ -273,7 +272,7 @@ TEST (NetworkManager_verifyConfig, UndefinedMeNode)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.me = NetworkManager::Node_t::DEVICE_NODE_1;
+    config.me = NODE_DEVICE1;
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_UNDEFINED_ME_NODE);
@@ -285,9 +284,9 @@ TEST (NetworkManager_verifyConfig, DuplicateChannelSameOrder)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.channels.push_back ({NetworkManager::Node_t::CONTROL_NODE, 
-                               NetworkManager::Node_t::DEVICE_NODE_0, 
-                               NetworkManager::MIN_PORT});
+    config.channels.push_back ({NODE_CONTROL, 
+                                NODE_DEVICE0, 
+                                NetworkManager::MIN_PORT});
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
                  E_DUPLICATE_CHANNEL);
@@ -299,8 +298,8 @@ TEST (NetworkManager_verifyConfig, DuplicateChannelDifferentOrder)
     INIT_DATA_VECTOR (gDvConfig);
 
     NetworkManager::Config_t config = gNmConfig;
-    config.channels.push_back ({NetworkManager::Node_t::DEVICE_NODE_0, 
-                                NetworkManager::Node_t::CONTROL_NODE, 
+    config.channels.push_back ({NODE_DEVICE0, 
+                                NODE_CONTROL, 
                                 NetworkManager::MIN_PORT});
 
     CHECK_ERROR (NetworkManager::verifyConfig (config, pDv), 
@@ -377,24 +376,24 @@ TEST (NetworkManager_ipConvert, Success)
 static const Time::TimeNs_t SELECT_OVERHEAD_NS = 250000;
 
 /* Loopback nodes to use for send/recv tests. */
-std::unordered_map<NetworkManager::Node_t, 
+std::unordered_map<Node_t, 
                    NetworkManager::IP_t, 
                    EnumClassHash> gLoopbackNodes =
 {
-    {NetworkManager::Node_t::CONTROL_NODE,  "127.0.0.1"},
-    {NetworkManager::Node_t::DEVICE_NODE_0, "127.0.0.2"},
-    {NetworkManager::Node_t::DEVICE_NODE_1, "127.0.0.3"},
+    {NODE_CONTROL, "127.0.0.1"},
+    {NODE_DEVICE0, "127.0.0.2"},
+    {NODE_DEVICE1, "127.0.0.3"},
 };
 
 
 /* Loopback channels to use for send/recv tests. */
 std::vector<NetworkManager::ChannelConfig_t> gLoopbackChannels =
 {
-    {NetworkManager::Node_t::CONTROL_NODE, 
-     NetworkManager::Node_t::DEVICE_NODE_0, 
+    {NODE_CONTROL, 
+     NODE_DEVICE0, 
      static_cast<uint16_t> (NetworkManager::MIN_PORT)},
-    {NetworkManager::Node_t::CONTROL_NODE, 
-     NetworkManager::Node_t::DEVICE_NODE_1, 
+    {NODE_CONTROL, 
+     NODE_DEVICE1, 
      static_cast<uint16_t> (NetworkManager::MIN_PORT + 1)},
 };
 
@@ -403,7 +402,7 @@ NetworkManager::Config_t gLoopbackConfigCtrl =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::CONTROL_NODE,
+    NODE_CONTROL,
     DV_ELEM_TEST0,
     DV_ELEM_TEST1,
 };
@@ -413,7 +412,7 @@ NetworkManager::Config_t gLoopbackConfigDev0 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::DEVICE_NODE_0,
+    NODE_DEVICE0,
     DV_ELEM_TEST2,
     DV_ELEM_TEST3,
 };
@@ -423,7 +422,7 @@ NetworkManager::Config_t gLoopbackConfigDev1 =
 {
     gLoopbackNodes,
     gLoopbackChannels,
-    NetworkManager::Node_t::DEVICE_NODE_1,
+    NODE_DEVICE1,
     DV_ELEM_TEST4,
     DV_ELEM_TEST5,
 };
@@ -440,8 +439,7 @@ TEST (NetworkManager_SendRecv, SendEmptyBuffer)
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> sendBuf;
-    CHECK_ERROR (pNmCtrl->send (NetworkManager::Node_t::CONTROL_NODE, 
-                                sendBuf), E_EMPTY_BUFFER);
+    CHECK_ERROR (pNmCtrl->send (NODE_CONTROL, sendBuf), E_EMPTY_BUFFER);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
@@ -453,8 +451,7 @@ TEST (NetworkManager_SendRecv, SendInvalidNode)
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> sendBuf = {0xff};
-    CHECK_ERROR (pNmCtrl->send (NetworkManager::Node_t::DEVICE_NODE_2, 
-                            sendBuf), E_INVALID_NODE);
+    CHECK_ERROR (pNmCtrl->send (NODE_DEVICE2, sendBuf), E_INVALID_NODE);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
@@ -466,8 +463,7 @@ TEST (NetworkManager_SendRecv, RecvEmptyBuffer)
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> recvBuf;
-    CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::CONTROL_NODE, 
-                            recvBuf), E_EMPTY_BUFFER);
+    CHECK_ERROR (pNmCtrl->recv (NODE_CONTROL, recvBuf), E_EMPTY_BUFFER);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
@@ -479,8 +475,7 @@ TEST (NetworkManager_SendRecv, RecvInvalidNode)
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> recvBuf (1);
-    CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_2, 
-                            recvBuf), E_INVALID_NODE);
+    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE2, recvBuf), E_INVALID_NODE);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
@@ -494,10 +489,9 @@ TEST (NetworkManager_SendRecv, RecvBufferTooSmall)
     // Send and receive a message using loopback.
     std::vector<uint8_t> sendBuf = {0xff, 0xff};
     std::vector<uint8_t> recvBuf (1, 0);
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf));
-    CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, recvBuf), 
-                            E_UNEXPECTED_RECV_SIZE);
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE0, recvBuf), 
+                                E_UNEXPECTED_RECV_SIZE);
 
     // Expect 1 msg sent from dn0.
     CHECK_DV (0, 0, 1, 0, 0, 0);
@@ -511,10 +505,8 @@ TEST (NetworkManager_SendRecv, RecvBufferTooBig)
     // Send and receive a message using loopback.
     std::vector<uint8_t> sendBuf = {0xff, 0xff};
     std::vector<uint8_t> recvBuf (3, 0);
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf));
-    CHECK_ERROR (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, recvBuf), 
-                            E_UNEXPECTED_RECV_SIZE);
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE0, recvBuf), E_UNEXPECTED_RECV_SIZE);
 
     // Expect 1 msg sent from dn0.
     CHECK_DV (0, 0, 1, 0, 0, 0);
@@ -529,17 +521,13 @@ TEST (NetworkManager_SendRecv, SuccessOneMessagePerChannel)
     std::vector<uint8_t> sendBuf0 = {0xff};
     std::vector<uint8_t> sendBuf1 = {0x01};
     std::vector<uint8_t> recvBuf (1, 0);
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf0));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf1));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
 
     // Receive and verify buffers.
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, 
-                   recvBuf));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf));
     CHECK (sendBuf0 == recvBuf);
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_1, 
-                   recvBuf));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf));
     CHECK (sendBuf1 == recvBuf);
 
     // Expect all msgs tx'd/rx'd.
@@ -560,22 +548,14 @@ TEST (NetworkManager_SendRecv, SuccessTwoMessagesPerChannel)
     std::vector<uint8_t> sendBuf1Msg2 = {0x11, 0x01};
     std::vector<uint8_t> recvBuf1Msg1 (1, 0);
     std::vector<uint8_t> recvBuf1Msg2 (2, 0);
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf0Msg1));
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf0Msg2));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf1Msg1));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::Node_t::CONTROL_NODE, 
-                   sendBuf1Msg2));
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, 
-                   recvBuf0Msg1));
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, 
-                   recvBuf0Msg2));
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_1, 
-                   recvBuf1Msg1));
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_1, 
-                   recvBuf1Msg2));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0Msg1));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0Msg2));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg1));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg2));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf0Msg1));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf0Msg2));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf1Msg1));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf1Msg2));
 
     // Receive and verify buffers.
     CHECK (sendBuf0Msg1 == recvBuf0Msg1);
@@ -616,7 +596,7 @@ static void* threadFuncSend (void *rawArgs)
 
     log->logEvent (Log::LogEvent_t::CALLED_SEND, 0);    
     std::vector<uint8_t> sendBuf = {0xff};
-    ret = pNmDev0->send (NetworkManager::Node_t::CONTROL_NODE, sendBuf);
+    ret = pNmDev0->send (NODE_CONTROL, sendBuf);
     return (void *) ret;
 }
 
@@ -641,8 +621,7 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     // Block on recv call.
     testLog.logEvent (Log::LogEvent_t::CALLED_RECV, 0);    
     std::vector<uint8_t> recvBuf (1, 0);
-    CHECK_SUCCESS (pNmCtrl->recv (NetworkManager::Node_t::DEVICE_NODE_0, 
-                   recvBuf));
+    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf));
     testLog.logEvent (Log::LogEvent_t::RECEIVED, 0);    
 
     // Verify received expected buffer.
@@ -674,7 +653,7 @@ TEST (NetworkManager_RecvMult, DiffVectorSizes)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes;
+    std::vector<Node_t> nodes;
     std::vector<std::vector<uint8_t>> bufs;
     std::vector<bool> msgsReceived;
 
@@ -706,7 +685,7 @@ TEST (NetworkManager_RecvMult, LargeTimeout)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes;
+    std::vector<Node_t> nodes;
     std::vector<std::vector<uint8_t>> bufs;
     std::vector<bool> msgsReceived;
 
@@ -724,11 +703,7 @@ TEST (NetworkManager_RecvMult, EmptyBuffer)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<std::vector<uint8_t>> bufsFirstEmpty (2);
     bufsFirstEmpty[1].resize (1);
     std::vector<std::vector<uint8_t>> bufsSecondEmpty (2); 
@@ -752,16 +727,8 @@ TEST (NetworkManager_RecvMult, InvalidNode)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodesFirstInvalid =
-    {
-        NetworkManager::CONTROL_NODE,
-        NetworkManager::DEVICE_NODE_1,
-    };
-    std::vector<NetworkManager::Node_t> nodesSecondInvalid =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_2,
-    };
+    std::vector<Node_t> nodesFirstInvalid = {NODE_CONTROL, NODE_DEVICE1};
+    std::vector<Node_t> nodesSecondInvalid = {NODE_DEVICE0, NODE_DEVICE2};
     std::vector<std::vector<uint8_t>> bufs = {{0xff}, {0xff}};
     std::vector<bool> msgsReceived (2);
 
@@ -782,11 +749,7 @@ TEST (NetworkManager_RecvMult, BufferSizeTooSmall)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> buf = {0xff, 0xff};
     std::vector<std::vector<uint8_t>> bufsFirstTooSmall (2);
     bufsFirstTooSmall[0].resize (1);
@@ -796,14 +759,14 @@ TEST (NetworkManager_RecvMult, BufferSizeTooSmall)
     bufsSecondTooSmall[1].resize (1);
     std::vector<bool> msgsReceived (2);
 
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, buf));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, buf));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, buf));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, buf));
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsFirstTooSmall, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, buf));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, buf));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, buf));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, buf));
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsSecondTooSmall, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
@@ -819,11 +782,7 @@ TEST (NetworkManager_RecvMult, BufferSizeTooLarge)
     INIT_NETWORK_MANAGERS
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
 
     std::vector<uint8_t> sendBuf = {0xff, 0xff};
     std::vector<std::vector<uint8_t>> bufsFirstTooLarge (2);
@@ -834,14 +793,14 @@ TEST (NetworkManager_RecvMult, BufferSizeTooLarge)
     bufsSecondTooLarge[1].resize (3);
     std::vector<bool> msgsReceived (2);
 
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, sendBuf));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf));
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsFirstTooLarge, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, sendBuf));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf));
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
                                     nodes, bufsSecondTooLarge, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
@@ -861,11 +820,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     Time::getInstance (pTime);
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
     std::vector<std::vector<uint8_t>> bufs (2);
@@ -874,8 +829,8 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     std::vector<bool> msgsReceived (2);
 
     // Send messages to Control Node.
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, sendBuf0));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf1));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
@@ -914,11 +869,7 @@ TEST (NetworkManager_RecvMult, NoMsgs)
 
     // Set up params.
     const uint32_t TIMEOUT_US = 1000;
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
     bufs[1].resize (2);
@@ -959,11 +910,7 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     Time::getInstance (pTime);
 
     // Set up params.
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
     std::vector<uint8_t> sendBuf0SecondMsg = {0x11, 0x11};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
@@ -973,10 +920,9 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     std::vector<bool> msgsReceived (2);
 
     // Send messages to Control Node.
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, sendBuf0));
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf1));
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, 
-                                  sendBuf0SecondMsg));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0SecondMsg));
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
@@ -1015,11 +961,7 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 
     // Set up params.
     const uint32_t TIMEOUT_US = 1000;
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
     std::vector<std::vector<uint8_t>> bufs (2);
@@ -1028,7 +970,7 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     std::vector<bool> msgsReceived (2);
 
     // Send message to Control Node from Device Node 0.
-    CHECK_SUCCESS (pNmDev0->send (NetworkManager::CONTROL_NODE, sendBuf0));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
@@ -1054,7 +996,7 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     CHECK_DV (0, 1, 1, 0, 0, 0);
 
     // Send message to Control Node from Device Node 1.
-    CHECK_SUCCESS (pNmDev1->send (NetworkManager::CONTROL_NODE, sendBuf1));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
@@ -1108,11 +1050,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
 
     // Set up params. Threads send buffer = {0xff}.
     const uint32_t TIMEOUT_US = 1000;
-    std::vector<NetworkManager::Node_t> nodes =
-    {
-        NetworkManager::DEVICE_NODE_0,
-        NetworkManager::DEVICE_NODE_1,
-    };
+    std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (1);
     bufs[1].resize (1);

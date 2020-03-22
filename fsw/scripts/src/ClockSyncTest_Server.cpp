@@ -37,7 +37,7 @@ void ClockSyncTest_Server::main (int ac, char** av)
     {
         ClockSyncTest_Config::mNodes,
         ClockSyncTest_Config::mChannels,
-        NetworkManager::Node_t::CONTROL_NODE,
+        NODE_CONTROL,
         DV_ELEM_TEST0, // msg tx count
         DV_ELEM_TEST1, // msg rx count
     };
@@ -46,9 +46,7 @@ void ClockSyncTest_Server::main (int ac, char** av)
                          "Failed to init Network Manager");
 
     // 3) Attempt to sync client with server.
-    Errors::exitOnError(ClockSync::syncServer (
-                                     pNm, 
-                                     {NetworkManager::Node_t::DEVICE_NODE_0}),
+    Errors::exitOnError(ClockSync::syncServer (pNm, {NODE_DEVICE0}),
                         "Failed to sync.");
 
     // 4) Verify message tx and rx counts.

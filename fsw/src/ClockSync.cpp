@@ -43,9 +43,8 @@ static Error_t setNtpDaemonStatus (bool kEnable);
  */
 static Error_t verifyClientSynced (NetworkManager::IP_t kServerNodeIP);
 
-Error_t ClockSync::syncServer (
-                       std::shared_ptr<NetworkManager>& kPNm, 
-                       std::vector<NetworkManager::Node_t> kClientNodes)
+Error_t ClockSync::syncServer (std::shared_ptr<NetworkManager>& kPNm, 
+                               std::vector<Node_t> kClientNodes)
 {
     // 1) Verify params.
     if (kPNm == nullptr)
@@ -67,7 +66,7 @@ Error_t ClockSync::syncServer (
 
     // 3) Send notification to clients and create rx buffers.
     std::vector<std::vector<uint8_t>> rxMsgs;
-    for (NetworkManager::Node_t client : kClientNodes)
+    for (Node_t client : kClientNodes)
     {
         rxMsgs.push_back ({ClockSync::Msg_t::CLIENT_SYNC_FAIL});
         std::vector<uint8_t> sendMsg = {ClockSync::Msg_t::SERVER_READY};
@@ -125,7 +124,7 @@ Error_t ClockSync::syncServer (
 }
 
 Error_t ClockSync::syncClient (std::shared_ptr<NetworkManager>& kPNm, 
-                               NetworkManager::Node_t kServerNode,
+                               Node_t kServerNode,
                                NetworkManager::IP_t kServerNodeIP)
 {
     // 1) Verify params.

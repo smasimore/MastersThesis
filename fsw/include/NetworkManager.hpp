@@ -57,6 +57,21 @@
 #include "DataVector.hpp"
 #include "Errors.hpp"
 
+/**
+ * Allowed network nodes. Defined outside of class to enable more succinct
+ * usage.
+ */
+enum Node_t : uint8_t
+{
+	NODE_CONTROL,
+	NODE_DEVICE0,
+	NODE_DEVICE1,
+	NODE_DEVICE2,
+	NODE_GROUND,
+
+	NODE_LAST
+};
+
 class NetworkManager final 
 {
 
@@ -76,20 +91,6 @@ public:
      * Maximum timeout size in microseconds.
      */
     static const uint32_t MAX_TIMEOUT_US;
-
-    /**
-     * Allowed network nodes.
-     */
-    enum Node_t : uint8_t
-    {
-        CONTROL_NODE,
-        DEVICE_NODE_0,
-        DEVICE_NODE_1,
-        DEVICE_NODE_2,
-        GROUND,
-
-        LAST
-    };
 
     /**
      * IPv4 address type. This is expected to be in "x.x.x.x" format, which each
@@ -188,7 +189,7 @@ public:
      *          E_DATA_VECTOR_WRITE         Failed to increment msgs sent 
      *                                      counter.
      */
-    Error_t send (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBuf);
+    Error_t send (Node_t kNode, std::vector<uint8_t>& kBuf);
 
     /**
      * Receive a message from a node. kBufRet must already have size equal to
@@ -208,7 +209,7 @@ public:
      *          E_DATA_VECTOR_WRITE         Failed to increment msgs rx'd
      *                                      counter.
      */
-    Error_t recv (NetworkManager::Node_t kNode, std::vector<uint8_t>& kBufRet);
+    Error_t recv (Node_t kNode, std::vector<uint8_t>& kBufRet);
 
     /**
      * Receive a message from each of the provided nodes. The method returns
@@ -243,7 +244,7 @@ public:
      *                                      counter.
      */
     Error_t recvMult (uint32_t kTimeoutUs,
-                      std::vector<NetworkManager::Node_t> kNodes, 
+                      std::vector<Node_t> kNodes, 
                       std::vector<std::vector<uint8_t>>& kBufsRet, 
                       std::vector<bool>& kMsgReceivedRet);
 

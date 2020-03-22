@@ -20,7 +20,7 @@ static DataVector::Config_t RCS_DV_CONFIG =
 {
     {DV_REG_TEST0,
     {
-        DV_ADD_UINT8 (DV_ELEM_RCS_CONTROLLER_MODE, Controller::Mode_t::SAFED),
+        DV_ADD_UINT8 (DV_ELEM_RCS_CONTROLLER_MODE, MODE_SAFED),
     }},
 };
 
@@ -248,7 +248,7 @@ TEST (RCSController, OverflowDetection)
     CHECK_SUCCESS (Controller::createNew<RCSController> (
                        badConfig, pDv, DV_ELEM_RCS_CONTROLLER_MODE, rcs));
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Elicit a nonzero response
     CHECK_SUCCESS (rcs->setAngle (0));
@@ -281,7 +281,7 @@ TEST (RCSController, NoFireOnDisableOrSafe)
                        PHASE_CHANNEL_TEST_CONFIG, pDv, 
                        DV_ELEM_RCS_CONTROLLER_MODE, rcs));
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -291,13 +291,13 @@ TEST (RCSController, NoFireOnDisableOrSafe)
 
     // Place controller in SAFED mode
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::SAFED));
+                               (uint8_t) MODE_SAFED));
     CHECK_SUCCESS (rcs->getResponse (response));
     CHECK_EQUAL (RCS_NO_FIRE, response);
 
     // Reenable
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -479,7 +479,7 @@ TEST (RCSController, NoFireFailsafes)
                      PHASE_CHANNEL_TEST_CONFIG, pDv, 
                      DV_ELEM_RCS_CONTROLLER_MODE, rcs));
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Elicit an active response
     CHECK_SUCCESS (makeNonzeroResponse (rcs));
@@ -522,7 +522,7 @@ TEST (RCSController, PlaneResponses)
                        PHASE_CHANNEL_TEST_CONFIG, pDv, 
                        DV_ELEM_RCS_CONTROLLER_MODE, rcs));
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Mapping of RCS inputs -> correct responses
     std::map<RCSInputs_t, RCSController::Response_t> noHysteresisTests =
@@ -638,7 +638,7 @@ TEST (RCSController, PhaseChannelShape)
                        PHASE_CHANNEL_TEST_CONFIG, pDv, 
                        DV_ELEM_RCS_CONTROLLER_MODE, rcs));
     CHECK_SUCCESS (pDv->write (DV_ELEM_RCS_CONTROLLER_MODE,
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
 
     // Visualization strings to be built
     std::string planeNoHysteresis;

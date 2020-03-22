@@ -9,8 +9,8 @@ static DataVector::Config_t gDvConfig =
 {
     {DV_REG_TEST0,
     {
-        DV_ADD_UINT8 (DV_ELEM_LED_CONTROLLER_MODE, Controller::Mode_t::SAFED),
-        DV_ADD_BOOL  (DV_ELEM_LED_CONTROL_VAL,     false                    ),
+        DV_ADD_UINT8  ( DV_ELEM_LED_CONTROLLER_MODE,  MODE_SAFED ),
+        DV_ADD_BOOL   ( DV_ELEM_LED_CONTROL_VAL,      false      ),
     }},
 };
 
@@ -77,14 +77,14 @@ TEST (LEDControllerTest, Run)
 
     // Expect this to call runEnabled
     CHECK_SUCCESS (pDv->write (DV_ELEM_LED_CONTROLLER_MODE, 
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
     CHECK_SUCCESS (pLEDController->run ());
     CHECK_SUCCESS (pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal));
     CHECK_EQUAL (true, controlVal);
 
     // Expect this to call runSafed
     CHECK_SUCCESS (pDv->write (DV_ELEM_LED_CONTROLLER_MODE, 
-                               (uint8_t) Controller::Mode_t::SAFED));
+                               (uint8_t) MODE_SAFED));
     CHECK_SUCCESS (pLEDController->run ());
     CHECK_SUCCESS (pDv->read (DV_ELEM_LED_CONTROL_VAL, controlVal));
     CHECK_EQUAL (false, controlVal);

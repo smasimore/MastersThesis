@@ -36,7 +36,7 @@ void ClockSyncTest_Client::main (int ac, char** av)
     {
         ClockSyncTest_Config::mNodes,
         ClockSyncTest_Config::mChannels,
-        NetworkManager::Node_t::DEVICE_NODE_0,
+        NODE_DEVICE0,
         DV_ELEM_TEST0, // msg tx count
         DV_ELEM_TEST1, // msg rx count
     };
@@ -47,7 +47,7 @@ void ClockSyncTest_Client::main (int ac, char** av)
     // 3) Attempt to sync client with server.
     Errors::exitOnError(ClockSync::syncClient (
                                          pNm, 
-                                         NetworkManager::Node_t::CONTROL_NODE, 
+                                         NODE_CONTROL, 
                                          CONTROL_NODE_IP),
                         "Failed to sync.");
 

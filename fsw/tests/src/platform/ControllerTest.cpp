@@ -13,7 +13,7 @@ static DataVector::Config_t gDvConfig =
 {
     {DV_REG_TEST0,
     {
-        DV_ADD_UINT8 (DV_ELEM_TEST_CONTROLLER_MODE, Controller::Mode_t::SAFED),
+        DV_ADD_UINT8 (DV_ELEM_TEST_CONTROLLER_MODE, MODE_SAFED),
     }},
 };
 
@@ -50,9 +50,9 @@ TEST (ControllerTest, InitValidConfig)
                        DV_ELEM_TEST_CONTROLLER_MODE,
                        pTestController));
 
-    Controller::Mode_t stateRet;
+    Mode_t stateRet;
     CHECK_SUCCESS (pTestController->getMode (stateRet));
-    CHECK_EQUAL (Controller::Mode_t::SAFED, stateRet);
+    CHECK_EQUAL (MODE_SAFED, stateRet);
 }
 
 /* Test initialization of controller with an invalid config. */
@@ -64,9 +64,9 @@ TEST (ControllerTest, InitInvalidConfig)
     std::unique_ptr<TestController> pInvalid = nullptr;
     TestController::Config_t config = {false}; 
     CHECK_ERROR (Controller::createNew<TestController> (
-                     config, pDv,
-                     DV_ELEM_TEST_CONTROLLER_MODE,
-                     pInvalid),
+                                                 config, pDv,
+                                                 DV_ELEM_TEST_CONTROLLER_MODE,
+                                                 pInvalid),
                  E_OUT_OF_BOUNDS);
     POINTERS_EQUAL (pInvalid.get (), nullptr);
 }
@@ -112,15 +112,15 @@ TEST (ControllerTest, SetMode)
                        pTestController));
 
     // Controller should initialize SAFED.
-    Controller::Mode_t modeRet;
+    Mode_t modeRet;
     CHECK_SUCCESS (pTestController->getMode (modeRet));
-    CHECK_EQUAL (Controller::Mode_t::SAFED, modeRet);
+    CHECK_EQUAL (MODE_SAFED, modeRet);
 
     // Set mode as ENABLED and verify.
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
     CHECK_SUCCESS (pTestController->getMode (modeRet));
-    CHECK_EQUAL (Controller::Mode_t::ENABLED, modeRet);
+    CHECK_EQUAL (MODE_ENABLED, modeRet);
 }
 
 /* Test running controller in ENABLED and SAFED modes. */
@@ -140,12 +140,12 @@ TEST (ControllerTest, Run)
 
     // Expect this to call runEnabled
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
-                               (uint8_t) Controller::Mode_t::ENABLED));
+                               (uint8_t) MODE_ENABLED));
     CHECK_SUCCESS (pTestController->run ());
 
     // Expect this to call runSafed
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST_CONTROLLER_MODE, 
-                               (uint8_t) Controller::Mode_t::SAFED));
+                               (uint8_t) MODE_SAFED));
     CHECK_SUCCESS (pTestController->run ());
 
     // Build expected log.

@@ -41,8 +41,7 @@ Error_t NetworkManager::createNew (NetworkManager::Config_t& kConfig,
     return E_SUCCESS;
 }
 
-Error_t NetworkManager::send (NetworkManager::Node_t kNode, 
-                              std::vector<uint8_t>& kBuf)
+Error_t NetworkManager::send (Node_t kNode, std::vector<uint8_t>& kBuf)
 {
     // 1) Verify buffer is not empty.
     if (kBuf.size () == 0)
@@ -88,8 +87,7 @@ Error_t NetworkManager::send (NetworkManager::Node_t kNode,
     return E_SUCCESS;
 }
 
-Error_t NetworkManager::recv (NetworkManager::Node_t kNode, 
-                             std::vector<uint8_t>& kBufRet)
+Error_t NetworkManager::recv (Node_t kNode, std::vector<uint8_t>& kBufRet)
 {
     // 1) Verify buffer is not empty.
     if (kBufRet.size () == 0)
@@ -127,7 +125,7 @@ Error_t NetworkManager::recv (NetworkManager::Node_t kNode,
 }
 
 Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
-                                  std::vector<NetworkManager::Node_t> kNodes,
+                                  std::vector<Node_t> kNodes,
                                   std::vector<std::vector<uint8_t>>& kBufsRet, 
                                   std::vector<bool>& kMsgReceivedRet)
 {
@@ -279,7 +277,7 @@ NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig,
     // 1) Parse info from kConfig.
     std::vector<NetworkManager::ChannelConfig_t> channelConfigs = 
         kConfig.channels;
-    NetworkManager::Node_t me = kConfig.me;
+    Node_t me = kConfig.me;
 
     uint32_t meIp; 
     kRet = NetworkManager::convertIPStringToUInt32 (kConfig.nodeToIp[me], meIp);
@@ -307,7 +305,7 @@ NetworkManager::NetworkManager (NetworkManager::Config_t& kConfig,
         }
 
         // 2c) Get node on other side of channelConfig.
-        NetworkManager::Node_t toNode = me == channelConfig.node1 
+        Node_t toNode = me == channelConfig.node1 
             ? channelConfig.node2 
             : channelConfig.node1;
 
@@ -360,13 +358,13 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig,
     // 4) Verify nodes valid & IP's are valid and unique. Can't have duplicate
     //    nodes at this point, since stored in a map.
     std::set<std::string> ipSet;
-    for (std::pair<NetworkManager::Node_t, std::string> element : nodeToIp)
+    for (std::pair<Node_t, std::string> element : nodeToIp)
     {
-        NetworkManager::Node_t node = element.first;
-        std::string ip              = element.second;
+        Node_t node    = element.first;
+        std::string ip = element.second;
 
         // 4a) Verify valid node enum.
-        if (node >= NetworkManager::Node_t::LAST)
+        if (node >= NODE_LAST)
         {
             return E_INVALID_ENUM;
         }
@@ -388,14 +386,13 @@ Error_t NetworkManager::verifyConfig (NetworkManager::Config_t& kConfig,
 
     // 5) Verify channels reference defined nodes, use valid port numbers, and
     //    only 1 channel per node pair.
-    std::set<std::set<NetworkManager::Node_t>> nodePairSet;
+    std::set<std::set<Node_t>> nodePairSet;
     for (uint32_t i = 0; i < channelConfigs.size (); i++)
     {
         NetworkManager::ChannelConfig_t channelConfig = channelConfigs[i];
 
         // 5a) Verify unique node pair.
-        std::set<NetworkManager::Node_t> nodePair = {channelConfig.node1,
-                                                     channelConfig.node2};
+        std::set<Node_t> nodePair = {channelConfig.node1, channelConfig.node2};
         if (nodePairSet.insert (nodePair).second == false)
         {
             return E_DUPLICATE_CHANNEL;
