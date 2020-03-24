@@ -106,3 +106,4 @@ void finalizeFpgaAtExit ()
         NiFpga_Finalize ();
     }
 }
+

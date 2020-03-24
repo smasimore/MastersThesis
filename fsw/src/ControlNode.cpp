@@ -355,7 +355,7 @@ static Error_t recvDataVectorData ()
  *                                          elapsed or started after timer
  *                                          triggered more than once.
  */
-void* loop (void* _kArgs)
+static void* loop (void* _kArgs)
 {
     // 1) Send copies of relevant Data Vector regions to Device and Ground 
     //    Nodes. This signal doubles as a loop synchronizer, as all Device

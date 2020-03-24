@@ -71,8 +71,8 @@
  *        caller.
  */
 
-# ifndef CONTROL_NODE_HPP
-# define CONTROL_NODE_HPP
+#ifndef CONTROL_NODE_HPP
+#define CONTROL_NODE_HPP
 
 #include <memory>
 #include <vector>

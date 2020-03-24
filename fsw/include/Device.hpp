@@ -48,8 +48,8 @@
  *        Device has been initialized with a low value.
  */
 
-#ifndef aDEVICE_HPP
-#define aDEVICE_HPP
+#ifndef DEVICE_HPP
+#define DEVICE_HPP
 
 #include <stdint.h>
 #include <memory>
@@ -128,7 +128,8 @@ class Device
         /**
          * Constructor. Must be called by derived device constructors.
          */
-        Device (NiFpga_Session& kSession, std::shared_ptr<DataVector> kPDataVector);
+        Device (NiFpga_Session& kSession, 
+                std::shared_ptr<DataVector> kPDataVector);
 };
 
 #endif
