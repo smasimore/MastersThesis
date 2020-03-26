@@ -209,49 +209,40 @@ static Error_t initializeBuffers ()
 }
 
 /**
- * Helper to copy relevant Data Vector data and send it to Control Node.
+ * Helper to recv Data Vector data from Control Node and send the relevant data
+ * back. Optimized for faster response time to Control Node.
  *
- * @ret  E_SUCCESS                  Successfully sent data.
+ * NOTE: Blocks until message received.
+ *
+ * @ret  E_SUCCESS                  Successfully received data.
  *       E_DATA_VECTOR_READ         Failed to copy data from Data Vector.
+ *       E_NETWORK_MANAGER_RX_FAIL  Failed to recv data.
+ *       E_DATA_VECTOR_WRITE        Failed to write data to Data Vector.
  *       E_NETWORK_MANAGER_TX_FAIL  Failed to send data to nodes.
  */
-static Error_t sendDataVectorData ()
+static Error_t recvAndSendDataVectorData ()
 {
-    // Copy Data Vector data to buffer.
+    // 1) Copy tx Data Vector data to buffer. Do this first so can respond as
+    //    soon as data is received.
     if (gPDv->readRegion (NODE_TO_DV_INFO.at (gMe).sendRegion, gSendBuf) 
             != E_SUCCESS)
     {
         return E_DATA_VECTOR_READ;
     }
 
-    // Send data to Control Node.
-    if (gPNm->send (NODE_CONTROL, gSendBuf) != E_SUCCESS)
-    {
-        return E_NETWORK_MANAGER_TX_FAIL;
-    }
-
-    return E_SUCCESS;
-}
-
-/**
- * Helper to recv Data Vector data from Control Node and save it to the local 
- * Data Vector. 
- *
- * NOTE: Blocks until message received.
- *
- * @ret  E_SUCCESS                  Successfully received data.
- *       E_NETWORK_MANAGER_RX_FAIL  Failed to recv data.
- *       E_DATA_VECTOR_WRITE        Failed to write data to Data Vector.
- */
-static Error_t recvDataVectorData ()
-{
-    // Receive data from Control Node.
+    // 2) Receive data from Control Node.
     if (gPNm->recv (NODE_CONTROL, gRecvBuf) != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_RX_FAIL;
     }
 
-    // Copy data from buffer to Data Vector.
+    // 3) Send data to Control Node.
+    if (gPNm->send (NODE_CONTROL, gSendBuf) != E_SUCCESS)
+    {
+        return E_NETWORK_MANAGER_TX_FAIL;
+    }
+
+    // 4) Copy data from buffer to Data Vector.
     if (gPDv->writeRegion (NODE_TO_DV_INFO.at (gMe).recvRegion, gRecvBuf) 
             != E_SUCCESS)
     {
@@ -282,33 +273,31 @@ static void* loop (void* _kArgs)
     DataVectorElement_t loopElem  = NODE_TO_DV_INFO.at (gMe).loopElem;
     while (1)
     {
-        // 1) Receive rx Region from Control Node and save to Data Vector.
-        Errors::incrementOnError (recvDataVectorData (), gPDv, errorElem);
+        // 1) Receive rx Region from Control Node send tx Region. 
+        Errors::incrementOnError (recvAndSendDataVectorData (), gPDv, 
+                                  errorElem);
 
-        // 2) Send tx Region to Control Node.
-        Errors::incrementOnError (sendDataVectorData (), gPDv, errorElem);
-
-        // 3) Run the Sensor Devices. Run this before the Controllers so that
+        // 2) Run the Sensor Devices. Run this before the Controllers so that
         //    they have the most up-to-date data.
         for (std::unique_ptr<Device>& pSensorDev : gPSensorDevs)
         {
             Errors::incrementOnError (pSensorDev->run (), gPDv, errorElem);
         }
         
-        // 4) Run the Controllers.
+        // 3) Run the Controllers.
         for (std::unique_ptr<Controller>& pCtrl : gPCtrls)
         {
             Errors::incrementOnError (pCtrl->run (), gPDv, errorElem);
         }
 
-        // 5) Run the Actuator Devices. Run this after the Controllers so that
+        // 4) Run the Actuator Devices. Run this after the Controllers so that
         //    the system can react quickly.
         for (std::unique_ptr<Device>& pActuatorDev : gPActuatorDevs)
         {
             Errors::incrementOnError (pActuatorDev->run (), gPDv, errorElem);
         }
 
-        // 6) Increment loop counter.
+        // 5) Increment loop counter.
         Errors::incrementOnError (gPDv->increment (loopElem), gPDv, errorElem);
     }
 }

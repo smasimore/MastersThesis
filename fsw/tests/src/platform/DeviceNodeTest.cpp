@@ -109,7 +109,7 @@
     CHECK_SUCCESS (gPCnDv->read (kDvElemTx, tx));                              \
     CHECK_SUCCESS (gPCnDv->read (kDvElemRx, rx));                              \
     CHECK_EQUAL (gNumSimLoops - 1, tx);                                        \
-    CHECK_EQUAL (gNumSimLoops, rx);                                            \
+    CHECK_EQUAL (gNumSimLoops - 1, rx);                                        \
 }
 
 /*************************** DEVICE NODE CONFIGS ******************************/
