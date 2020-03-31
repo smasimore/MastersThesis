@@ -1517,7 +1517,7 @@ DataVector::Config_t gSynchronizationConfig = {
  *   2) Logs its thread ID to the test log
  *   3) Releases the Data Vector lock
  */
-static void* threadFuncLockAndLog (void *rawArgs)
+static void* funcLockAndLog (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1546,7 +1546,7 @@ static void* threadFuncLockAndLog (void *rawArgs)
  *   5) Releases the test lock
  *   6) Logs to the test log
  */
-static void* threadFuncLockAndLogThenBlock (void *rawArgs)
+static void* funcLockAndLogThenBlock (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1576,7 +1576,7 @@ static void* threadFuncLockAndLogThenBlock (void *rawArgs)
 /**
  * Thread that calls read on DV_ELEM_TEST0 and logs the result to the test log.
  */
-static void* threadFuncRead (void *rawArgs)
+static void* funcRead (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1598,7 +1598,7 @@ static void* threadFuncRead (void *rawArgs)
 /**
  * Thread that calls write to update DV_ELEM_TEST0.
  */
-static void* threadFuncWrite (void *rawArgs)
+static void* funcWrite (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1616,7 +1616,7 @@ static void* threadFuncWrite (void *rawArgs)
 /**
  * Thread that calls increment to update DV_ELEM_TEST0.
  */
-static void* threadFuncIncrement (void *rawArgs)
+static void* funcIncrement (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1634,7 +1634,7 @@ static void* threadFuncIncrement (void *rawArgs)
  * Thread that calls readRegion on DV_REG_TEST0 and logs the result to the test 
  * log.
  */
-static void* threadFuncReadRegion (void *rawArgs)
+static void* funcReadRegion (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1658,7 +1658,7 @@ static void* threadFuncReadRegion (void *rawArgs)
 /**
  * Thread that calls writeRegion to update DV_REG_TEST0.
  */
-static void* threadFuncWriteRegion (void *rawArgs)
+static void* funcWriteRegion (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1676,7 +1676,7 @@ static void* threadFuncWriteRegion (void *rawArgs)
 /**
  * Thread that calls readDataVector logs the result to the test log.
  */
-static void* threadFuncReadDataVector (void *rawArgs)
+static void* funcReadDataVector (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1700,7 +1700,7 @@ static void* threadFuncReadDataVector (void *rawArgs)
 /**
  * Thread that calls writeDataVector to update DV_REG_TEST0.
  */
-static void* threadFuncWriteDataVector (void *rawArgs)
+static void* funcWriteDataVector (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -1742,8 +1742,8 @@ static void testLockAcquireSemantics (
     struct ThreadFuncArgs argsThread2 = {&testLog, pDv, 2}; 
     struct ThreadFuncArgs argsThread3 = {&testLog, pDv, 3}; 
 
-    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLog = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLog;
+    ThreadManager::ThreadFunc_t threadFuncLockAndLog = 
+        (ThreadManager::ThreadFunc_t) funcLockAndLog;
 
     // Acquire lock so that all other threads initially block on acquire.
     CHECK_SUCCESS (pDv->acquireLock ());
@@ -1757,19 +1757,19 @@ static void testLockAcquireSemantics (
     // 3) mid pri thread
     //
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncLockAndLog,
+                                    t1, threadFuncLockAndLog,
                                     &argsThread1, sizeof (argsThread1),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t2, pThreadFuncLockAndLog,
+                                    t2, threadFuncLockAndLog,
                                     &argsThread2, sizeof (argsThread2),
                                     t2Pri,
                                     ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t3, pThreadFuncLockAndLog,
+                                    t3, threadFuncLockAndLog,
                                     &argsThread3, sizeof (argsThread3),
                                     t3Pri,
                                     ThreadManager::Affinity_t::CORE_0));
@@ -1820,11 +1820,11 @@ static void testLockReleaseSemantics (
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
     struct ThreadFuncArgs argsThread2 = {&testLog, pDv, 2}; 
 
-    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLogThenBlock = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLogThenBlock;
+    ThreadManager::ThreadFunc_t threadFuncLockAndLogThenBlock = 
+        (ThreadManager::ThreadFunc_t) funcLockAndLogThenBlock;
 
-    ThreadManager::ThreadFunc_t *pThreadFuncLockAndLog = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncLockAndLog;
+    ThreadManager::ThreadFunc_t threadFuncLockAndLog = 
+        (ThreadManager::ThreadFunc_t) funcLockAndLog;
 
     // Initialize test lock used to synchronize between cpputest thread and 
     // t1.
@@ -1838,7 +1838,7 @@ static void testLockReleaseSemantics (
     // then blocks on the test lock (which is currently held by the cpputest 
     // thread).
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncLockAndLogThenBlock,
+                                    t1, threadFuncLockAndLogThenBlock,
                                     &argsThread1, sizeof (argsThread1),
                                     t1Pri, ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
@@ -1846,7 +1846,7 @@ static void testLockReleaseSemantics (
     // Create t2 and sleep so that the thread blocks on attempting to acquire 
     // the DV lock.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t2, pThreadFuncLockAndLog,
+                                    t2, threadFuncLockAndLog,
                                     &argsThread2, sizeof (argsThread2),
                                     t2Pri, ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
@@ -2003,8 +2003,6 @@ TEST (DataVector_threadSynchronization, ReadBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncRead = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncRead;
 
     // Write initial value to DV.
     pDv->write (DV_ELEM_TEST0, (uint8_t) 1);
@@ -2014,7 +2012,7 @@ TEST (DataVector_threadSynchronization, ReadBlocked)
 
     // Create thread and sleep so that thread blocks on read.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncRead,
+                                    t1, (ThreadManager::ThreadFunc_t) funcRead,
                                     &argsThread1, sizeof (argsThread1),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
@@ -2044,18 +2042,17 @@ TEST (DataVector_threadSynchronization, WriteBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncWrite = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncWrite;
 
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
     // Create thread and sleep so that thread blocks on write.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncWrite,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                                t1, 
+                                (ThreadManager::ThreadFunc_t) funcWrite,
+                                &argsThread1, sizeof (argsThread1),
+                                ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Verify value is still 0.
@@ -2085,18 +2082,17 @@ TEST (DataVector_threadSynchronization, IncrementBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncIncrement = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncIncrement;
 
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
     // Create thread and sleep so that thread blocks on increment.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncIncrement,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                            t1, 
+                            (ThreadManager::ThreadFunc_t) funcIncrement,
+                            &argsThread1, sizeof (argsThread1),
+                            ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                            ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Verify value is still 0.
@@ -2126,8 +2122,6 @@ TEST (DataVector_threadSynchronization, ReadRegionBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncReadRegion = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncReadRegion;
 
     // Write initial value to DV.
     pDv->write (DV_ELEM_TEST0, (uint8_t) 1);
@@ -2137,10 +2131,11 @@ TEST (DataVector_threadSynchronization, ReadRegionBlocked)
 
     // Create thread and sleep so that thread blocks on read.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncReadRegion,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                                t1, 
+                                (ThreadManager::ThreadFunc_t) funcReadRegion,
+                                &argsThread1, sizeof (argsThread1),
+                                ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Write new value to DV.
@@ -2167,18 +2162,17 @@ TEST (DataVector_threadSynchronization, WriteRegionBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncWriteRegion = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncWriteRegion;
 
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
     // Create thread and sleep so that thread blocks on write.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncWriteRegion,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                                t1, 
+                                (ThreadManager::ThreadFunc_t) funcWriteRegion,
+                                &argsThread1, sizeof (argsThread1),
+                                ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Verify value is still 0.
@@ -2208,8 +2202,6 @@ TEST (DataVector_threadSynchronization, ReadDataVectorBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncReadDataVector = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncReadDataVector;
 
     // Write initial value to DV.
     pDv->write (DV_ELEM_TEST0, (uint8_t) 1);
@@ -2219,10 +2211,11 @@ TEST (DataVector_threadSynchronization, ReadDataVectorBlocked)
 
     // Create thread and sleep so that thread blocks on read.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncReadDataVector,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                        t1, 
+                        (ThreadManager::ThreadFunc_t) funcReadDataVector,
+                        &argsThread1, sizeof (argsThread1),
+                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                        ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Write new value to DV.
@@ -2249,18 +2242,17 @@ TEST (DataVector_threadSynchronization, WriteDataVectorBlocked)
     // Initialize thread.
     pthread_t t1;
     struct ThreadFuncArgs argsThread1 = {&testLog, pDv, 1}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncWriteDataVector = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncWriteDataVector;
 
     // Acquire lock so that thread blocks on write attempt.
     CHECK_SUCCESS (pDv->acquireLock ());
 
     // Create thread and sleep so that thread blocks on write.
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    t1, pThreadFuncWriteDataVector,
-                                    &argsThread1, sizeof (argsThread1),
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                    ThreadManager::Affinity_t::CORE_0));
+                        t1, 
+                        (ThreadManager::ThreadFunc_t) funcWriteDataVector,
+                        &argsThread1, sizeof (argsThread1),
+                        ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                        ThreadManager::Affinity_t::CORE_0));
     TestHelpers::sleepMs (10);
 
     // Verify value is still 0.

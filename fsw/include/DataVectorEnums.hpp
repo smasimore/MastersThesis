@@ -117,6 +117,7 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_TEST_CONTROLLER_MODE,
     DV_ELEM_DN_RESP_CTRL_MODE,
     DV_ELEM_ERROR_CTRL_MODE,
+    DV_ELEM_MISS_CTRL_MODE,
     DV_ELEM_THREAD_KILL_CTRL_MODE,
     DV_ELEM_DEVICE_NODE_CTRL_MODE,
 
@@ -135,6 +136,7 @@ enum DataVectorElement_t : uint32_t
 ///////////////////////////////// FSW ELEMENTS /////////////////////////////////
 
     /* Health Counters */
+    DV_ELEM_CN_DEADLINE_MISSES,
     DV_ELEM_CN_LOOP_COUNT,
     DV_ELEM_CN_ERROR_COUNT,
     DV_ELEM_CN_MSG_TX_COUNT,

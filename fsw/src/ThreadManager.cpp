@@ -27,7 +27,7 @@ const uint8_t ThreadManager::MIN_NEW_THREAD_PRIORITY = 1;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
-Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
+Error_t ThreadManager::getInstance (ThreadManager*& kPThreadManagerRet)
 {
     // 1) Initialize the kernel scheduling environment.
     static bool initialized = false;
@@ -44,46 +44,46 @@ Error_t ThreadManager::getInstance (ThreadManager **ppThreadManager)
     // 2) Construct the ThreadManager instance and store it's pointer in the
     //    return param.
     static ThreadManager threadManagerInstance = ThreadManager ();
-    *ppThreadManager = &threadManagerInstance;
+    kPThreadManagerRet = &threadManagerInstance;
 
     return E_SUCCESS;
 }
 
-Error_t ThreadManager::createThread (pthread_t &thread, 
-                                     ThreadManager::ThreadFunc_t * pFunc, 
-                                     void *pArgs, uint32_t numArgBytes,
-                                     ThreadManager::Priority_t priority, 
-                                     ThreadManager::Affinity_t cpuAffinity)
+Error_t ThreadManager::createThread (pthread_t& kThread, 
+                                     ThreadManager::ThreadFunc_t kFunc, 
+                                     void* kPArgs, uint32_t kNumArgBytes,
+                                     ThreadManager::Priority_t kPriority, 
+                                     ThreadManager::Affinity_t kCpuAffinity)
 {
     // 1) Validate params. 
-    if (pFunc == nullptr)
+    if (kFunc == nullptr)
     {
         return E_INVALID_POINTER;
     } 
-    else if (priority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
-             priority > ThreadManager::MAX_NEW_THREAD_PRIORITY)
+    else if (kPriority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
+             kPriority > ThreadManager::MAX_NEW_THREAD_PRIORITY)
     {
         return E_INVALID_PRIORITY;
     }
-    else if (cpuAffinity >= ThreadManager::Affinity_t::LAST)
+    else if (kCpuAffinity >= ThreadManager::Affinity_t::LAST)
     {
         return E_INVALID_AFFINITY;
     }
-    else if (pArgs == nullptr && numArgBytes != 0)
+    else if (kPArgs == nullptr && kNumArgBytes != 0)
     {
         return E_INVALID_ARGS_LENGTH;
     }
 
     // 2) Copy the passed in args to the heap.
     void *pArgsCopy = nullptr;
-    if (numArgBytes > 0)
+    if (kNumArgBytes > 0)
     {
-        pArgsCopy = malloc (numArgBytes);
+        pArgsCopy = malloc (kNumArgBytes);
         if (pArgsCopy == nullptr)
         {
             return E_FAILED_TO_ALLOCATE_ARGS;
         }
-        std::memcpy (pArgsCopy, pArgs, numArgBytes);
+        std::memcpy (pArgsCopy, kPArgs, kNumArgBytes);
     }
 
     // 3) Initialize the thread attribute struct.
@@ -104,7 +104,7 @@ Error_t ThreadManager::createThread (pthread_t &thread,
 
     // 5) Set the thread priority.
     struct sched_param param;
-    param.__sched_priority = priority;
+    param.__sched_priority = kPriority;
     if (pthread_attr_setschedparam (&attr, &param) != 0)
     {
         return E_FAILED_TO_SET_PRIORITY;
@@ -118,7 +118,7 @@ Error_t ThreadManager::createThread (pthread_t &thread,
     }
 
     // 7) Create the thread.
-    if (pthread_create (&thread, &attr, (void *(*)(void*)) pFunc, pArgsCopy) 
+    if (pthread_create (&kThread, &attr, (void *(*)(void*)) kFunc, pArgsCopy) 
             != 0)
     {
         return E_FAILED_TO_CREATE_THREAD;
@@ -127,11 +127,11 @@ Error_t ThreadManager::createThread (pthread_t &thread,
     // 8) Set the CPU affinity of the new thread.
     cpu_set_t cpuset;
     CPU_ZERO (&cpuset);
-    if (cpuAffinity == ThreadManager::Affinity_t::CORE_0)
+    if (kCpuAffinity == ThreadManager::Affinity_t::CORE_0)
     {
         CPU_SET (0, &cpuset);
     }
-    else if (cpuAffinity == ThreadManager::Affinity_t::CORE_1)
+    else if (kCpuAffinity == ThreadManager::Affinity_t::CORE_1)
     {
         CPU_SET (1, &cpuset);
     }
@@ -141,7 +141,7 @@ Error_t ThreadManager::createThread (pthread_t &thread,
         CPU_SET (1, &cpuset);
     }
 
-    if (pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset) != 0)
+    if (pthread_setaffinity_np (kThread, sizeof (cpu_set_t), &cpuset) != 0)
     {
         return E_FAILED_TO_SET_AFFINITY;
     }
@@ -153,87 +153,96 @@ Error_t ThreadManager::createThread (pthread_t &thread,
     pthread_attr_destroy (&attr);
 
     // 10) Allocate a thread struct to keep track of thread and insert it at the
-    //     front of ThreadList.
+    //     front of mThreadList.
     struct Thread *pNewThread = (struct Thread *) 
                                 malloc (sizeof (struct Thread));
     if (pNewThread == nullptr)
     {
         return E_FAILED_TO_ALLOCATE_THREAD;
     }
-    pNewThread->thread = thread;
-    pNewThread->pArgs = pArgsCopy;
-    pNewThread->next = this->ThreadList;
-    this->ThreadList = pNewThread;
+    pNewThread->thread = kThread;
+    pNewThread->pArgs  = pArgsCopy;
+    pNewThread->next   = mThreadList;
+    mThreadList        = pNewThread;
 
     return E_SUCCESS;
 }
 
-Error_t ThreadManager::createPeriodicThread (pthread_t &thread, 
-                                             ThreadFunc_t *pFunc,
-                                             void *pArgs,  uint32_t numArgBytes, 
-                                             Priority_t priority, 
-                                             Affinity_t cpuAffinity, 
-                                             uint32_t periodMs)
+Error_t ThreadManager::createPeriodicThread (
+                                     pthread_t& kThread, ThreadFunc_t kFunc,
+                                     void* kPArgs, uint32_t kNumArgBytes, 
+                                     Priority_t kPriority, 
+                                     Affinity_t kCpuAffinity, 
+                                     uint32_t kPeriodMs,
+                                     ErrorHandler_t kErrorHandlerFunc)
 {
-    // 1) Validate pFunc and pArgs. The rest of the params will be validated 
-    //    in the createThread call.
-    if (pFunc == nullptr)
+    // 1) Validate function ptrs and args. The rest of the params will be 
+    //    validated in the createThread call.
+    if (kFunc == nullptr || kErrorHandlerFunc == nullptr)
     {
         return E_INVALID_POINTER;
     } 
-    else if (pArgs == nullptr && numArgBytes != 0)
+    else if (kPArgs == nullptr && kNumArgBytes != 0)
     {
         return E_INVALID_ARGS_LENGTH;
     }
 
-    // 2) Copy args to a buffer with an extra 8 bytes at the beginning to store
-    //    periodMs and pFunc. These last 2 elements will be used by the periodic
-    //    wrapper thread, while the original arguments will be passed down the
-    //    pFunc.
-    uint32_t argsBufferSize = numArgBytes + sizeof(periodMs) + sizeof(pFunc);
-    uint8_t argsBuffer[argsBufferSize];
+    // 2) Copy args to a buffer with metadata at the beginning for use in the
+    //    wrappe. The original user-provided arguments will be passed to kFunc.
+    uint32_t numMetadataBytes = sizeof (kPeriodMs) + sizeof (kFunc) +
+                                sizeof (kErrorHandlerFunc);
+    uint32_t argsBufferSizeBytes = kNumArgBytes + numMetadataBytes;
+    uint8_t argsBuffer[argsBufferSizeBytes];
 
-    // 3) Store periodMs in the buffer.
-    argsBuffer[3] = (periodMs >> 24) & 0xFF;
-    argsBuffer[2] = (periodMs >> 16) & 0xFF;
-    argsBuffer[1] = (periodMs >> 8) & 0xFF;
-    argsBuffer[0] = periodMs & 0xFF;
+    // 3) Store kPeriodMs in the buffer.
+    argsBuffer[3] = (kPeriodMs >> 24) & 0xFF;
+    argsBuffer[2] = (kPeriodMs >> 16) & 0xFF;
+    argsBuffer[1] = (kPeriodMs >> 8)  & 0xFF;
+    argsBuffer[0] =  kPeriodMs        & 0xFF;
 
-    // 4) Store pFunc in the buffer.
-    argsBuffer[7] = ((uint32_t) pFunc >> 24) & 0xFF;
-    argsBuffer[6] = ((uint32_t) pFunc >> 16) & 0xFF;
-    argsBuffer[5] = ((uint32_t) pFunc >> 8) & 0xFF;
-    argsBuffer[4] = (uint32_t) pFunc & 0xFF;
+    // 4) Store kFunc in the buffer.
+    argsBuffer[7] = ((uint32_t) kFunc >> 24) & 0xFF;
+    argsBuffer[6] = ((uint32_t) kFunc >> 16) & 0xFF;
+    argsBuffer[5] = ((uint32_t) kFunc >> 8)  & 0xFF;
+    argsBuffer[4] =  (uint32_t) kFunc        & 0xFF;
 
-    // 5) Copy the pFunc args to the rest of the buffer.
-    if (numArgBytes > 0)
+    // 5) Store kErrorHandlerFunc in the buffer.
+    argsBuffer[11] = ((uint32_t) kErrorHandlerFunc >> 24) & 0xFF;
+    argsBuffer[10] = ((uint32_t) kErrorHandlerFunc >> 16) & 0xFF;
+    argsBuffer[9]  = ((uint32_t) kErrorHandlerFunc >> 8)  & 0xFF;
+    argsBuffer[8]  =  (uint32_t) kErrorHandlerFunc        & 0xFF;
+
+    // 6) Copy the kFunc args to the rest of the buffer.
+    if (kNumArgBytes > 0)
     {
-        std::memcpy (argsBuffer + 8, pArgs, numArgBytes);
+        std::memcpy (argsBuffer + numMetadataBytes, kPArgs, kNumArgBytes);
     }
-   
-    // 6) Create wrapper thread, which will call pFunc.
-    ThreadManager::ThreadFunc_t *pPeriodicWrapperFunc = 
-        (ThreadManager::ThreadFunc_t *) &ThreadManager::periodicWrapperFunc;
-    Error_t ret = this->createThread (thread, pPeriodicWrapperFunc, argsBuffer,
-                                      argsBufferSize, priority, cpuAffinity);
+
+    // 7) Create wrapper thread, which will call kFunc.
+    ThreadManager::ThreadFunc_t periodicWrapperFunc = 
+        (ThreadManager::ThreadFunc_t) &ThreadManager::periodicWrapperFunc;
+    Error_t ret = this->createThread (kThread, periodicWrapperFunc, argsBuffer,
+                                      argsBufferSizeBytes, kPriority, 
+                                      kCpuAffinity);
 
     return ret;
 }
 
 
-Error_t ThreadManager::waitForThread (pthread_t &thread, Error_t &threadReturn)
+Error_t ThreadManager::waitForThread (pthread_t& kThread, 
+                                      Error_t& kThreadRet)
 {
     void * threadReturnVoid = nullptr;
-    if (pthread_join (thread, &threadReturnVoid) != 0)
+    if (pthread_join (kThread, &threadReturnVoid) != 0)
     {
         return E_FAILED_TO_WAIT_ON_THREAD;
     }
 
-    threadReturn = static_cast<Error_t> (
-                    reinterpret_cast<uint64_t> (threadReturnVoid));
+    kThreadRet = static_cast<Error_t> (
+                     reinterpret_cast<uint64_t> (threadReturnVoid));
 
     // Find thread struct and free allocated memory.
-    struct ThreadManager::Thread *curr = this->ThreadList;
+    struct ThreadManager::Thread *curr = mThreadList;
     struct ThreadManager::Thread *prev = nullptr;
     bool foundInList = false;
     while (curr != nullptr)
@@ -241,12 +250,12 @@ Error_t ThreadManager::waitForThread (pthread_t &thread, Error_t &threadReturn)
         foundInList = true;
 
         // If thread found, remove from list and free memory.
-        if (pthread_equal (curr->thread, thread) != 0)
+        if (pthread_equal (curr->thread, kThread) != 0)
         {
             // Handle if curr is first thread in the list.
             if (prev == nullptr)
             {
-                this->ThreadList = curr->next;
+                mThreadList = curr->next;
             }
 
             // Handle if curr is not first thread in the list.
@@ -279,16 +288,16 @@ Error_t ThreadManager::waitForThread (pthread_t &thread, Error_t &threadReturn)
     return E_SUCCESS;
 } 
 
-Error_t ThreadManager::verifyProcess (const uint8_t pid, 
-                                      const std::string expectedName, 
-                                      bool &verified)
+Error_t ThreadManager::verifyProcess (const uint8_t kPid, 
+                                      const std::string kExpectedName, 
+                                      bool& kVerifiedRet)
 {
-    verified = true;
+    kVerifiedRet = true;
 
     // 1) Build path to file 
     const std::string PROC_DIR = "/proc/";
     const std::string PROC_COMM_DIR = "/comm";
-    std::string procNameFilePath = PROC_DIR + std::to_string (pid) + 
+    std::string procNameFilePath = PROC_DIR + std::to_string (kPid) + 
                                    PROC_COMM_DIR;
     std::fstream procNameFile;
 
@@ -317,28 +326,28 @@ Error_t ThreadManager::verifyProcess (const uint8_t pid,
     }
 
     // 5) Compare actual to expected.
-    if (strcmp (actualName, expectedName.c_str ()) != 0)
+    if (strcmp (actualName, kExpectedName.c_str ()) != 0)
     {
-        verified = false;
+        kVerifiedRet = false;
     }
 
     return E_SUCCESS;
 }
 
-Error_t ThreadManager::setProcessPriority (const uint8_t pid, 
-                                           const uint8_t priority)
+Error_t ThreadManager::setProcessPriority (const uint8_t kPid, 
+                                           const uint8_t kPriority)
 {
 
     // Only allow priorities below hw IRQ thread priority and above min
     // SCHED_FIFO priority.
-    if (priority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
-        priority >= ThreadManager::HW_IRQ_PRIORITY)
+    if (kPriority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
+        kPriority >= ThreadManager::HW_IRQ_PRIORITY)
     {
         return E_INVALID_PRIORITY;
     }
     struct sched_param schedParam;
-    schedParam.__sched_priority = priority;
-    if (sched_setparam (pid, &schedParam) != 0)
+    schedParam.__sched_priority = kPriority;
+    if (sched_setparam (kPid, &schedParam) != 0)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
@@ -348,10 +357,8 @@ Error_t ThreadManager::setProcessPriority (const uint8_t pid,
 
 /**************************** PRIVATE FUNCTIONS *******************************/
 
-ThreadManager::ThreadManager () 
-{
-    this->ThreadList = nullptr;
-}
+ThreadManager::ThreadManager () :
+    mThreadList  (nullptr) { }
 
 ThreadManager::ThreadManager (ThreadManager const &) {}
 
@@ -454,13 +461,16 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
     return E_SUCCESS;
 }
 
-void *ThreadManager::periodicWrapperFunc (void *rawArgs)
+void* ThreadManager::periodicWrapperFunc (void* kRawArgs)
 {
-    // 1) Get period and function to call every period from first 8 bytes in 
-    //    argsBuffer.
-    uint32_t *argsBuffer = (uint32_t *) rawArgs;
-    uint32_t periodMs = argsBuffer[0];
-    ThreadManager::ThreadFunc_t *pFunc = (ThreadManager::ThreadFunc_t *) argsBuffer[1];
+    // 1) Get metadata from argsBuffer.
+    uint8_t metadataIdx = 0;
+    uint32_t *argsBuffer = (uint32_t *) kRawArgs;
+    uint32_t periodMs = argsBuffer[metadataIdx++];
+    ThreadManager::ThreadFunc_t pFunc = 
+        (ThreadManager::ThreadFunc_t) argsBuffer[metadataIdx++];
+    ThreadManager::ErrorHandler_t pErrorHandlerFunc = 
+        (ThreadManager::ErrorHandler_t) argsBuffer[metadataIdx++];
 
     // 2) Set up periodic timer.
     static const uint32_t NUM_MS_IN_S = 1000;
@@ -489,13 +499,16 @@ void *ThreadManager::periodicWrapperFunc (void *rawArgs)
     // 3) Enter periodic loop.
     while (1)
     {
-        // 3a) Call pFunc with the args buffer starting after the period and
-        //     pFunc elements.
-        Error_t ret = static_cast<Error_t> (reinterpret_cast<uint64_t> (
-                                                        pFunc(&argsBuffer[2])));
+        // 3a) Call pFunc with the args buffer starting after metadata elements.
+        Error_t ret = static_cast<Error_t> (
+            reinterpret_cast<uint64_t> (pFunc(&argsBuffer[metadataIdx])));
         if (ret != E_SUCCESS)
         {
-            return (void *) ret;
+            ret = pErrorHandlerFunc (ret);
+            if (ret != E_SUCCESS)
+            {
+                return (void *) ret;
+            }
         }
 
         // 3b) Set fd as non-blocking to be able to check for deadline miss.
@@ -514,14 +527,19 @@ void *ThreadManager::periodicWrapperFunc (void *rawArgs)
         // 3c) Check for deadline miss.
         int32_t readRet = 0;
         uint64_t ticksSinceLastRead = 0;
-        readRet = read (timerFd, &ticksSinceLastRead, sizeof (ticksSinceLastRead));
+        readRet = read (timerFd, &ticksSinceLastRead, 
+                        sizeof (ticksSinceLastRead));
         if (readRet < 0 && errno != EAGAIN)
         {
             return (void *) E_FAILED_TO_READ_TIMERFD;
         }
         else if (ticksSinceLastRead > 0)
         {
-            return (void *) E_MISSED_SCHEDULER_DEADLINE;
+            ret = pErrorHandlerFunc (E_MISSED_SCHEDULER_DEADLINE);
+            if (ret != E_SUCCESS)
+            {
+                return (void *) ret;
+            }
         }
 
         // 3d) Set fd as blocking so can block until timer elapses.
@@ -532,10 +550,11 @@ void *ThreadManager::periodicWrapperFunc (void *rawArgs)
         }
 
         // 3e) Block until timer elapses and make sure timer only expired once.
-        readRet = read (timerFd, &ticksSinceLastRead, sizeof (ticksSinceLastRead));
+        readRet = read (timerFd, &ticksSinceLastRead, 
+                        sizeof (ticksSinceLastRead));
         if (ticksSinceLastRead > 1)
         {
-            return (void *) E_MISSED_SCHEDULER_DEADLINE;
+            return (void *) E_TIMER_EXPIRED_MORE_THAN_ONCE;
         }
     }
 }

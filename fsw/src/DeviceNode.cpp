@@ -262,7 +262,8 @@ static Error_t recvAndSendDataVectorData ()
  *   4) Run Controllers.
  *   5) Run Actuator Devices.
  *
- * This function never returns.
+ * This function never returns. If Errors::incrementOnError fails, fails 
+ * silently.
  *
  * @param   _kArgs                          Unused.
  *
@@ -330,7 +331,7 @@ void DeviceNode::entry (NetworkManager::Config_t  kNmConfig,
     // 3) Init Thread Manager. Do this early on so that the kernel scheduling 
     //    environment is set up immediately.
     ThreadManager* pTm = nullptr;
-    Errors::exitOnError (ThreadManager::getInstance (&pTm),
+    Errors::exitOnError (ThreadManager::getInstance (pTm),
                          "Thread Manager failed to initialize.");
 
     // 4) Init Data Vector. This is required for Network Manager, Controller, 
@@ -376,7 +377,7 @@ void DeviceNode::entry (NetworkManager::Config_t  kNmConfig,
 
     // 11) Create thread to run loop function.
     pthread_t loopThread;
-    ThreadManager::ThreadFunc_t *fLoop = (ThreadManager::ThreadFunc_t*) &loop;
+    ThreadManager::ThreadFunc_t fLoop = (ThreadManager::ThreadFunc_t) loop;
     Errors::exitOnError (pTm->createThread (
                                       loopThread, fLoop, nullptr, 0,
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,

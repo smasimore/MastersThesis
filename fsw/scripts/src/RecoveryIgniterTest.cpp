@@ -446,18 +446,16 @@ Error_t initDevice ()
 Error_t initThreads ()
 {
     // Create the thread manager.
-    Error_t err = ThreadManager::getInstance (&gPThreadManager);
+    Error_t err = ThreadManager::getInstance (gPThreadManager);
     if (err != E_SUCCESS)
     {
         return err;
     }
 
     // Create the abort thread that stops the countdown when enter is pressed.
-    ThreadManager::ThreadFunc_t* pAbortThreadFunc =
-            (ThreadManager::ThreadFunc_t*) &abortThreadFunc;
     err = gPThreadManager->createThread (
-            gAbortThread, pAbortThreadFunc, nullptr, 0,
-            ThreadManager::MAX_NEW_THREAD_PRIORITY,
+            gAbortThread, (ThreadManager::ThreadFunc_t) abortThreadFunc, 
+            nullptr, 0, ThreadManager::MAX_NEW_THREAD_PRIORITY,
             ThreadManager::Affinity_t::CORE_0);
     if (err != E_SUCCESS)
     {
@@ -466,11 +464,9 @@ Error_t initThreads ()
 
     // Create the ignition thread that counts down and raises the DIO line. This
     // thread has a lower priority than the abort thread.
-    ThreadManager::ThreadFunc_t* pIgnitionThreadFunc =
-            (ThreadManager::ThreadFunc_t*) &ignitionThreadFunc;
     err = gPThreadManager->createThread (
-            gIgnitionThread, pIgnitionThreadFunc, nullptr, 0,
-            ThreadManager::MIN_NEW_THREAD_PRIORITY,
+            gIgnitionThread, (ThreadManager::ThreadFunc_t) ignitionThreadFunc, 
+            nullptr, 0, ThreadManager::MIN_NEW_THREAD_PRIORITY,
             ThreadManager::Affinity_t::CORE_0);
     if (err != E_SUCCESS)
     {

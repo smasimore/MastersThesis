@@ -15,7 +15,7 @@ void ProfileHelpers::setThreadPriAndAffinity ()
 {
     // Initialize ThreadManager so that kernel environment is set.
     ThreadManager* pTm;
-    if (ThreadManager::getInstance (&pTm) != E_SUCCESS)
+    if (ThreadManager::getInstance (pTm) != E_SUCCESS)
     {
         throw std::runtime_error ("Failed to initialize Thread Manager");
     }

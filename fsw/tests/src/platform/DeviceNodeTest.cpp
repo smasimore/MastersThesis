@@ -65,7 +65,7 @@
 #define CREATE_SIM_THREAD(kClockSync, kEnterLoop, kNode, kDvConfig,            \
                           kDvRegRecv, kDvRegSend)                              \
     ThreadManager* pTm = nullptr;                                              \
-    CHECK_SUCCESS (ThreadManager::getInstance (&pTm));                         \
+    CHECK_SUCCESS (ThreadManager::getInstance (pTm));                          \
     pthread_t thread;                                                          \
     FuncArgs_t args = {kClockSync, kEnterLoop, kNode, kDvConfig, kDvRegRecv,   \
                        kDvRegSend};                                            \
@@ -708,8 +708,8 @@ static void* fControlNodeSim (void* _args)
 /**
  * Node sim function pointer.
  */
-ThreadManager::ThreadFunc_t* gFControlNodeSim = 
-    (ThreadManager::ThreadFunc_t*) &fControlNodeSim;
+ThreadManager::ThreadFunc_t gFControlNodeSim = 
+    (ThreadManager::ThreadFunc_t) fControlNodeSim;
 
 /********************************* TESTS **************************************/
 

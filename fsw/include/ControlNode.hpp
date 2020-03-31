@@ -48,6 +48,7 @@
  *           DV_ELEM_DN0_RX_MISS_COUNT
  *           DV_ELEM_DN1_RX_MISS_COUNT
  *           DV_ELEM_DN2_RX_MISS_COUNT
+ *           DV_ELEM_CN_DEADLINE_MISSES
  *       DV_REG_CN_TO_DN0
  *       DV_REG_CN_TO_DN1
  *       DV_REG_CN_TO_DN2

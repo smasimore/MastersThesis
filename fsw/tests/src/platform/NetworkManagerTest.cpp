@@ -585,7 +585,7 @@ struct ThreadFuncArgs
 /**
  * Thread that sends a message.
  */
-static void* threadFuncSend (void *rawArgs)
+static void* funcSend (void *rawArgs)
 {
     Error_t ret = E_SUCCESS;
 
@@ -610,10 +610,9 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     // since it is lower pri than the cpputest thread.
     pthread_t thread;
     struct ThreadFuncArgs argsThread = {&testLog, pNmDev0.get ()}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncSend = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncSend;
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    thread, pThreadFuncSend,
+                                    thread, 
+                                    (ThreadManager::ThreadFunc_t) funcSend,
                                     &argsThread, sizeof (argsThread),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
@@ -1035,15 +1034,15 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     pthread_t thread1;
     struct ThreadFuncArgs argsThread0 = {&testLog, pNmDev0.get ()}; 
     struct ThreadFuncArgs argsThread1 = {&testLog, pNmDev1.get ()}; 
-    ThreadManager::ThreadFunc_t *pThreadFuncSend = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncSend;
+    ThreadManager::ThreadFunc_t threadFuncSend = 
+        (ThreadManager::ThreadFunc_t) funcSend;
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    thread0, pThreadFuncSend,
+                                    thread0, threadFuncSend,
                                     &argsThread0, sizeof (argsThread0),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));
     CHECK_SUCCESS (pThreadManager->createThread (
-                                    thread1, pThreadFuncSend,
+                                    thread1, threadFuncSend,
                                     &argsThread1, sizeof (argsThread1),
                                     ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                     ThreadManager::Affinity_t::CORE_0));

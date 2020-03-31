@@ -1,4 +1,5 @@
 /* All #include statements should come before the CppUTest include */
+#include <unistd.h>
 #include <sched.h>
 #include <signal.h>
 #include <iostream>
@@ -23,11 +24,15 @@ struct ThreadFuncArgs
 
 /**
  * Thread that logs its thread ID to the test log and then returns.
+ *
+ * @param  kRawArgs   Args.
+ *
+ * @ret    E_SUCCESS  Successfully executed thread.
  */
-void *threadFuncLog (void *rawArgs)
+static void* funcLog (void* kRawArgs)
 {
     // Log event to test log.
-    struct ThreadFuncArgs *pArgs = (struct ThreadFuncArgs *) rawArgs;
+    struct ThreadFuncArgs *pArgs = (struct ThreadFuncArgs *) kRawArgs;
     uint8_t threadId = pArgs->threadId;
     pArgs->testLog->logEvent (Log::LogEvent_t::THREAD_START, threadId);
 
@@ -36,33 +41,89 @@ void *threadFuncLog (void *rawArgs)
 
 /**
  * Thread that logs its thread ID to the test log and then returns.
+ *
+ * @param  _kRawArgs  Unused.
+ *
+ * @ret    E_SUCCESS  Successfully executed thread.
  */
-void *threadFuncNoArgs (void *rawArgs)
+static void* funcNoArgs (void* _kRawArgs)
 {
     return (void *) E_SUCCESS;
 }
 
 /**
- * Thread that logs once and then spins.
+ * Global flag to stop spinning thread.
  */
-void *threadFuncSpin (void *rawArgs)
-{
-    // Set cancellation type to be asynchronous so cpputest thread can cancel
-    // thread.
-    pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
+static bool gStopSpin = false;
 
+/**
+ * Thread that logs once and then spins until global flag is true.
+ *
+ * @param  kRawArgs   Args.
+ */
+static void* funcSpin (void* kRawArgs)
+{
     // Log event to test log.
-    struct ThreadFuncArgs *pArgs = (struct ThreadFuncArgs *) rawArgs;
+    struct ThreadFuncArgs *pArgs = (struct ThreadFuncArgs *) kRawArgs;
     uint8_t threadId = pArgs->threadId;
-    pArgs->testLog->logEvent (Log::LogEvent_t::THREAD_START, threadId);
+    CHECK_SUCCESS (pArgs->testLog->logEvent (Log::LogEvent_t::THREAD_START, 
+                                             threadId));
 
     while (1) 
     {
         // Spin.
+        if (gStopSpin == true)
+        {
+            break;
+        }
     }
 
     // Thread should never get here.
     return (void *) E_SUCCESS;
+}
+
+/**
+ * Thread that sleeps for 20ms to miss a 10ms deadline.
+ *
+ * @param  _kRawArgs  Unused.
+ *
+ * @ret    E_SUCCESS  Successfully executed thread.
+ */
+static void* funcMiss10MsDeadline (void* _kRawArgs)
+{
+    TestHelpers::sleepMs (20);
+    return (void *) E_SUCCESS;
+}
+
+/**
+ * Thread that returns error.
+ *
+ * @param  _kRawArgs          Unused.
+ *
+ * @ret    E_INVALID_POINTER  Intentional error.
+ */
+static void* funcError (void* _kRawArgs)
+{
+    return (void *) E_INVALID_POINTER;
+}
+
+/**
+ * Handle a missed scheduler deadline. 
+ *
+ * @param  kError     Error to handle.
+ *
+ * @ret    E_SUCCESS     
+ */
+static Error_t periodicErrorHandler (Error_t kError)
+{
+    // Verify error expected.
+    if (kError != E_MISSED_SCHEDULER_DEADLINE &&
+        kError != E_INVALID_POINTER)
+    {
+        FAIL ("Unexpected periodic thread error");
+    }
+
+    return kError;
 }
 
 /********************************* TESTS **************************************/
@@ -70,20 +131,24 @@ void *threadFuncSpin (void *rawArgs)
 TEST_GROUP (ThreadManagerInit)
 {
     // Reset priorities of software irq threads.
-    void teardown()
+    void teardown ()
     {
         // Priority of threads on boot.
         const uint8_t KSOFTIRQD_PRIORITY = 8;
         const uint8_t KTIMERSOFTD_PRIORITY = 1;
 
-        ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID,
-                                           KSOFTIRQD_PRIORITY);
-        ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_1_PID,
-                                           KSOFTIRQD_PRIORITY);
-        ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID,
-                                           KTIMERSOFTD_PRIORITY);
-        ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID,
-                                           KTIMERSOFTD_PRIORITY);
+        CHECK_SUCCESS (ThreadManager::setProcessPriority (
+                           ThreadManager::KSOFTIRQD_0_PID,
+                           KSOFTIRQD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setProcessPriority (
+                           ThreadManager::KSOFTIRQD_1_PID,
+                           KSOFTIRQD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setProcessPriority (
+                           ThreadManager::KTIMERSOFTD_0_PID,
+                           KTIMERSOFTD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setProcessPriority (
+                           ThreadManager::KTIMERSOFTD_1_PID,
+                           KTIMERSOFTD_PRIORITY));
     }
 };
 
@@ -96,15 +161,13 @@ TEST (ThreadManagerInit, VerifyProcess)
 
     // Test incorrect name.
     bool verified = false;
-    Error_t ret = ThreadManager::verifyProcess (SYSTEMD_PID, "not_my_name", 
-                                                verified);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (ThreadManager::verifyProcess (SYSTEMD_PID, "not_my_name", 
+                                                 verified));
     CHECK_EQUAL (false, verified);
 
     // Test correct name.
-    ret = ThreadManager::verifyProcess (SYSTEMD_PID, SYSTEMD_NAME, 
-                                        verified);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (ThreadManager::verifyProcess (SYSTEMD_PID, SYSTEMD_NAME, 
+                                                 verified));
     CHECK_EQUAL (true, verified);
 }
 
@@ -115,11 +178,10 @@ TEST (ThreadManagerInit, SetProcessPriority)
 
     // Set priority and verify. Sleep for 1ms to allow priority change to 
     // propagate. 
-    Error_t ret = ThreadManager::setProcessPriority (
+    CHECK_SUCCESS (ThreadManager::setProcessPriority (
                                     ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::SW_IRQ_PRIORITY); 
+                                    ThreadManager::SW_IRQ_PRIORITY)); 
     TestHelpers::sleepMs (1);
-    CHECK_EQUAL (E_SUCCESS, ret);
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
     CHECK_EQUAL (ThreadManager::SW_IRQ_PRIORITY, 
@@ -127,8 +189,9 @@ TEST (ThreadManagerInit, SetProcessPriority)
     
     // Set priority back to default and verify. Sleep for 1ms to allow
     // priority change to propagate. 
-    ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID, 
-                                       DEFAULT_PRIORITY);
+    CHECK_SUCCESS (ThreadManager::setProcessPriority (
+                                               ThreadManager::KSOFTIRQD_0_PID, 
+                                               DEFAULT_PRIORITY));
     TestHelpers::sleepMs (1);
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
     CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);
@@ -141,10 +204,10 @@ TEST (ThreadManagerInit, SetProcessPriorityInvalidPri)
                                     ThreadManager::KSOFTIRQD_0_PID,
                                     ThreadManager::HW_IRQ_PRIORITY); 
     CHECK_EQUAL (E_INVALID_PRIORITY, ret);
-    ret = ThreadManager::setProcessPriority (
-                                    ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::MIN_NEW_THREAD_PRIORITY - 1); 
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
+    CHECK_ERROR (ThreadManager::setProcessPriority (
+                                ThreadManager::KSOFTIRQD_0_PID,
+                                ThreadManager::MIN_NEW_THREAD_PRIORITY - 1),
+                 E_INVALID_PRIORITY);
 }
 
 /* Test ThreadManager singleton. This test will fail if not run on RT Linux. */
@@ -152,15 +215,13 @@ TEST (ThreadManagerInit, ConstructTwo)
 {
     // Get first instance.
     ThreadManager *pThreadManagerOne = nullptr;
-    Error_t ret = ThreadManager::getInstance (&pThreadManagerOne);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (ThreadManager::getInstance (pThreadManagerOne));
     CHECK_TRUE (pThreadManagerOne != nullptr);
     CHECK_TRUE (typeid (*pThreadManagerOne) == typeid (ThreadManager));
 
     // Get second instance.
     ThreadManager *pThreadManagerTwo = nullptr;
-    ret = ThreadManager::getInstance (&pThreadManagerTwo);
-    CHECK_TRUE (ret == E_SUCCESS);
+    CHECK_SUCCESS (ThreadManager::getInstance (pThreadManagerTwo));
     CHECK_TRUE (pThreadManagerTwo != nullptr);
     CHECK_TRUE (typeid (*pThreadManagerTwo) == typeid (ThreadManager));
 
@@ -202,40 +263,43 @@ TEST (ThreadManagerCreate, CreateThreadInvalidParams)
 
     // Invalid function.
     pthread_t thread1;
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncLog;
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcLog;
     struct ThreadFuncArgs args = {&testLog, 1};
-    ret = pThreadManager->createThread (thread1, nullptr, &args, sizeof (args),
+    CHECK_ERROR (pThreadManager->createThread (
+                                        thread1, nullptr, &args, sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_EQUAL (E_INVALID_POINTER, ret);
+                                        ThreadManager::Affinity_t::ALL),
+                 E_INVALID_POINTER);
 
     // Invalid priority. 
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
-                                        sizeof (args),
-                                        ThreadManager::MAX_NEW_THREAD_PRIORITY 
-                                            + 1, 
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
-                                        sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY 
-                                            - 1, 
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
+    CHECK_ERROR (pThreadManager->createThread (
+                                    thread1, threadFunc, &args, 
+                                    sizeof (args),
+                                    ThreadManager::MAX_NEW_THREAD_PRIORITY + 1, 
+                                    ThreadManager::Affinity_t::ALL),
+                 E_INVALID_PRIORITY);
+    CHECK_ERROR (pThreadManager->createThread (
+                                    thread1, threadFunc, &args, 
+                                    sizeof (args),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY - 1, 
+                                    ThreadManager::Affinity_t::ALL),
+                 E_INVALID_PRIORITY);
 
     // Invalid affinity. 
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+    CHECK_ERROR (pThreadManager->createThread (
+                                        thread1, threadFunc, &args, 
                                         sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::LAST);
-    CHECK_EQUAL (E_INVALID_AFFINITY, ret);
+                                        ThreadManager::Affinity_t::LAST),
+                 E_INVALID_AFFINITY);
 
     // Non-zero args length with nullptr args.
-    ret = pThreadManager->createThread (thread1, pThreadFunc, nullptr, 1,
+    CHECK_ERROR (pThreadManager->createThread (
+                                        thread1, threadFunc, nullptr, 1,
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_EQUAL (E_INVALID_ARGS_LENGTH, ret);
+                                        ThreadManager::Affinity_t::ALL),
+                 E_INVALID_ARGS_LENGTH);
 
     // Expect both logs to be empty.
     VERIFY_LOGS;
@@ -248,16 +312,16 @@ TEST (ThreadManagerCreate, CreateThreadNoArgsAndWait)
 
     // Create thread.
     pthread_t thread;
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncNoArgs;
-    ret = pThreadManager->createThread (thread, pThreadFunc, nullptr, 0,
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcNoArgs;
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        thread, threadFunc, nullptr, 0,
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::ALL);
-    CHECK_EQUAL (E_SUCCESS, ret);
+                                        ThreadManager::Affinity_t::ALL));
 
     // Wait for thread.
     Error_t threadReturn;
-    ret = pThreadManager->waitForThread (thread, threadReturn);
+    CHECK_SUCCESS (pThreadManager->waitForThread (thread, threadReturn));
 
     // Verify return value.
     CHECK_EQUAL (E_SUCCESS, threadReturn);
@@ -271,19 +335,18 @@ TEST (ThreadManagerCreate, CreateThreadArgsAndWait)
     // Create thread.
     pthread_t thread1;
     struct ThreadFuncArgs args = {&testLog, 1};
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncLog;
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcLog;
     ThreadManager::Affinity_t affinity = ThreadManager::Affinity_t::ALL;
-    ret = pThreadManager->createThread (thread1, pThreadFunc, &args, 
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        thread1, threadFunc, &args, 
                                         sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
-                                        affinity);
-    CHECK_EQUAL (E_SUCCESS, ret);
+                                        affinity));
 
     // Wait for thread.
     Error_t threadReturn;
-    ret = pThreadManager->waitForThread (thread1, threadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pThreadManager->waitForThread (thread1, threadReturn));
     CHECK_EQUAL (E_SUCCESS, threadReturn);
 
     // Log that this thread returned from wait.
@@ -310,28 +373,27 @@ TEST (ThreadManagerCreate, Priorities)
     struct ThreadFuncArgs argsThread2 = {&testLog, 2};
     struct ThreadFuncArgs argsThread3 = {&testLog, 3};
 
-    ThreadManager::ThreadFunc_t *pThreadFuncLog = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncLog;
+    ThreadManager::ThreadFunc_t threadFuncLog = 
+        (ThreadManager::ThreadFunc_t) funcLog;
 
     // Create the three threads. Order doesn't matter since they all have CPU
     // affinity of 0 (same as cpputest thread), and cpputest thread has the
     // highest priority.
-    ret = pThreadManager->createThread (lowPriThread3, pThreadFuncLog, 
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        lowPriThread3, threadFuncLog, 
                                         &argsThread3, sizeof (argsThread3),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                        ThreadManager::Affinity_t::CORE_0);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = pThreadManager->createThread (medPriThread2, pThreadFuncLog, 
-                                        &argsThread2, sizeof (argsThread2),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY
-                                            + 1,
-                                        ThreadManager::Affinity_t::CORE_0);
-    CHECK_EQUAL (E_SUCCESS, ret);
-    ret = pThreadManager->createThread (highPriThread1, pThreadFuncLog, 
+                                        ThreadManager::Affinity_t::CORE_0));
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    medPriThread2, threadFuncLog, 
+                                    &argsThread2, sizeof (argsThread2),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY + 1,
+                                    ThreadManager::Affinity_t::CORE_0));
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        highPriThread1, threadFuncLog, 
                                         &argsThread1, sizeof (argsThread1),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::CORE_0);
-    CHECK_EQUAL (E_SUCCESS, ret);
+                                        ThreadManager::Affinity_t::CORE_0));
 
     // Since newly created threads have lower priority than the cpputest thread,
     // neither should have run at this point. Verify the test log is empty.
@@ -339,8 +401,8 @@ TEST (ThreadManagerCreate, Priorities)
 
     // Wait for lowest pri thread.
     Error_t lowPriThreadReturn;
-    ret = pThreadManager->waitForThread (lowPriThread3, lowPriThreadReturn);
-    CHECK_EQUAL (E_SUCCESS, ret);
+    CHECK_SUCCESS (pThreadManager->waitForThread (lowPriThread3, 
+                                                  lowPriThreadReturn));
     CHECK_EQUAL (E_SUCCESS, lowPriThreadReturn);
 
     // Build expected log. 
@@ -371,22 +433,22 @@ TEST (ThreadManagerCreate, AffinityCore0)
     struct ThreadFuncArgs argsThread2 = {&testLog, 2};
 
     // Create high pri, looping thread.
-    ThreadManager::ThreadFunc_t *pThreadFuncSpin = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncSpin;
-    ret = pThreadManager->createThread (highPriThread1, pThreadFuncSpin, 
+    ThreadManager::ThreadFunc_t threadFuncSpin = 
+        (ThreadManager::ThreadFunc_t) funcSpin;
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        highPriThread1, threadFuncSpin, 
                                         &argsThread1, sizeof (argsThread1),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY, 
-                                        ThreadManager::Affinity_t::CORE_0);
-    CHECK_EQUAL (E_SUCCESS, ret);
+                                        ThreadManager::Affinity_t::CORE_0));
 
     // Create low pri thread that logs once then returns.
-    ThreadManager::ThreadFunc_t *pThreadFuncLog = 
-        (ThreadManager::ThreadFunc_t *) &threadFuncLog;
-    ret = pThreadManager->createThread (lowPriThread2, pThreadFuncLog, 
+    ThreadManager::ThreadFunc_t threadFuncLog = 
+        (ThreadManager::ThreadFunc_t) funcLog;
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                        lowPriThread2, threadFuncLog, 
                                         &argsThread2, sizeof (argsThread2),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                        ThreadManager::Affinity_t::CORE_0);
-    CHECK_EQUAL (E_SUCCESS, ret);
+                                        ThreadManager::Affinity_t::CORE_0));
 
     // Since newly created threads have lower priority than the cpputest thread,
     // neither should have run at this point. Verify the test log is empty.
@@ -396,20 +458,19 @@ TEST (ThreadManagerCreate, AffinityCore0)
     TestHelpers::sleepMs (100);
 
     // At this point only the high priority thread should have run.
-    expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);
+    CHECK_SUCCESS (expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1));
     VERIFY_LOGS;
 
-    // Cancel the high pri thread and wait for the low pri thread to finish.
-    pthread_cancel (highPriThread1);
-    pThreadManager->waitForThread (lowPriThread2, ret);
+    // Stop the high pri thread and wait for the low pri thread to finish.
+    gStopSpin = true;
+    CHECK_SUCCESS (pThreadManager->waitForThread (lowPriThread2, ret));
 
     // Now low pri thread should have run as well.
-    expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2);
+    CHECK_SUCCESS (expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 2));
     VERIFY_LOGS;
 
     // Clean up threads.
-    pThreadManager->waitForThread (highPriThread1, ret); 
-    pThreadManager->waitForThread (lowPriThread2, ret); 
+    CHECK_SUCCESS (pThreadManager->waitForThread (highPriThread1, ret)); 
 }
  
 TEST_GROUP (ThreadManagerCreatePeriodic)
@@ -423,52 +484,63 @@ TEST (ThreadManagerCreatePeriodic, CreateThreadInvalidParams)
 
     INIT_THREAD_MANAGER_AND_LOGS;
 
+    // Error handler.
+    ThreadManager::ErrorHandler_t fErrorHandler = 
+        (ThreadManager::ErrorHandler_t) periodicErrorHandler;
+
     // Invalid function.
     pthread_t thread1;
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncLog;
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcLog;
     struct ThreadFuncArgs args = {&testLog, 1};
-    ret = pThreadManager->createPeriodicThread (thread1, nullptr, &args, sizeof (args),
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                        thread1, nullptr, &args, sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL,
-                                        THREAD_PERIOD_MS);
-    CHECK_EQUAL (E_INVALID_POINTER, ret);
+                                        THREAD_PERIOD_MS, fErrorHandler),
+                 E_INVALID_POINTER);
 
     // Invalid priority. 
-    ret = pThreadManager->createPeriodicThread (
-                                        thread1, pThreadFunc, &args, 
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                        thread1, threadFunc, &args, 
                                         sizeof (args),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY 
                                             + 1, 
                                         ThreadManager::Affinity_t::ALL,
-                                        THREAD_PERIOD_MS);
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
-    ret = pThreadManager->createPeriodicThread (
-                                        thread1, pThreadFunc, &args, 
-                                        sizeof (args),
-                                        ThreadManager::MIN_NEW_THREAD_PRIORITY 
-                                            - 1, 
-                                        ThreadManager::Affinity_t::ALL,
-                                        THREAD_PERIOD_MS);
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
+                                        THREAD_PERIOD_MS, fErrorHandler),
+                 E_INVALID_PRIORITY);
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                    thread1, threadFunc, &args, sizeof (args),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY - 1, 
+                                    ThreadManager::Affinity_t::ALL,
+                                    THREAD_PERIOD_MS, fErrorHandler),
+                 E_INVALID_PRIORITY);
 
     // Invalid affinity. 
-    ret = pThreadManager->createPeriodicThread (
-                                        thread1, pThreadFunc, &args, 
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                        thread1, threadFunc, &args, 
                                         sizeof (args),
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::LAST,
-                                        THREAD_PERIOD_MS);
-    CHECK_EQUAL (E_INVALID_AFFINITY, ret);
+                                        THREAD_PERIOD_MS, fErrorHandler),
+                 E_INVALID_AFFINITY);
 
     // Non-zero args length with nullptr args.
-    ret = pThreadManager->createPeriodicThread (
-                                        thread1, pThreadFunc, nullptr, 
-                                        1, 
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                        thread1, threadFunc, nullptr, 1, 
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL,
-                                        THREAD_PERIOD_MS);
-    CHECK_EQUAL (E_INVALID_ARGS_LENGTH, ret);
+                                        THREAD_PERIOD_MS, fErrorHandler),
+                 E_INVALID_ARGS_LENGTH);
+
+    // Invalid error handler.
+    CHECK_ERROR (pThreadManager->createPeriodicThread (
+                                        thread1, threadFunc, &args, 
+                                        sizeof (args), 
+                                        ThreadManager::MIN_NEW_THREAD_PRIORITY, 
+                                        ThreadManager::Affinity_t::ALL,
+                                        THREAD_PERIOD_MS, nullptr),
+                 E_INVALID_POINTER);
 
     // Expect both logs to be empty.
     VERIFY_LOGS;
@@ -481,20 +553,23 @@ TEST (ThreadManagerCreate, CreatePeriodicThreadNoArgs)
 
     INIT_THREAD_MANAGER_AND_LOGS;
 
+    // Error handler.
+    ThreadManager::ErrorHandler_t fErrorHandler = 
+        (ThreadManager::ErrorHandler_t) periodicErrorHandler;
+
     // Create thread.
     pthread_t thread;
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncNoArgs;
-    ret = pThreadManager->createPeriodicThread (
-                                        thread, pThreadFunc, nullptr, 0,
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcNoArgs;
+    CHECK_SUCCESS (pThreadManager->createPeriodicThread (
+                                        thread, threadFunc, nullptr, 0,
                                         ThreadManager::MIN_NEW_THREAD_PRIORITY, 
                                         ThreadManager::Affinity_t::ALL,
-                                        THREAD_PERIOD_MS);
-   CHECK_EQUAL (E_SUCCESS, ret);
+                                        THREAD_PERIOD_MS, fErrorHandler));
 
     // Clean up thread.
     pthread_cancel (thread);
-    pThreadManager->waitForThread (thread, ret);
+    CHECK_SUCCESS (pThreadManager->waitForThread (thread, ret));
 
     // Expect the thread to return -1. Since ret is a uint32, this is the same 
     // as max uint32.
@@ -509,20 +584,24 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
 
     INIT_THREAD_MANAGER_AND_LOGS;
 
+    // Error handler.
+    ThreadManager::ErrorHandler_t fErrorHandler = 
+        (ThreadManager::ErrorHandler_t) periodicErrorHandler;
+
     pthread_t highPriPeriodicThread;
 
     struct ThreadFuncArgs argsThread = {&testLog, 1};
 
     // Create high pri, looping thread.
-    ThreadManager::ThreadFunc_t *pThreadFunc = (ThreadManager::ThreadFunc_t *)
-                                                    &threadFuncLog;
-    ret = pThreadManager->createPeriodicThread (
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcLog;
+    CHECK_SUCCESS (pThreadManager->createPeriodicThread (
                                         highPriPeriodicThread, 
-                                        pThreadFunc, &argsThread,
+                                        threadFunc, &argsThread,
                                         sizeof (argsThread),
                                         ThreadManager::MAX_NEW_THREAD_PRIORITY,
                                         ThreadManager::Affinity_t::CORE_0,
-                                        THREAD_PERIOD_MS);
+                                        THREAD_PERIOD_MS, fErrorHandler));
 
     // Block for 100ms to allow high pri thread to run 10 times.
     TestHelpers::sleepMs (TIME_TO_SLEEP_MS);
@@ -530,7 +609,7 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
     // Build expected log.
     for (uint32_t i = 0; i < TIME_TO_SLEEP_MS; i += THREAD_PERIOD_MS)
     {
-        expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1);
+        CHECK_SUCCESS (expectedLog.logEvent (Log::LogEvent_t::THREAD_START, 1));
     }
 
     // Clean up thread. Do this before verifying in case the test fails.
@@ -538,7 +617,7 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
     // during subsequent tests. Return value is -1 because the thread was 
     // cancelled.
     pthread_cancel (highPriPeriodicThread);
-    pThreadManager->waitForThread (highPriPeriodicThread, ret);
+    CHECK_SUCCESS (pThreadManager->waitForThread (highPriPeriodicThread, ret));
 
     // Expect the thread to return -1. Since ret is a uint32, this is the same 
     // as max uint32.
@@ -546,5 +625,71 @@ TEST (ThreadManagerCreatePeriodic, CreatePeriodicArgsThread)
 
     // Verify.
     VERIFY_LOGS;
+}
+
+/* Test creating and running a periodic thread that misses its deadline. */
+TEST (ThreadManagerCreatePeriodic, CreatePeriodicDeadlineMiss)
+{
+    const uint32_t THREAD_PERIOD_MS = 10;
+    const uint32_t TIME_TO_SLEEP_MS = 20;
+
+    INIT_THREAD_MANAGER_AND_LOGS;
+
+    // Error handler.
+    ThreadManager::ErrorHandler_t fErrorHandler = 
+        (ThreadManager::ErrorHandler_t) periodicErrorHandler;
+
+    // Create thread.
+    pthread_t thread;
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcMiss10MsDeadline;
+    CHECK_SUCCESS (pThreadManager->createPeriodicThread (
+                                        thread, 
+                                        threadFunc, nullptr, 0,
+                                        ThreadManager::MAX_NEW_THREAD_PRIORITY,
+                                        ThreadManager::Affinity_t::CORE_0,
+                                        THREAD_PERIOD_MS, fErrorHandler));
+
+    // Block for 20ms to allow thread to run.
+    TestHelpers::sleepMs (TIME_TO_SLEEP_MS);
+
+    // Clean up thread.
+    CHECK_SUCCESS (pThreadManager->waitForThread (thread, ret));
+
+    // Expect deadline miss.
+    CHECK_EQUAL (E_MISSED_SCHEDULER_DEADLINE, ret);
+}
+
+/* Test creating and running a periodic thread that returns an error. */
+TEST (ThreadManagerCreatePeriodic, CreatePeriodicError)
+{
+    const uint32_t THREAD_PERIOD_MS = 10;
+    const uint32_t TIME_TO_SLEEP_MS = 20;
+
+    INIT_THREAD_MANAGER_AND_LOGS;
+
+    // Error handler.
+    ThreadManager::ErrorHandler_t fErrorHandler = 
+        (ThreadManager::ErrorHandler_t) periodicErrorHandler;
+
+    // Create thread.
+    pthread_t thread;
+    ThreadManager::ThreadFunc_t threadFunc = 
+        (ThreadManager::ThreadFunc_t) funcError;
+    CHECK_SUCCESS (pThreadManager->createPeriodicThread (
+                                        thread, 
+                                        threadFunc, nullptr, 0,
+                                        ThreadManager::MAX_NEW_THREAD_PRIORITY,
+                                        ThreadManager::Affinity_t::CORE_0,
+                                        THREAD_PERIOD_MS, fErrorHandler));
+
+    // Block for 20ms to allow thread to run.
+    TestHelpers::sleepMs (TIME_TO_SLEEP_MS);
+
+    // Clean up thread.
+    CHECK_SUCCESS (pThreadManager->waitForThread (thread, ret));
+
+    // Expect loop error.
+    CHECK_EQUAL (E_INVALID_POINTER, ret);
 }
 

@@ -61,7 +61,7 @@
 #define INIT_THREAD_MANAGER                                                    \
     Error_t ret = E_SUCCESS;                                                   \
     ThreadManager *pTm = nullptr;                                              \
-    ret = ThreadManager::getInstance (&pTm);                                   \
+    ret = ThreadManager::getInstance (pTm);                                    \
     CHECK_EQUAL(E_SUCCESS, ret);                                               \
 
 /**
@@ -71,7 +71,7 @@
 #define INIT_THREAD_MANAGER_AND_LOGS                                           \
     Error_t ret = E_SUCCESS;                                                   \
     ThreadManager *pThreadManager = nullptr;                                   \
-    ret = ThreadManager::getInstance (&pThreadManager);                        \
+    ret = ThreadManager::getInstance (pThreadManager);                         \
     CHECK_EQUAL(E_SUCCESS, ret);                                               \
     Log expectedLog = Log (ret);                                               \
     Log testLog = Log (ret);
@@ -79,9 +79,9 @@
 /**
  * Initializes Data Vector as local variable pDv.
  */
-#define INIT_DATA_VECTOR(config)                                             \
-    std::shared_ptr<DataVector> pDv = nullptr;                               \
-    CHECK_SUCCESS (DataVector::createNew (config, pDv));                     \
+#define INIT_DATA_VECTOR(config)                                               \
+    std::shared_ptr<DataVector> pDv = nullptr;                                 \
+    CHECK_SUCCESS (DataVector::createNew (config, pDv));                       \
 
 /**
  * Verifies local variables expectedLog == actualLog.

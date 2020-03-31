@@ -46,9 +46,9 @@
 #define CREATE_CLIENT_THREAD(kThread, kPNm, kFunc)                             \
 {                                                                              \
     struct ThreadFuncArgs argsThread = {kPNm.get ()};                          \
-    ThreadManager::ThreadFunc_t *pThreadFunc =                                 \
-        (ThreadManager::ThreadFunc_t *) &kFunc;                                \
-    CHECK_SUCCESS (pTm->createThread (kThread, pThreadFunc, &argsThread,       \
+    ThreadManager::ThreadFunc_t threadFunc =                                   \
+        (ThreadManager::ThreadFunc_t) kFunc;                                   \
+    CHECK_SUCCESS (pTm->createThread (kThread, threadFunc, &argsThread,        \
                                       sizeof (argsThread),                     \
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,  \
                                       ThreadManager::Affinity_t::CORE_0));     \

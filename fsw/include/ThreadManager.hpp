@@ -83,8 +83,8 @@
  *      Min new thread priority      = MIN_NEW_THREAD_PRIORITY   = 1 
  */
 
-# ifndef THREAD_MANAGER_HPP
-# define THREAD_MANAGER_HPP
+#ifndef THREAD_MANAGER_HPP
+#define THREAD_MANAGER_HPP
 
 #include <stdint.h>
 #include <pthread.h>
@@ -99,8 +99,37 @@ public:
 
     /**
      * Type of function expected by the thread creation methods.
+     *
+     * @param  void*  Void pointer to arguments struct.
+     *
+     * @ret    E_SUCCESS  Function executed successfully.
+     *         [other]    Function error.
      */
-    typedef void *ThreadFunc_t (void *);
+    typedef void* (*ThreadFunc_t) (void*);
+
+    /**
+     * Type of function provided by user and called by periodic thread if there
+     * is a missed scheduler deadline or error returned by user's periodic 
+     * function. If this function returns anything but E_SUCCESS, the periodic
+     * thread will exit.
+     *
+     * ------------------------- Errors to Handle ------------------------------
+     *
+     *      E_MISSED_SCHEDULER_DEADLINE     Thread completed after period
+     *                                      elapsed.
+     *      [other]                         Error returned from caller's 
+     *                                      periodic function.
+     *
+     * -------------------------------------------------------------------------
+     *
+     * @param  Error_t    Error surfaced in periodic thread and to be handled by
+     *                    provided error handler.
+     *
+     * @ret    E_SUCCESS  Error handled successfully. Indicates to periodic 
+     *                    thread that it can proceed safely.
+     *         [other]    Critical error. Periodic thread will exit.
+     */
+    typedef Error_t (*ErrorHandler_t) (Error_t);
 
     /**
      * Priority type used by thread creation methods. 
@@ -130,18 +159,17 @@ public:
 
     /**
      * Construct the ThreadManager if it does not already exist and return it
-     * in the ppThreadManager param. Initializes kernel scheduling environment
+     * in the kPThreadManager param. Initializes kernel scheduling environment
      * the first time it is called.
      * 
-     * @param   ppThreadManager             Pointer to pointer to ThreadManager 
-     *                                      object.     
+     * @param   kPThreadManagerRet          Pointer to ThreadManager object.
      * 
      * @ret     E_SUCCESS                   Successfully pointed pThreadManager 
      *                                      to ThreadManager object.
      *          E_FAILED_TO_INIT_KERNEL_ENV Failed to initialize kernel 
      *                                      environment.
      */
-    static Error_t getInstance (ThreadManager **ppThreadManager);
+    static Error_t getInstance (ThreadManager*& kPThreadManagerRet);
 
     /**
      * Create a thread with SCHED_FIFO scheduling policy. All created threads
@@ -150,24 +178,24 @@ public:
      * Note: Affinity is set after thread is created due to pthread API 
      *       limitations.
      * 
-     * @param   thread                      pthread_t for new thread.
-     * @param   pFunc                       Pointer to ThreadFunc_t function new 
-     *                                      thread will execute.
-     * @param   pArgs                       Pointer to arguments passed to new 
+     * @param   kThread                     pthread_t for new thread.
+     * @param   kFunc                       Function new thread will execute.
+     * @param   kPArgs                      Pointer to arguments passed to new 
      *                                      thread's function. These arguments
      *                                      will be copied to the heap, so the
      *                                      caller does not need to keep the 
      *                                      memory pArgs points to after this
      *                                      function returns successfully.
-     * @param   numArgBytes                 Number of bytes pArgs points to.
-     * @param   priority                    Priority to set new thread. Must be
+     * @param   kNumArgBytes                Number of bytes pArgs points to.
+     * @param   kPriority                   Priority to set new thread. Must be
      *                                      >= MIN_NEW_THREAD_PRIORITY and <= 
      *                                      MAX_NEW_THREAD_PRIORITY.
-     * @param   cpuAffinity                 CPU affinity for new thread.
+     * @param   kCpuAffinity                CPU affinity for new thread.
      * 
      * @ret     E_SUCCESS                   Successfully created new thread.
      *          E_INVALID_POINTER           Invalid pFunc param.
      *          E_INVALID_PRIORITY          Priority invalid.
+     *          E_INVALID_ARGS_LENGTH       Args length invalid.
      *          E_INVALID_AFFINITY          CPU affinity invalid.
      *          E_FAILED_TO_ALLOCATE_ARGS   Malloc failed for args.
      *          E_FAILED_TO_ALLOCATE_THREAD Malloc failed for thread struct.
@@ -179,9 +207,9 @@ public:
      *          E_FAILED_TO_CREATE_THREAD   Failed to create thread.
      *          E_FAILED_TO_SET_AFFINITY    Failed to set thread affinity.
      */
-    Error_t createThread (pthread_t &thread, ThreadFunc_t *pFunc, void *pArgs,
-                          uint32_t numArgBytes, Priority_t priority, 
-                          Affinity_t cpuAffinity);
+    Error_t createThread (pthread_t& kThread, ThreadFunc_t kFunc, 
+                          void* kPArgs, uint32_t kNumArgBytes, 
+                          Priority_t kPriority, Affinity_t kCpuAffinity);
 
     /**
      * Create a periodic thread with SCHED_FIFO scheduling policy. All created 
@@ -189,25 +217,33 @@ public:
      * 
      * Note: Affinity is set after thread is created due to pthread API 
      *       limitations.
+     *
+     * Warning: If there is a timer error in the periodic implementation, the 
+     *          thread will exit. This is explicitly not tolerated, as a timer
+     *          failure is a critical system error.
      * 
-     * @param   thread                      pthread_t for new thread.
-     * @param   pFunc                       Pointer to ThreadFunc_t function new 
-     *                                      thread will execute.
-     * @param   pArgs                       Pointer to arguments passed to new 
+     * @param   kThread                     pthread_t for new thread.
+     * @param   kFunc                       Function new thread will execute
+     *                                      periodically.
+     * @param   kPArgs                      Pointer to arguments passed to new 
      *                                      thread's function. These arguments
      *                                      will be copied to the heap, so the
      *                                      caller does not need to keep the 
      *                                      memory pArgs points to after this
      *                                      function returns successfully.
-     * @param   numArgBytes                 Number of bytes pArgs points to.
-     * @param   priority                    Priority to set new thread. Must be
+     * @param   kNumArgBytes                Number of bytes pArgs points to.
+     * @param   kPriority                   Priority to set new thread. Must be
      *                                      >= MIN_NEW_THREAD_PRIORITY and <= 
      *                                      MAX_NEW_THREAD_PRIORITY.
-     * @param   cpuAffinity                 CPU affinity for new thread.
-     * @param   periodMs                    Period of thread in ms.
+     * @param   kCpuAffinity                CPU affinity for new thread.
+     * @param   kPeriodMs                   Period of thread in ms.
+     * @param   kErrorHandlerFunc           Callback function in case of error
+     *                                      during execution of periodic thread
+     *                                      or deadline miss.
      * 
      * @ret     E_SUCCESS                   Successfully created new thread.
-     *          E_INVALID_POINTER           Invalid pFunc param.
+     *          E_INVALID_POINTER           Invalid function pointer.
+     *          E_INVALID_ARGS_LENGTH       Args length invalid.
      *          E_INVALID_PRIORITY          Priority invalid.
      *          E_INVALID_AFFINITY          CPU affinity invalid.
      *          E_FAILED_TO_ALLOCATE_ARGS   Malloc failed for args.
@@ -220,17 +256,18 @@ public:
      *          E_FAILED_TO_CREATE_THREAD   Failed to create thread.
      *          E_FAILED_TO_SET_AFFINITY    Failed to set thread affinity.
      */
-    Error_t createPeriodicThread (pthread_t &thread, ThreadFunc_t *pFunc, 
-                                  void *pArgs,  uint32_t numArgBytes, 
-                                  Priority_t priority, Affinity_t cpuAffinity, 
-                                  uint32_t periodMs);
+    Error_t createPeriodicThread (pthread_t& kThread, ThreadFunc_t kFunc, 
+                                  void* kPArgs, uint32_t kNumArgBytes, 
+                                  Priority_t kPriority, Affinity_t kCpuAffinity, 
+                                  uint32_t kPeriodMs, 
+                                  ErrorHandler_t kErrorHandlerFunc);
 
     /**
      * Block until specified thread returns. Waiting on an invalid thread has
      * undefined behavior (most likely a seg fault).
      * 
-     * @param   thread                      Thread to wait on.
-     * @param   threadReturn                Reference to Error_t to fill with
+     * @param   kThread                     Thread to wait on.
+     * @param   kThreadRet                  Reference to Error_t to fill with
      *                                      thread's return value.
      * 
      * @ret     E_SUCCESS                   Successfully waited on thread.
@@ -238,7 +275,7 @@ public:
      *          E_THREAD_NOT_FOUND          Failed to find thread and free 
      *                                      memory.
      */
-    Error_t waitForThread (pthread_t &thread, Error_t &threadReturn); 
+    Error_t waitForThread (pthread_t& kThread, Error_t& kThreadRet); 
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
@@ -271,9 +308,9 @@ public:
      * system threads are being modified. It is static so that it can be done
      * before the ThreadManager object is constructed.
      * 
-     * @param   pid                     PID of the process to verify.
-     * @param   expectedName            Expected name of process.
-     * @param   verified                Will be set to true if process is 
+     * @param   kPid                    PID of the process to verify.
+     * @param   kExpectedName           Expected name of process.
+     * @param   kVerifiedRet            Will be set to true if process is 
      *                                  successfully verified and false 
      *                                  otherwise.
      * 
@@ -284,9 +321,9 @@ public:
      *          E_FAILED_TO_READ_FILE   Unable to read /proc file.  
      *          E_FAILED_TO_CLOSE_FILE  Unable to close /proc file.
      */
-    static Error_t verifyProcess (const uint8_t pid, 
-                                  const std::string expectedName, 
-                                  bool &verified);
+    static Error_t verifyProcess (const uint8_t kPid,
+                                  const std::string kExpectedName, 
+                                  bool& kVerifiedRet);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
@@ -296,8 +333,8 @@ public:
      * time-critical kernel threads.It is static so that it can be done before 
      * the ThreadManager object is constructed.
      * 
-     * @param   pid                         PID of the process to verify.
-     * @param   priority                    SCHED_FIFO priority to set process 
+     * @param   kPid                        PID of the process to verify.
+     * @param   kPriority                   SCHED_FIFO priority to set process 
      *                                      to. Must be between 1-49 to not risk 
      *                                      starving the hw IRQ thread with 
      *                                      priority 50.
@@ -306,8 +343,8 @@ public:
      *          E_INVALID_PRIORITY          Priority out of bounds.
      *          E_FAILED_TO_SET_PRIORITY    Failed to set priority.
      */
-    static Error_t setProcessPriority (const uint8_t pid, 
-                                       const uint8_t priority);
+    static Error_t setProcessPriority (const uint8_t kPid, 
+                                       const uint8_t kPriority);
 
 private:
 
@@ -323,7 +360,7 @@ private:
     /**
      * List of active threads.
      */
-    struct Thread *ThreadList;
+    struct Thread* mThreadList;
 
     /**
      * Constructor.
@@ -369,7 +406,7 @@ private:
      * Wrapper function for periodic thread implementation. Manages timer and
      * calls thread function each period. Does not return except on error.
      *
-     * @param   rawArgs                         Buffer with first 4 bytes 
+     * @param   kRawArgs                        Buffer with first 4 bytes 
      *                                          representing the thread's 
      *                                          period in ms, and second
      *                                          4 bytes representing the 
@@ -380,13 +417,16 @@ private:
      *          E_FAILED_TO_GET_TIMER_FLAGS     Failed to get timer flags.
      *          E_FAILED_TO_SET_TIMER_FLAGS     Failed to set timer flags.
      *          E_FAILED_TO_READ_TIMERFD        Failed to read timer.
-     *          E_MISSED_SCHEDULER_DEADLINE     Thread ended after period
-     *                                          elapsed or started after timer
-     *                                          triggered more than once.
+     *          E_DATA_VECTOR_WRITE             Failed to log deadline miss.
+     *          E_MISSED_SCHEDULER_DEADLINE     Thread completed after period
+     *                                          elapsed.
+     *          E_TIMER_EXPIRED_MORE_THAN_ONCE  While blocked waiting for timer,
+     *                                          timer unexpectedly expired more 
+     *                                          than once.
      *          [other]                         Error returned from caller's 
-     *                                          periodic function.
+     *                                          error handler.
      */
-    static void *periodicWrapperFunc (void *rawArgs);
+    static void* periodicWrapperFunc (void* kRawArgs);
 };
 
 #endif

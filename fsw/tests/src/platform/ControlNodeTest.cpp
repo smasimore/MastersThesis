@@ -59,10 +59,10 @@
  */
 #define CREATE_SIM_THREAD(kSyncSuccess, kEnterLoop)                            \
     ThreadManager* pTm = nullptr;                                              \
-    CHECK_SUCCESS (ThreadManager::getInstance (&pTm));                         \
+    CHECK_SUCCESS (ThreadManager::getInstance (pTm));                          \
     pthread_t thread;                                                          \
     FuncArgs_t args = {kSyncSuccess, kEnterLoop};                              \
-    CHECK_SUCCESS (pTm->createThread (thread, gFNodesSim, &args,         \
+    CHECK_SUCCESS (pTm->createThread (thread, gFNodesSim, &args,               \
                                       sizeof (args),                           \
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,  \
                                       ThreadManager::Affinity_t::CORE_1));
@@ -115,10 +115,12 @@ static DataVector::Config_t gDvConfig =
      DV_ADD_UINT32 ( DV_ELEM_DN0_RX_MISS_COUNT,     0            ),
      DV_ADD_UINT32 ( DV_ELEM_DN1_RX_MISS_COUNT,     0            ),
      DV_ADD_UINT32 ( DV_ELEM_DN2_RX_MISS_COUNT,     0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_DEADLINE_MISSES,    0            ),
      DV_ADD_UINT8  ( DV_ELEM_CMD,                   CMD_NONE     ),
      DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM,     0            ),
      DV_ADD_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,     MODE_SAFED   ),
      DV_ADD_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,       MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_SAFED   ),
      DV_ADD_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE, MODE_SAFED   ),
      DV_ADD_UINT64 ( DV_ELEM_CN_TIME_NS,            0            ),
      DV_ADD_UINT32 ( DV_ELEM_STATE,                 STATE_A      ),
@@ -235,8 +237,8 @@ static StateMachine::Config_t gSmConfig =
 
     //////////////////////////////// STATE_D ///////////////////////////////////
     //
-    // Enables ErrorController immediately and ThreadKillController after 1st 
-    // loop. ThreadKillController kills the thread.
+    // Enables ErrorController and then DeadlineMissController. Transitions 
+    // after a deadline is missed. 
     //
     // ID
     {STATE_D,
@@ -246,6 +248,21 @@ static StateMachine::Config_t gSmConfig =
         {ACT_CREATE_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,     MODE_SAFED   ),
          ACT_CREATE_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,       MODE_ENABLED )}},
      {.01 * Time::NS_IN_SECOND,
+        {ACT_CREATE_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_ENABLED )}}},
+    //
+    // TRANSITIONS
+    {TR_CREATE_UINT32  ( DV_ELEM_CN_DEADLINE_MISSES,  CMP_EQUALS,  1,  STATE_E )}},
+
+
+    //////////////////////////////// STATE_E ///////////////////////////////////
+    //
+    // Enables ThreadKillController, which kills the thread.
+    //
+    // ID
+    {STATE_E,
+    //
+    // ACTIONS
+    {{.01 * Time::NS_IN_SECOND,
         {ACT_CREATE_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE, MODE_ENABLED )}}},
     //
     // TRANSITIONS
@@ -327,7 +344,7 @@ class CheckDeviceNodeResponsesController final : public Controller
 };
 
 /**
- * Controller to test error logging.
+ * Controller to test error logging on controller error.
  */
 class ErrorController final : public Controller
 {
@@ -365,6 +382,57 @@ class ErrorController final : public Controller
         ErrorController (Config_t kConfig,
                          std::shared_ptr<DataVector> kPDv,
                          DataVectorElement_t kDvModeElem) :
+            Controller (kPDv, kDvModeElem),
+            mConfig (kConfig) {}
+    
+    private:
+
+        /**
+         * Unused.
+         */
+        Config_t mConfig;
+};
+
+/**
+ * Controller to test error logging on deadline miss.
+ */
+class DeadlineMissController final : public Controller
+{
+    public:
+
+        /**
+         * Unused.
+         */
+        typedef struct Config {} Config_t;
+
+        /**
+         * Sleep for 20ms, causing a deadline miss.
+         */
+        Error_t runEnabled ()
+        {
+            TestHelpers::sleepMs (20);
+            return E_SUCCESS;
+        }
+
+        /**
+         * Do nothing.
+         */
+        Error_t runSafed ()
+        {
+            return E_SUCCESS;
+        }
+
+        /**
+         * Do nothing.
+         */
+        Error_t verifyConfig ()
+        {
+            return E_SUCCESS;
+        }
+
+        DeadlineMissController (Config_t kConfig,
+                                std::shared_ptr<DataVector> kPDv,
+                                DataVectorElement_t kDvModeElem) :
             Controller (kPDv, kDvModeElem),
             mConfig (kConfig) {}
     
@@ -446,6 +514,12 @@ static Error_t initializeControllersSuccess (
                                           DV_ELEM_ERROR_CTRL_MODE, 
                                           pErrorCtrlr));
 
+    std::unique_ptr<DeadlineMissController> pMissCtrlr;
+    DeadlineMissController::Config_t missCtrlConfig = {};
+    CHECK_SUCCESS (Controller::createNew (missCtrlConfig, kPDv, 
+                                          DV_ELEM_MISS_CTRL_MODE, 
+                                          pMissCtrlr));
+
     std::unique_ptr<ThreadKillController> pThreadKillCtrlr;
     ThreadKillController::Config_t threadKillCtrlConfig = {};
     CHECK_SUCCESS (Controller::createNew (threadKillCtrlConfig, kPDv, 
@@ -456,6 +530,7 @@ static Error_t initializeControllersSuccess (
     // are stored in unique_ptr. Move transfers ownership of the object.
     kPCtlrsVecRet.push_back (std::move (pDnResponsesCtrlr));
     kPCtlrsVecRet.push_back (std::move (pErrorCtrlr));
+    kPCtlrsVecRet.push_back (std::move (pMissCtrlr));
     kPCtlrsVecRet.push_back (std::move (pThreadKillCtrlr));
     
     return E_SUCCESS;
@@ -647,8 +722,8 @@ static void* fNodesSim (void* _args)
             // Increment sim loop counter.
             gNumSimLoops++;
 
-            // Break once we reach STATE_D.
-            if (state == STATE_D)
+            // Break once we reach STATE_E.
+            if (state == STATE_E)
             {
                 break;
             }
@@ -661,8 +736,8 @@ static void* fNodesSim (void* _args)
 /**
  * Node sim function pointer.
  */
-ThreadManager::ThreadFunc_t* gFNodesSim = 
-    (ThreadManager::ThreadFunc_t*) &fNodesSim;
+ThreadManager::ThreadFunc_t gFNodesSim = 
+    (ThreadManager::ThreadFunc_t) &fNodesSim;
 
 /********************************* TESTS **************************************/
 
@@ -874,27 +949,37 @@ TEST (ControlNode, Success)
     CHECK_EQUAL (0, dn1Misses);
     CHECK_EQUAL (0, dn2Misses);
 
-    // Expect 1 error due to ErrorController.
+    // Expect 3 errors due to ErrorController (2 in STATE_D, 1 in STATE_E).
     uint32_t numErrors = 0;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_ERROR_COUNT, numErrors));
-    CHECK_EQUAL (1, numErrors);
+    CHECK_EQUAL (3, numErrors);
 
-    // Expect to end in STATE_D.
+    // Expect 2 deadline misses due to DeadlineMissController. (1 in STATE_D, 1
+    // in STATE_E).
+    uint32_t numMisses = 0;
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_DEADLINE_MISSES, numMisses));
+    CHECK_EQUAL (2, numMisses);
+
+    // Expect to end in STATE_E.
     uint32_t state = STATE_A;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_STATE, state));
-    CHECK_EQUAL (STATE_D, state);
+    CHECK_EQUAL (STATE_E, state);
 
     // Expect CheckDeviceNodeResponsesController to be safed and ErrorController
-    // to be enabled. ThreadKillController will also be safed since the thread
-    // is killed before we receive another telem snapshot.
-    uint8_t dnRespCtrlMode = MODE_SAFED;
-    uint8_t errorCtrlMode = MODE_SAFED;
+    // and DV_ELEM_MISS_CTRL_MODE to be enabled. ThreadKillController will also 
+    // be safed since the thread is killed before we receive another telem 
+    // snapshot.
+    uint8_t dnRespCtrlMode     = MODE_SAFED;
+    uint8_t errorCtrlMode      = MODE_SAFED;
+    uint8_t missCtrlMode       = MODE_SAFED;
     uint8_t threadKillCtrlMode = MODE_SAFED;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_DN_RESP_CTRL_MODE, dnRespCtrlMode));
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_ERROR_CTRL_MODE, errorCtrlMode));
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_MISS_CTRL_MODE, missCtrlMode));
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_THREAD_KILL_CTRL_MODE, 
                                     threadKillCtrlMode));
     CHECK_EQUAL (MODE_SAFED,   dnRespCtrlMode);
     CHECK_EQUAL (MODE_SAFED,   threadKillCtrlMode);
     CHECK_EQUAL (MODE_ENABLED, errorCtrlMode);
+    CHECK_EQUAL (MODE_ENABLED, missCtrlMode);
 };

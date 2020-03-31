@@ -73,6 +73,27 @@ static std::vector<uint8_t> gCnToGndBuf;
 /***************************** PRIVATE FUNCIONS *******************************/
 
 /**
+ * Handle a missed scheduler deadline. No other errors are expected since loop
+ * never returns.
+ *
+ * @param  kError     Error to handle.
+ *
+ * @ret    E_SUCCESS     
+ */
+static Error_t periodicErrorHandler (Error_t kError)
+{
+    // Log deadline miss.
+    if (kError == E_MISSED_SCHEDULER_DEADLINE)
+    {
+        Errors::incrementOnError (gPDv->increment (DV_ELEM_CN_DEADLINE_MISSES),
+                                  gPDv, DV_ELEM_CN_ERROR_COUNT);
+        return E_SUCCESS;
+    }
+
+    return kError;
+}
+
+/**
  * Helper to verify Network Manager config matches required Platform v1 
  * topology.
  *
@@ -150,6 +171,7 @@ static Error_t verifyDvConfig (DataVector::Config_t& kDvConfig)
         DV_ELEM_DN1_RX_MISS_COUNT,
         DV_ELEM_DN2_RX_MISS_COUNT,
         DV_ELEM_CN_TIME_NS,
+        DV_ELEM_CN_DEADLINE_MISSES,
     };
 
     // Loop over regions and elements, removing them from the required sets.
@@ -344,16 +366,10 @@ static Error_t recvDataVectorData ()
  *
  * On success, function never returns.
  *
- * @param   _kArgs                          Unused.
+ * @param   _kArgs     Unused.
  *
- * @ret     E_FAILED_TO_CREATE_TIMERFD      Failed to create timer.
- *          E_FAILED_TO_ARM_TIMERFD         Failed to set and arm timer.
- *          E_FAILED_TO_GET_TIMER_FLAGS     Failed to get timer flags.
- *          E_FAILED_TO_SET_TIMER_FLAGS     Failed to set timer flags.
- *          E_FAILED_TO_READ_TIMERFD        Failed to read timer.
- *          E_MISSED_SCHEDULER_DEADLINE     Thread ended after period
- *                                          elapsed or started after timer
- *                                          triggered more than once.
+ * @ret     E_SUCCESS  Loop executed successfully. Errors may have been logged.
+ *                     If Errors::incrementOnError fails, fails silently.
  */
 static void* loop (void* _kArgs)
 {
@@ -380,10 +396,6 @@ static void* loop (void* _kArgs)
     //    was received. This must run before the State Machine, as some state
     //    transitions are dependent on a ground command.
     Errors::incrementOnError (gPCh->run (), gPDv, DV_ELEM_CN_ERROR_COUNT);
-    uint8_t cmdReq = CMD_NONE;
-    uint8_t cmd = CMD_NONE;
-    gPDv->read (DV_ELEM_CMD, cmd);
-    gPDv->read (DV_ELEM_CMD_REQ, cmdReq);
     
     // 5) Step the State Machine.
     Errors::incrementOnError (gPSm->step (currTimeNs), gPDv, 
@@ -399,7 +411,7 @@ static void* loop (void* _kArgs)
     Errors::incrementOnError (gPDv->increment (DV_ELEM_CN_LOOP_COUNT), gPDv,
                               DV_ELEM_CN_ERROR_COUNT);
 
-    return nullptr;
+    return (void *) E_SUCCESS;
 }
 
 /***************************** PUBLIC FUNCIONS ********************************/
@@ -423,7 +435,7 @@ void ControlNode::entry (NetworkManager::Config_t kNmConfig,
     // 2) Init Thread Manager. Do this first so that the kernel scheduling 
     //    environment is set up immediately.
     ThreadManager* pTm = nullptr;
-    Errors::exitOnError (ThreadManager::getInstance (&pTm),
+    Errors::exitOnError (ThreadManager::getInstance (pTm),
                          "Thread Manager failed to initialize.");
 
     // 3) Init Data Vector. This is required for Network Manager, Command 
@@ -480,12 +492,14 @@ void ControlNode::entry (NetworkManager::Config_t kNmConfig,
             
     // 12) Create periodic thread to run loop function.
     pthread_t loopThread;
-    ThreadManager::ThreadFunc_t *fLoop = (ThreadManager::ThreadFunc_t*) &loop;
+    ThreadManager::ThreadFunc_t fLoop = (ThreadManager::ThreadFunc_t) loop;
+    ThreadManager::ErrorHandler_t fError = 
+        (ThreadManager::ErrorHandler_t) &periodicErrorHandler;
     Errors::exitOnError (pTm->createPeriodicThread (
                                       loopThread, fLoop, nullptr, 0,
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,
                                       ThreadManager::Affinity_t::CORE_0,
-                                      LOOP_PERIOD_MS),
+                                      LOOP_PERIOD_MS, fError),
                          "Failed to start periodic thread.");
 
     // 13) Wait for thread and check return status. On success, this will cause
