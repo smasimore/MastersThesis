@@ -20,6 +20,14 @@
 
 namespace ScriptHelpers
 {
+
+	/**
+	 * Sleep for specified nanoseconds.
+	 *
+     * @param  kNs  Time to sleep in nanoseconds.
+	 */
+	void sleepNs (uint64_t kNs);
+
     /**
      * Sleeps the running thread.
      *

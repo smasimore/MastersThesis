@@ -14,7 +14,7 @@
 #define EXECUTE_AND_CHECK_ACTIONS(kTimeS, kExpVals)                            \
 {                                                                              \
     std::vector<std::shared_ptr<Actions::ActionBase>> actionsToExecute;        \
-    Time::TimeNs_t timeNs = kTimeS * Time::NS_IN_SECOND;                       \
+    Time::TimeNs_t timeNs = kTimeS * Time::NS_IN_S;                       \
     CHECK_SUCCESS (pActions->checkActions (timeNs, actionsToExecute));         \
     for (std::shared_ptr<Actions::ActionBase> action : actionsToExecute )      \
     {                                                                          \
@@ -90,14 +90,14 @@ static DataVector::Config_t gDvConfig =
  */
 static Actions::Config_t gActionsConfig =
 {
-    {0 * Time::NS_IN_SECOND, 
+    {0 * Time::NS_IN_S, 
         {
             ACT_CREATE_UINT8   ( DV_ELEM_TEST0,    1      ),
             ACT_CREATE_UINT16  ( DV_ELEM_TEST1,    10     ),
             ACT_CREATE_UINT32  ( DV_ELEM_TEST2,    20     ),
         }}, 
 
-    {.5 * Time::NS_IN_SECOND,
+    {.5 * Time::NS_IN_S,
         {
             ACT_CREATE_UINT64  ( DV_ELEM_TEST3,    500    ),
             ACT_CREATE_INT8    ( DV_ELEM_TEST4,   -1      ),
@@ -105,7 +105,7 @@ static Actions::Config_t gActionsConfig =
             ACT_CREATE_INT32   ( DV_ELEM_TEST6,   -20     ),
         }},
 
-    {10 * Time::NS_IN_SECOND,
+    {10 * Time::NS_IN_S,
         {
             ACT_CREATE_INT64   ( DV_ELEM_TEST7,    -500   ),
             ACT_CREATE_FLOAT   ( DV_ELEM_TEST8,    1.23   ),
@@ -152,7 +152,7 @@ TEST (Actions_VerifyConfig, IncorrectElemType)
     // Set one action to have incorrect type.
     Actions::Config_t actionsConfig =
     {
-        {0 * Time::NS_IN_SECOND, 
+        {0 * Time::NS_IN_S, 
             {
                 ACT_CREATE_UINT8  ( DV_ELEM_TEST1,  1 ),
             }}, 
@@ -172,7 +172,7 @@ TEST (Actions_VerifyConfig, InvalidAction)
     // Set one action elem attempting to change the state.
     Actions::Config_t actionsConfig =
     {
-        {0 * Time::NS_IN_SECOND, 
+        {0 * Time::NS_IN_S, 
             {
                 ACT_CREATE_UINT32  ( DV_ELEM_STATE,  STATE_B ),
             }}, 

@@ -109,10 +109,10 @@ static StateMachine::Config_t gSmConfig =
     // ID
     {STATE_A,
     // ACTIONS
-    {{0 * Time::NS_IN_SECOND,
+    {{0 * Time::NS_IN_S,
          {ACT_CREATE_UINT8  (DV_ELEM_TEST0,  1),
           ACT_CREATE_UINT16 (DV_ELEM_TEST1,  1)}},
-     {1 * Time::NS_IN_SECOND,
+     {1 * Time::NS_IN_S,
          {ACT_CREATE_UINT32 (DV_ELEM_TEST2,  1),
           ACT_CREATE_UINT8  (DV_ELEM_TEST0,  2)}}},
     // TRANSITIONS
@@ -125,10 +125,10 @@ static StateMachine::Config_t gSmConfig =
     // ID
     {STATE_B,
     // ACTIONS
-    {{0 * Time::NS_IN_SECOND,
+    {{0 * Time::NS_IN_S,
          {ACT_CREATE_UINT64 (DV_ELEM_TEST3,  1),
           ACT_CREATE_INT8   (DV_ELEM_TEST4,  2)}},
-     {.5 * Time::NS_IN_SECOND,
+     {.5 * Time::NS_IN_S,
          {ACT_CREATE_INT16  (DV_ELEM_TEST5,  3),
           ACT_CREATE_INT8   (DV_ELEM_TEST4,  0)}}},
     // TRANSITIONS
@@ -141,9 +141,9 @@ static StateMachine::Config_t gSmConfig =
     // ID
     {STATE_C,
     // ACTIONS
-    {{1 * Time::NS_IN_SECOND,
+    {{1 * Time::NS_IN_S,
          {ACT_CREATE_INT32  (DV_ELEM_TEST6,  1)}},
-     {2 * Time::NS_IN_SECOND,
+     {2 * Time::NS_IN_S,
          {ACT_CREATE_INT64  (DV_ELEM_TEST7, -1),
           ACT_CREATE_FLOAT  (DV_ELEM_TEST8, -1.1)}}},
     // TRANSITIONS
@@ -156,9 +156,9 @@ static StateMachine::Config_t gSmConfig =
     // ID
     {STATE_D,
     // ACTIONS
-    {{0 * Time::NS_IN_SECOND,
+    {{0 * Time::NS_IN_S,
          {ACT_CREATE_BOOL   (DV_ELEM_TEST10, true)}},
-     {1 * Time::NS_IN_SECOND,
+     {1 * Time::NS_IN_S,
          {ACT_CREATE_DOUBLE (DV_ELEM_TEST9, -1)}}},
     // TRANSITIONS
     {TR_CREATE_DOUBLE ( DV_ELEM_TEST9,   CMP_LESS_EQUALS_THAN,    -1,  STATE_A),
@@ -290,13 +290,13 @@ TEST (StateMachine_Config, InvalidAction)
 
     Actions::Config_t actionsConfigA =
     {
-        {0 * Time::NS_IN_SECOND,
+        {0 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST0,    1),
                 ACT_CREATE_UINT64 ( DV_ELEM_TEST2,    1)
             }},
 
-        {1 * Time::NS_IN_SECOND,
+        {1 * Time::NS_IN_S,
             {
                 ACT_CREATE_BOOL   ( DV_ELEM_TEST1,    true),
             }},
@@ -305,13 +305,13 @@ TEST (StateMachine_Config, InvalidAction)
     // Create Actions config with an transition overwriting state elem.
     Actions::Config_t actionsConfigB =
     {
-        {0 * Time::NS_IN_SECOND,
+        {0 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST0,    2),
                 ACT_CREATE_BOOL   ( DV_ELEM_TEST1,    false)
             }},
 
-        {1 * Time::NS_IN_SECOND,
+        {1 * Time::NS_IN_S,
             {
                 ACT_CREATE_UINT64   ( DV_ELEM_TEST2,  2),
                 ACT_CREATE_UINT32   ( DV_ELEM_STATE,  STATE_B)
@@ -375,7 +375,7 @@ TEST (StateMachine_Step, NoActionsOrTransitions)
                                             DV_ELEM_STATE, pSm));
 
     DvVals expVals = {STATE_A, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_S, expVals);
 }
 
 /* Test iterator reset. */
@@ -390,17 +390,17 @@ TEST (StateMachine_Step, ActionsIteratorReset)
 
     // Expect first set of STATE_A's actions to have run.
     DvVals expVals = {STATE_A, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_S, expVals);
 
     // Expect second set of STATE_A's actions to have run and to remain in 
     // STATE_A since the transition check runs before actions are executed. 
     expVals = {STATE_A, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (1 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (1 * Time::NS_IN_S, expVals);
 
     // Expect transition to STATE_B and for STATE_B's first set of actions to 
     // have run. 
     expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (2 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (2 * Time::NS_IN_S, expVals);
     
     // Reset first set of DV values set by STATE_A.
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST0, (uint8_t) 0));
@@ -411,7 +411,7 @@ TEST (StateMachine_Step, ActionsIteratorReset)
     // run again.
     CHECK_SUCCESS (pDv->write (DV_ELEM_TEST3, (uint64_t) 0));
     expVals = {STATE_A, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (3 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (3 * Time::NS_IN_S, expVals);
 }
 
 /* Cycle through every state and action. */
@@ -427,51 +427,51 @@ TEST (StateMachine_Step, Success)
 
     // Expect first set of STATE_A's actions to have run.
     DvVals expVals = {STATE_A, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (0 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (0 * Time::NS_IN_S, expVals);
 
     // Expect second set of STATE_A's actions to have run and to remain in 
     // STATE_A since the transition check runs before actions are executed. 
     expVals = {STATE_A, 2, 1, 1, 0, 0, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (1 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (1 * Time::NS_IN_S, expVals);
 
     // Expect transition to STATE_B and for STATE_B's first set of actions to 
     // have run. 
     expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (2 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (2 * Time::NS_IN_S, expVals);
 
     // Expect no change.
     expVals = {STATE_B, 2, 1, 1, 1, 2, 0, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (2.25 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (2.25 * Time::NS_IN_S, expVals);
 
     // Expect second set of STATE_B's actions to have run. 
     expVals = {STATE_B, 2, 1, 1, 1, 0, 3, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (2.5 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (2.5 * Time::NS_IN_S, expVals);
 
     // Expect transition to STATE_C and for no STATE_C actions to have run. 
     expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 0, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (3 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (3 * Time::NS_IN_S, expVals);
 
     // Expect STATE_C's first set of actions to have run. 
     expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 1, 0, 0, 0, false};
-    STEP_AND_CHECK_DV (4 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (4 * Time::NS_IN_S, expVals);
 
     // Expect STATE_C's second set of actions to have run. 
     expVals = {STATE_C, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, 0, false};
-    STEP_AND_CHECK_DV (5 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (5 * Time::NS_IN_S, expVals);
 
     // Expect transition to STATE_D and for STATE_D's first set of actions to 
     // have run. 
     expVals = {STATE_D, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, 0, true};
-    STEP_AND_CHECK_DV (6 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (6 * Time::NS_IN_S, expVals);
 
     // Expect STATE_D's second set of actions to have run. 
     expVals = {STATE_D, 2, 1, 1, 1, 0, 3, 1, -1, -1.1, -1, true};
-    STEP_AND_CHECK_DV (7 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (7 * Time::NS_IN_S, expVals);
 
     // Expect transition back to STATE_A and for STATE_A's first set of actions
     // to run again.
     expVals = {STATE_A, 1, 1, 1, 1, 0, 3, 1, -1, -1.1, -1, true};
-    STEP_AND_CHECK_DV (7 * Time::NS_IN_SECOND, expVals);
+    STEP_AND_CHECK_DV (7 * Time::NS_IN_S, expVals);
 }
 
 /* Test State Machine integration with State, Transitions, and Time classes. */
@@ -550,13 +550,13 @@ TEST (StateMachine_Step, Actions)
 
     Actions::Config_t actionsConfigA =
     {
-        {0 * Time::NS_IN_SECOND,
+        {0 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST5,    1),
                 ACT_CREATE_UINT64 ( DV_ELEM_TEST3,    1)
             }},
 
-        {1 * Time::NS_IN_SECOND,
+        {1 * Time::NS_IN_S,
             {
                 ACT_CREATE_BOOL   ( DV_ELEM_TEST10,    true),
             }},
@@ -564,13 +564,13 @@ TEST (StateMachine_Step, Actions)
 
     Actions::Config_t actionsConfigB =
     {
-        {0 * Time::NS_IN_SECOND,
+        {0 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST5,    2),
                 ACT_CREATE_BOOL  ( DV_ELEM_TEST10,    false)
             }},
 
-        {1 * Time::NS_IN_SECOND,
+        {1 * Time::NS_IN_S,
             {
                 ACT_CREATE_UINT64   ( DV_ELEM_TEST3,  2),
             }},

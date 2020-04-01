@@ -3,11 +3,15 @@
 #include <time.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <numeric>
 #include <algorithm>
 #include <stdexcept>
+#include <string>
+#include <sys/ioctl.h>
+#include <linux/sockios.h>
+#include <string.h>
 
-#include "ThreadManager.hpp"
 #include "Errors.hpp"
 #include "ProfileHelpers.hpp"
 
@@ -84,7 +88,7 @@ void ProfileHelpers::printProcessStats ()
     }
     else
     {
-        throw std::runtime_error ("Failed to to open " + filePath);
+        throw std::runtime_error ("Failed to open " + filePath);
     }
 }
 
@@ -101,5 +105,105 @@ void ProfileHelpers::printVectorStats (std::vector<uint64_t>& results,
     std::cout << "Average: " << avg << std::endl;
     std::cout << "Min:     " << min << std::endl;
     std::cout << "Max:     " << max << std::endl;
+}
+
+std::map<uint32_t, ProfileHelpers::ProcessStats_t> 
+    ProfileHelpers::getProcessStats ()
+{
+    const uint32_t MAX_PID = 2000;
+
+    // Loop over PID's 0 - 1999 and store stats.
+    std::map<uint32_t, ProfileHelpers::ProcessStats_t> pidToStats;
+    for (uint32_t pid = 0; pid < MAX_PID; pid++)
+    {
+        // 1) Open proc stat and status files.
+        std::string statFilePath = "/proc/" + std::to_string (pid) + "/stat";
+        std::string statusFilePath = "/proc/" + std::to_string (pid) + 
+                                     "/status";
+        std::ifstream statFile (statFilePath);
+        std::ifstream statusFile (statusFilePath);
+
+        // 2) If either file not open, pid doesn't exist.
+        if (statFile.is_open() == false || statusFile.is_open () == false)
+        {
+            continue;
+        }
+
+        // 3) Read proc/<pid>/stat file (one line) into a vector, where each 
+        //    word is an element.
+        std::string statLine = "";
+        std::getline (statFile, statLine);
+        std::stringstream statLineStream (statLine);
+        std::vector<std::string> statWords;
+        std::string statWord;
+        while (std::getline (statLineStream, statWord, ' '))
+        {
+            statWords.push_back (statWord);
+        }
+
+        // 4) Read proc/<pid>/status file into a vector, where each line is an 
+        //    element.
+        std::vector<std::string> statusLines;
+        std::string statusLine;
+        while (std::getline (statusFile, statusLine))
+        {
+            statusLines.push_back (statusLine);
+        }
+
+        // 5) Create info struct.
+        ProfileHelpers::ProcessStats_t stats;
+        stats.pid = pid;
+        stats.name = statWords[1];
+        stats.priority = std::stoi (statWords[17]);
+        stats.cpuLastRanOn = std::stoi (statWords[38]);
+
+        // 6) Get voluntary context switches. Not all /status files have same # 
+        //    of lines, but switches are always last two.
+        std::string vCtxSwLine = statusLines[statusLines.size () - 2];
+        stats.numVoluntarySwitches = std::stoi (vCtxSwLine.substr (24));
+
+        // 7) Add pid and stats to map.
+        pidToStats[pid] = stats;
+    }
+
+    return pidToStats;
+}
+
+void ProfileHelpers::printActiveProcesses (
+                    std::map<uint32_t, ProfileHelpers::ProcessStats_t> kPre,
+                    std::map<uint32_t, ProfileHelpers::ProcessStats_t> kPost,
+                    ThreadManager::Affinity_t kCpuSet)
+{
+    for (std::pair<uint32_t, ProfileHelpers::ProcessStats_t> elem : kPre)
+    {
+        ProfileHelpers::ProcessStats_t pre = elem.second;
+        ProfileHelpers::ProcessStats_t post = kPost[pre.pid];
+
+        // Compare pre and post voluntary context switches. If number of 
+        // switches didn't go up, skip.
+        int32_t numSwitches = post.numVoluntarySwitches - 
+                                  pre.numVoluntarySwitches;
+        if (numSwitches == 0)
+        {
+            continue;
+        }
+
+        // Check if process ran on a cpu we care about. If not, skip.
+        if (kCpuSet == ThreadManager::Affinity_t::CORE_0 && 
+            post.cpuLastRanOn != 0)
+        {
+            continue;
+        }
+        else if (kCpuSet == ThreadManager::Affinity_t::CORE_1 && 
+                 post.cpuLastRanOn != 1)
+        {
+            continue;
+        }
+
+        // Print process' stats.
+        std::cout << "PID: " << post.pid << " NAME: " << post.name
+            << " PRIORITY: " << post.priority << " CPU: " << post.cpuLastRanOn
+            << " NUM VOL SWITCHES: " << numSwitches << std::endl;
+    }
 }
 

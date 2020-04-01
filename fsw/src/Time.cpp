@@ -16,7 +16,7 @@ Error_t Time::getTimeNs (Time::TimeNs_t& kTimeNsRet)
     }
 
     // Store current time.
-    kTimeNsRet = NS_IN_SECOND * realtime.tv_sec + realtime.tv_nsec;
+    kTimeNsRet = NS_IN_S * realtime.tv_sec + realtime.tv_nsec;
 
     return E_SUCCESS;
 }
@@ -54,7 +54,7 @@ Time::Time (Error_t& kErrorRet)
         return;
     }
 
-    mTimeAtInit =  NS_IN_SECOND * realtime.tv_sec + realtime.tv_nsec;
+    mTimeAtInit =  NS_IN_S * realtime.tv_sec + realtime.tv_nsec;
 }
 
 Time::Time (Time const &) {}

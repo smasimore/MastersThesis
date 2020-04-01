@@ -7,11 +7,25 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 #include "Time.hpp"
+#include "ThreadManager.hpp"
 
 namespace ProfileHelpers
 {
+
+    /**
+     * Struct to hold process stats.
+     */
+    typedef struct ProcessStats
+    {
+        uint32_t pid;
+        std::string name;
+        int32_t priority;
+        int32_t cpuLastRanOn;
+        int32_t numVoluntarySwitches;
+    } ProcessStats_t;
 
     /**
      * Set current thread to have minimum FSW thread priority and only use core 0.
@@ -38,6 +52,25 @@ namespace ProfileHelpers
      * Calculate and print avg, min, and max.
      */
     void printVectorStats (std::vector<uint64_t>& results, std::string header);
+
+    /**
+     * Get stats for all processes with PID <= 2000.
+     *
+     * @ret  Map from PID to process' stats.
+     */
+    std::map<uint32_t, ProcessStats_t> getProcessStats ();
+
+    /**
+     * Print processes that ran during an event.
+	 *
+	 * @param  kPre      PID to ProcessStats_t map collected before event.
+	 * @param  kPost     PID to ProcessStats_t map collected after event.
+	 * @param  kCpupSet  Set of relevant CPU's.
+     */
+    void printActiveProcesses (
+                    std::map<uint32_t, ProfileHelpers::ProcessStats_t> kPre,
+                    std::map<uint32_t, ProfileHelpers::ProcessStats_t> kPost,
+                    ThreadManager::Affinity_t kCpuSet);
 
 }
 

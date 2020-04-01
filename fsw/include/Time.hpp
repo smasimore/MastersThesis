@@ -47,7 +47,12 @@ public:
     /**
      * Unsigned long long used to convert seconds to nanoseconds
      */
-    static const uint64_t NS_IN_SECOND = 1000000000;
+    static const uint64_t NS_IN_S = 1000000000;
+
+    /**
+     * Unsigned long long used to convert milliseconds to nanoseconds
+     */
+    static const uint64_t NS_IN_MS = 1000000;
 
     /**
      * Unsigned long long used to convert microseconds to nanoseconds
@@ -58,6 +63,11 @@ public:
      * Unsigned long long used to convert milliseconds to microseconds
      */
     static const uint64_t US_IN_MS = 1000;
+
+    /**
+     * Unsigned long long used to convert seconds to milliseconds.
+     */
+    static const uint64_t MS_IN_S = 1000;
 
     /**
      * Returns current time in nanoseconds.

@@ -5,14 +5,17 @@
 #include "ScriptHelpers.hpp"
 #include "Time.hpp"
 
+void ScriptHelpers::sleepNs (uint64_t kNs)
+{
+    timespec timeToSleep;
+    timeToSleep.tv_sec = kNs / Time::NS_IN_S;
+    timeToSleep.tv_nsec = kNs % Time::NS_IN_S;
+    nanosleep (&timeToSleep, nullptr);
+}
+
 void ScriptHelpers::sleepMs (uint32_t kMs)
 {
-    static const uint32_t MS_IN_S = 1000;
-    static const uint32_t NS_IN_MS = 1000000;
-    timespec timeToSleep;
-    timeToSleep.tv_sec = kMs / MS_IN_S;
-    timeToSleep.tv_nsec = (kMs % MS_IN_S) * NS_IN_MS;
-    nanosleep (&timeToSleep, nullptr);
+    ScriptHelpers::sleepNs (kMs * Time::NS_IN_MS);
 }
 
 double ScriptHelpers::timeS ()
@@ -37,5 +40,5 @@ double ScriptHelpers::timeS ()
     }
 
     // Compute elapsed seconds and return.
-    return timeNs * 1.0 / Time::NS_IN_SECOND;
+    return timeNs * 1.0 / Time::NS_IN_S;
 }

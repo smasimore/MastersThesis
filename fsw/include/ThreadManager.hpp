@@ -36,7 +36,7 @@
  * SCHEDULING PRIORITIES:
  * 
  * For SCHED_FIFO threads, 99 is the highest priority and 1 is the lowest.
- * There are 4 categories of threads we need to manage the priorities of:
+ * There are 5 categories of threads we need to manage the priorities of:
  * 
  * 1. Hardware IRQ Threads: These kernel threads service the top half of hw 
  *    interrupts such as a key stroke or timer expiring. In NILRT Linux their
@@ -72,6 +72,13 @@
  *    to read sensors, process data, communicate over the network, and set 
  *    actuators. Their priorities are to be >= 1 and <= 12 so that the hw and sw
  *    timer IRQ threads have no risk of starvation.
+ *
+ * 5. RCU Threads: Implements a synchronization method called read-copy update 
+ *    to improve concurrency in the Linux kernel. Moving to a lower priority 
+ *    than fsw threads had no measureable repurcussions and improves determinism 
+ *    by ensuring the fsw threads can regain control of the CPU from these 
+ *    threads.
+ *                 
  * 
  * After the ThreadManager is initialized, the following thread priorities are
  * set:
@@ -80,7 +87,8 @@
  *      Software IRQ Threads         = KSOFTIRQD_PRIORITY        = 14
  *      FSW Init thread              = FSW_INIT_THREAD_PRIORITY  = 13
  *      Max new thread priority      = MAX_NEW_THREAD_PRIORITY   = 12
- *      Min new thread priority      = MIN_NEW_THREAD_PRIORITY   = 1 
+ *      Min new thread priority      = MIN_NEW_THREAD_PRIORITY   = 2 
+ *      RCU Threads                  = RCU_PRIORITY              = 1 (default) 
  */
 
 #ifndef THREAD_MANAGER_HPP
@@ -295,6 +303,7 @@ public:
      * 
      * Hardcoded thread priorities.
      */
+    static const uint8_t RCU_PRIORITY;
     static const uint8_t HW_IRQ_PRIORITY;
     static const uint8_t SW_IRQ_PRIORITY;
     static const uint8_t FSW_INIT_THREAD_PRIORITY;
@@ -328,23 +337,22 @@ public:
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF THREADMANAGER
      * 
-     * Set the priority of a SCHED_FIFO process given its PID. This function is
-     * used during ThreadManager initialization to update the priorities of
-     * time-critical kernel threads.It is static so that it can be done before 
-     * the ThreadManager object is constructed.
+     * Set the priority of a SCHED_FIFO kernel process given its PID. This 
+     * function is used during ThreadManager initialization to update the 
+     * priorities of time-critical kernel threads. It is static so that it can 
+     * be done before the ThreadManager object is constructed.
      * 
      * @param   kPid                        PID of the process to verify.
      * @param   kPriority                   SCHED_FIFO priority to set process 
-     *                                      to. Must be between 1-49 to not risk 
-     *                                      starving the hw IRQ thread with 
-     *                                      priority 50.
+     *                                      to. Must be between min and max
+     *                                      SCHED_FIFO priorities.
      * 
      * @ret     E_SUCCESS                   Priority successfully set.  
      *          E_INVALID_PRIORITY          Priority out of bounds.
      *          E_FAILED_TO_SET_PRIORITY    Failed to set priority.
      */
-    static Error_t setProcessPriority (const uint8_t kPid, 
-                                       const uint8_t kPriority);
+    static Error_t setKernelProcessPriority (const uint8_t kPid, 
+                                             const uint8_t kPriority);
 
 private:
 

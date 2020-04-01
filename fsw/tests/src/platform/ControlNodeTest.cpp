@@ -223,10 +223,10 @@ static StateMachine::Config_t gSmConfig =
     {STATE_C,
     //
     // ACTIONS
-    {{0 * Time::NS_IN_SECOND,
+    {{0 * Time::NS_IN_S,
         {ACT_CREATE_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE, MODE_ENABLED )}},
 
-     {.01 * Time::NS_IN_SECOND,
+     {.01 * Time::NS_IN_S,
          {ACT_CREATE_BOOL  ( DV_ELEM_TEST0,  true ),
           ACT_CREATE_BOOL  ( DV_ELEM_TEST1,  true ),
           ACT_CREATE_BOOL  ( DV_ELEM_TEST2,  true )}}},
@@ -244,10 +244,10 @@ static StateMachine::Config_t gSmConfig =
     {STATE_D,
     //
     // ACTIONS
-    {{0 * Time::NS_IN_SECOND,
+    {{0 * Time::NS_IN_S,
         {ACT_CREATE_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,     MODE_SAFED   ),
          ACT_CREATE_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,       MODE_ENABLED )}},
-     {.01 * Time::NS_IN_SECOND,
+     {.01 * Time::NS_IN_S,
         {ACT_CREATE_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_ENABLED )}}},
     //
     // TRANSITIONS
@@ -262,7 +262,7 @@ static StateMachine::Config_t gSmConfig =
     {STATE_E,
     //
     // ACTIONS
-    {{.01 * Time::NS_IN_SECOND,
+    {{.01 * Time::NS_IN_S,
         {ACT_CREATE_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE, MODE_ENABLED )}}},
     //
     // TRANSITIONS

@@ -20,6 +20,8 @@
 #include "ClockSyncTest_Client.hpp"
 #include "ClockSyncTest_Server.hpp"
 #include "ProfileFpgaApi.hpp"
+#include "ProfileEthernetRtt_ControlNode.hpp"
+#include "ProfileEthernetRtt_DeviceNode.hpp"
 
 int main (int ac, char** av)
 {
@@ -28,5 +30,7 @@ int main (int ac, char** av)
     // ProfileLock::main (ac, av);
     // ClockSyncTest_Client::main (ac, av);
     // ClockSyncTest_Server::main (ac, av);
-      ProfileFpgaApi::main (ac, av);
+    // ProfileFpgaApi::main (ac, av);
+    ProfileEthernetRtt_ControlNode::main (ac, av);
+    //ProfileEthernetRtt_DeviceNode::main (ac, av);
 }

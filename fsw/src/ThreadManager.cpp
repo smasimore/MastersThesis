@@ -16,6 +16,7 @@ const uint8_t ThreadManager::KSOFTIRQD_0_PID = 7;
 const uint8_t ThreadManager::KSOFTIRQD_1_PID = 22;
 const uint8_t ThreadManager::KTIMERSOFTD_0_PID = 8;
 const uint8_t ThreadManager::KTIMERSOFTD_1_PID = 21;
+const uint8_t ThreadManager::RCU_PRIORITY = 1;
 const uint8_t ThreadManager::HW_IRQ_PRIORITY = 15;
 const uint8_t ThreadManager::SW_IRQ_PRIORITY =
     ThreadManager::HW_IRQ_PRIORITY - 1;
@@ -23,7 +24,8 @@ const uint8_t ThreadManager::FSW_INIT_THREAD_PRIORITY =
     ThreadManager::SW_IRQ_PRIORITY - 1;
 const uint8_t ThreadManager::MAX_NEW_THREAD_PRIORITY = 
     ThreadManager::FSW_INIT_THREAD_PRIORITY - 1;
-const uint8_t ThreadManager::MIN_NEW_THREAD_PRIORITY = 1;
+const uint8_t ThreadManager::MIN_NEW_THREAD_PRIORITY = 
+    ThreadManager::RCU_PRIORITY + 1;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
@@ -334,14 +336,12 @@ Error_t ThreadManager::verifyProcess (const uint8_t kPid,
     return E_SUCCESS;
 }
 
-Error_t ThreadManager::setProcessPriority (const uint8_t kPid, 
-                                           const uint8_t kPriority)
+Error_t ThreadManager::setKernelProcessPriority (const uint8_t kPid, 
+                                                 const uint8_t kPriority)
 {
-
-    // Only allow priorities below hw IRQ thread priority and above min
-    // SCHED_FIFO priority.
-    if (kPriority < ThreadManager::MIN_NEW_THREAD_PRIORITY || 
-        kPriority >= ThreadManager::HW_IRQ_PRIORITY)
+    // Only allow priorities between min and max SCHED_FIFO priorities.    
+    if ((int32_t) kPriority < sched_get_priority_min (SCHED_FIFO) || 
+        (int32_t) kPriority > sched_get_priority_max (SCHED_FIFO))
     {
         return E_INVALID_PRIORITY;
     }
@@ -433,25 +433,29 @@ Error_t ThreadManager::initKernelSchedulingEnvironment ()
     }
 
     // 4) Set the priorities of the sw irq threads.
-    ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_0_PID, 
+    ret = ThreadManager::setKernelProcessPriority (
+                                             ThreadManager::KSOFTIRQD_0_PID, 
                                              ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
-    ret = ThreadManager::setProcessPriority (ThreadManager::KSOFTIRQD_1_PID, 
+    ret = ThreadManager::setKernelProcessPriority (
+                                             ThreadManager::KSOFTIRQD_1_PID, 
                                              ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
-    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_0_PID, 
+    ret = ThreadManager::setKernelProcessPriority (
+                                             ThreadManager::KTIMERSOFTD_0_PID, 
                                              ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {
         return E_FAILED_TO_SET_PRIORITY;
     }
-    ret = ThreadManager::setProcessPriority (ThreadManager::KTIMERSOFTD_1_PID, 
+    ret = ThreadManager::setKernelProcessPriority (
+                                             ThreadManager::KTIMERSOFTD_1_PID, 
                                              ThreadManager::SW_IRQ_PRIORITY);
     if (ret != E_SUCCESS)
     {

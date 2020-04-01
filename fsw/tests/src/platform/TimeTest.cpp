@@ -33,7 +33,7 @@
     nanosleep (&pTimeSpec, 0);                                                 \
     CHECK_SUCCESS (pTime->getTimeNs (timeNsTwo));                              \
     Time::TimeNs_t timeDif = timeNsTwo - timeNsOne;                            \
-    Time::TimeNs_t approxDif = kSecToSleep * pTime->NS_IN_SECOND + kNsToSleep; \
+    Time::TimeNs_t approxDif = kSecToSleep * Time::NS_IN_S + kNsToSleep;       \
     CHECK_IN_BOUND (timeDif, approxDif, ELAPSED_NS_ERROR_BOUND);               \
 }
 

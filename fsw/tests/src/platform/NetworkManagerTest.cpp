@@ -658,19 +658,19 @@ TEST (NetworkManager_RecvMult, DiffVectorSizes)
 
     // Num nodes different.
     nodes.resize (1);
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, bufs, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, bufs, 
                                     msgsReceived),
                  E_VECTORS_DIFF_SIZES);
 
     // Num buffs different.
     msgsReceived.resize (1);
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, bufs, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, bufs, 
                                     msgsReceived),
                  E_VECTORS_DIFF_SIZES);
 
     // Num msgsReceived different.
     msgsReceived.resize (2);
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, bufs, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, bufs, 
                                     msgsReceived),
                  E_VECTORS_DIFF_SIZES);
 
@@ -688,7 +688,7 @@ TEST (NetworkManager_RecvMult, LargeTimeout)
     std::vector<std::vector<uint8_t>> bufs;
     std::vector<bool> msgsReceived;
 
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US + 1, nodes, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS + 1, nodes, 
                                     bufs, msgsReceived),
                  E_TIMEOUT_TOO_LARGE);
 
@@ -709,10 +709,10 @@ TEST (NetworkManager_RecvMult, EmptyBuffer)
     bufsSecondEmpty[0].resize (1);
     std::vector<bool> msgsReceived (2);
 
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
                                     bufsFirstEmpty, msgsReceived),
                  E_EMPTY_BUFFER);
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
                                     bufsSecondEmpty, msgsReceived),
                  E_EMPTY_BUFFER);
 
@@ -731,10 +731,10 @@ TEST (NetworkManager_RecvMult, InvalidNode)
     std::vector<std::vector<uint8_t>> bufs = {{0xff}, {0xff}};
     std::vector<bool> msgsReceived (2);
 
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodesFirstInvalid, bufs, msgsReceived),
                  E_INVALID_NODE);
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodesSecondInvalid, bufs, msgsReceived),
                  E_INVALID_NODE);
 
@@ -760,13 +760,13 @@ TEST (NetworkManager_RecvMult, BufferSizeTooSmall)
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, buf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, buf));
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodes, bufsFirstTooSmall, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, buf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, buf));
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodes, bufsSecondTooSmall, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
@@ -794,13 +794,13 @@ TEST (NetworkManager_RecvMult, BufferSizeTooLarge)
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf));
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodes, bufsFirstTooLarge, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf));
-    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, 
+    CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodes, bufsSecondTooLarge, msgsReceived),
                  E_UNEXPECTED_RECV_SIZE);
 
@@ -836,7 +836,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
+    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
                                       bufs, msgsReceived));
     pTime->getTimeNs (endNs);
 
@@ -845,7 +845,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     CHECK (bufs[1] == sendBuf1);
 
     // Verify time taken is less than timeout.
-    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_US);
+    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_NS);
 
     // Verify msgsReceived all set to true.
     for (uint8_t i = 0; i < msgsReceived.size (); i++)
@@ -867,7 +867,7 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     Time::getInstance (pTime);
 
     // Set up params.
-    const uint32_t TIMEOUT_US = 1000;
+    const Time::TimeNs_t TIMEOUT_NS = 1 * Time::NS_IN_MS;
     std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
@@ -879,15 +879,14 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
+    pNmCtrl->recvMult (TIMEOUT_NS, nodes, bufs, msgsReceived);
     pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
     Time::TimeNs_t elapsedNs = endNs - startNs;
-    Time::TimeNs_t timeoutNs = TIMEOUT_US * Time::NS_IN_US;
-    CHECK (elapsedNs > timeoutNs);
-    CHECK_IN_BOUND (timeoutNs, elapsedNs, SELECT_OVERHEAD_NS);
+    CHECK (elapsedNs > TIMEOUT_NS);
+    CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
     // Verify msgsReceived all set to false.
     for (uint8_t i = 0; i < msgsReceived.size (); i++)
@@ -928,7 +927,7 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_US, nodes, 
+    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
                                       bufs, msgsReceived));
     pTime->getTimeNs (endNs);
 
@@ -937,7 +936,7 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     CHECK (bufs[1] == sendBuf1);
 
     // Verify time taken is less than timeout.
-    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_US);
+    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_NS);
 
     // Verify msgsReceived all set to true.
     for (uint8_t i = 0; i < msgsReceived.size (); i++)
@@ -959,7 +958,7 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     Time::getInstance (pTime);
 
     // Set up params.
-    const uint32_t TIMEOUT_US = 1000;
+    const Time::TimeNs_t TIMEOUT_NS = 1 * Time::NS_IN_MS;
     std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
@@ -976,15 +975,14 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
+    pNmCtrl->recvMult (TIMEOUT_NS, nodes, bufs, msgsReceived);
     pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
     Time::TimeNs_t elapsedNs = endNs - startNs;
-    Time::TimeNs_t timeoutNs = TIMEOUT_US * Time::NS_IN_US;
-    CHECK (elapsedNs > timeoutNs);
-    CHECK_IN_BOUND (timeoutNs, elapsedNs, SELECT_OVERHEAD_NS);
+    CHECK (elapsedNs > TIMEOUT_NS);
+    CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
     // Verify msg received only from Device Node 0.
     CHECK (sendBuf0 == bufs[0]);
@@ -1000,14 +998,14 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
     pTime->getTimeNs (startNs);
-    pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived);
+    pNmCtrl->recvMult (TIMEOUT_NS, nodes, bufs, msgsReceived);
     pTime->getTimeNs (endNs);
 
     // Verify time taken is greater than or equal to timeout and within 
     // expected bounds.
     elapsedNs = endNs - startNs;
-    CHECK (elapsedNs > timeoutNs);
-    CHECK_IN_BOUND (timeoutNs, elapsedNs, SELECT_OVERHEAD_NS);
+    CHECK (elapsedNs > TIMEOUT_NS);
+    CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
     // Verify msg received only from Device Node 1.
     CHECK (sendBuf1 == bufs[1]);
@@ -1048,7 +1046,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
                                     ThreadManager::Affinity_t::CORE_0));
 
     // Set up params. Threads send buffer = {0xff}.
-    const uint32_t TIMEOUT_US = 1000;
+    const Time::TimeNs_t TIMEOUT_NS = 1 * Time::NS_IN_MS;
     std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (1);
@@ -1057,7 +1055,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
 
     // Block on recvMult call.
     testLog.logEvent (Log::LogEvent_t::CALLED_RECVMULT, 0);    
-    CHECK_SUCCESS (pNmCtrl->recvMult (TIMEOUT_US, nodes, bufs, msgsReceived)); 
+    CHECK_SUCCESS (pNmCtrl->recvMult (TIMEOUT_NS, nodes, bufs, msgsReceived)); 
     testLog.logEvent (Log::LogEvent_t::RECEIVED, 0);    
 
     // Verify received expected buffers.

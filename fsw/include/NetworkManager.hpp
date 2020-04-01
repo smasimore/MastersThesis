@@ -40,7 +40,7 @@
  *
  *      Thread 1 blocking on the recvMult call is undesired and unexpected, as
  *      recvMult is intended to allow the Control Node to listen on multiple
- *      channels and timeout. recvMult should never block.
+ *      channels and timeout. recvMult should never block indefinitely.
  *
  */
 
@@ -56,6 +56,7 @@
 #include "EnumClassHash.hpp"
 #include "DataVector.hpp"
 #include "Errors.hpp"
+#include "Time.hpp"
 
 /**
  * Allowed network nodes. Defined outside of class to enable more succinct
@@ -63,13 +64,13 @@
  */
 enum Node_t : uint8_t
 {
-	NODE_CONTROL,
-	NODE_DEVICE0,
-	NODE_DEVICE1,
-	NODE_DEVICE2,
-	NODE_GROUND,
+    NODE_CONTROL,
+    NODE_DEVICE0,
+    NODE_DEVICE1,
+    NODE_DEVICE2,
+    NODE_GROUND,
 
-	NODE_LAST
+    NODE_LAST
 };
 
 class NetworkManager final 
@@ -88,9 +89,9 @@ public:
     static const uint16_t MAX_PORT;
 
     /**
-     * Maximum timeout size in microseconds.
+     * Maximum timeout size in nanoseconds.
      */
-    static const uint32_t MAX_TIMEOUT_US;
+    static const Time::TimeNs_t MAX_TIMEOUT_NS;
 
     /**
      * IPv4 address type. This is expected to be in "x.x.x.x" format, which each
@@ -178,6 +179,8 @@ public:
      * Send a message to a node. Increments message send count on successful
      * send.
      *
+     * WARNING: This method will block if the OS send buffer is full.
+     *
      * @param   kNode                       Node to send message to.
      * @param   kBuf                        Data to send.
      *
@@ -220,8 +223,9 @@ public:
      *
      * Note: The select call has up to 250us of overhead.
      *
-     * @param   kTimeoutUs                  Timeout in microseconds. Max timeout 
-     *                                      is 999999us.
+     * @param   kTimeoutNs                  Timeout in nanoseconds. Max timeout 
+     *                                      is 100 seconds. Underlying timeout 
+     *                                      uses microsecond increments.
      * @param   kNodes                      Nodes to receive messages from.
      * @param   kBufsRet                    Buffers to fill with messages.
      * @param   kMsgReceivedRet             True if message received from node.
@@ -243,7 +247,7 @@ public:
      *          E_DATA_VECTOR_WRITE         Failed to increment msgs rx'd
      *                                      counter.
      */
-    Error_t recvMult (uint32_t kTimeoutUs,
+    Error_t recvMult (Time::TimeNs_t kTimeoutNs,
                       std::vector<Node_t> kNodes, 
                       std::vector<std::vector<uint8_t>>& kBufsRet, 
                       std::vector<bool>& kMsgReceivedRet);

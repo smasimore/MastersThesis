@@ -10,9 +10,9 @@
 
 /**
  * Maximum starting clock offset between client and server. Value obtained
- * by synchronizing two sbRIO's 10 times and taking 1.5 * maximum offset.
+ * by synchronizing the flight network 10 times and taking 1.5 * maximum offset.
  */
-static const float MAX_STARTING_OFFSET_SECONDS = 0.000018;
+static const float MAX_STARTING_OFFSET_SECONDS = 0.000040;
 
 /**
  * Temporary file to store ntpdate output. This is used to verify offset after
@@ -151,8 +151,10 @@ Error_t ClockSync::syncClient (std::shared_ptr<NetworkManager>& kPNm,
     std::string ntpdateCmd = "ntpdate -b " + kServerNodeIP + " > /dev/null 2>&1";
     int32_t ntpdateRet = std::system (ntpdateCmd.c_str ());
 
-    // 4) If failed to sync, send fail status to server.
-    if (ntpdateRet != 0)
+    // 4) If failed to sync or post-sync offset over max, send fail status to 
+    //    server.
+    ret = verifyClientSynced (kServerNodeIP);
+    if (ntpdateRet != 0 || ret != E_SUCCESS)
     {
         std::vector<uint8_t> txMsg = {ClockSync::Msg_t::CLIENT_SYNC_FAIL};
         ret = kPNm->send (kServerNode, txMsg);
@@ -164,14 +166,7 @@ Error_t ClockSync::syncClient (std::shared_ptr<NetworkManager>& kPNm,
         return E_CLIENT_FAILED_TO_SYNC;
     }
 
-    // 5) Verify post-sync offset is below max offset. 
-    ret = verifyClientSynced (kServerNodeIP);
-    if (ret != E_SUCCESS)
-    {
-        return ret;
-    }
-
-    // 6) Otherwise, send success status.
+    // 5) Otherwise, send success status.
     std::vector<uint8_t> txMsg = {ClockSync::Msg_t::CLIENT_SYNC_SUCCESS};
     ret = kPNm->send (kServerNode, txMsg);
     if (ret != E_SUCCESS)

@@ -9,9 +9,9 @@
 
 #include "NetworkManager.hpp"
 
-const uint16_t NetworkManager::MIN_PORT       = 2200;
-const uint16_t NetworkManager::MAX_PORT       = 2299;
-const uint32_t NetworkManager::MAX_TIMEOUT_US = 999999;
+const uint16_t NetworkManager::MIN_PORT             = 2200;
+const uint16_t NetworkManager::MAX_PORT             = 2299;
+const Time::TimeNs_t NetworkManager::MAX_TIMEOUT_NS = 100 * Time::NS_IN_S;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
@@ -124,7 +124,7 @@ Error_t NetworkManager::recv (Node_t kNode, std::vector<uint8_t>& kBufRet)
     return E_SUCCESS;
 }
 
-Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
+Error_t NetworkManager::recvMult (Time::TimeNs_t kTimeoutNs,
                                   std::vector<Node_t> kNodes,
                                   std::vector<std::vector<uint8_t>>& kBufsRet, 
                                   std::vector<bool>& kMsgReceivedRet)
@@ -138,7 +138,7 @@ Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
     }
 
     // 2) Verify timeout less than max.
-    if (kTimeoutUs > NetworkManager::MAX_TIMEOUT_US)
+    if (kTimeoutNs > NetworkManager::MAX_TIMEOUT_NS)
     {
         return E_TIMEOUT_TOO_LARGE;
     }
@@ -178,13 +178,13 @@ Error_t NetworkManager::recvMult (uint32_t kTimeoutUs,
 
     // 5) Create struct timeval for select call.
     struct timeval timeout;
-    timeout.tv_sec = 0;
-    timeout.tv_usec = kTimeoutUs;
+    timeout.tv_sec = kTimeoutNs / Time::NS_IN_S;
+    timeout.tv_usec = (kTimeoutNs % Time::NS_IN_S) / Time::NS_IN_US;
 
     // 6) Attempt to receive message from nodes until timeout expires or all
     //    nodes have sent one message.
     uint8_t numMsgsReceived = 0;
-    while (timeout.tv_usec > 0)
+    while (timeout.tv_sec > 0 || timeout.tv_usec > 0)
     {
         // 6a) Call select on remaining fd's. Select returns 0 if timeout
         //     expired, -1 if there was an error, and > 0 to specify how many
@@ -488,7 +488,7 @@ Error_t NetworkManager::createSocket (uint32_t kMeIp, uint16_t kPort,
 {
     // 1) Create socket using IPv4 protocol (AF_INET), UDP (SOCK_DGRAM), and
     //    no additionally specified protocol (0, UDP is set through SOCK_DGRAM)
-    int32_t sockFd = socket (AF_INET, SOCK_DGRAM, 0);
+    int32_t sockFd = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockFd == -1)
     {
         return E_FAILED_TO_CREATE_SOCKET;

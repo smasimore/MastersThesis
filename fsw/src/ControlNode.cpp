@@ -10,9 +10,9 @@
 static const uint32_t LOOP_PERIOD_MS = 10;
 
 /**
- * Microseconds to wait for Device and Ground node messages at top of loop.
+ * Nanoseconds to wait for Device and Ground node messages at top of loop.
  */
-static const uint32_t DATA_RX_TIMEOUT_US = 2 * Time::US_IN_MS;
+static const Time::TimeNs_t DATA_RX_TIMEOUT_NS = 2 * Time::NS_IN_MS;
 
 /**
  * Nodes to receive messages from at the top of loop.
@@ -307,7 +307,7 @@ static Error_t recvDataVectorData ()
     std::vector<bool> msgsReceived (NODES_TO_RECV_FROM.size (), false);
 
     // Receive data from nodes.
-    if (gPNm->recvMult (DATA_RX_TIMEOUT_US, NODES_TO_RECV_FROM, gRecvBufs, 
+    if (gPNm->recvMult (DATA_RX_TIMEOUT_NS, NODES_TO_RECV_FROM, gRecvBufs, 
                         msgsReceived) != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_RX_FAIL;

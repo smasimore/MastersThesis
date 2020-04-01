@@ -80,14 +80,14 @@ TEST (States, AccessActions)
     StateId_t id = STATE_A;
     Actions::Config_t actionsA =
     {
-        {0 * Time::NS_IN_SECOND,
+        {0 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST0,  1    ),
                 ACT_CREATE_BOOL   ( DV_ELEM_TEST1,  true ),
                 ACT_CREATE_UINT64 ( DV_ELEM_TEST2,  1    )
             }},
 
-        {.5 * Time::NS_IN_SECOND,
+        {.5 * Time::NS_IN_S,
             {
                 ACT_CREATE_INT16  ( DV_ELEM_TEST0,  2     ),
                 ACT_CREATE_BOOL   ( DV_ELEM_TEST1,  false ),

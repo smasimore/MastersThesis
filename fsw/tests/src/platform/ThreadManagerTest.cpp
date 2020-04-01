@@ -137,18 +137,18 @@ TEST_GROUP (ThreadManagerInit)
         const uint8_t KSOFTIRQD_PRIORITY = 8;
         const uint8_t KTIMERSOFTD_PRIORITY = 1;
 
-        CHECK_SUCCESS (ThreadManager::setProcessPriority (
-                           ThreadManager::KSOFTIRQD_0_PID,
-                           KSOFTIRQD_PRIORITY));
-        CHECK_SUCCESS (ThreadManager::setProcessPriority (
-                           ThreadManager::KSOFTIRQD_1_PID,
-                           KSOFTIRQD_PRIORITY));
-        CHECK_SUCCESS (ThreadManager::setProcessPriority (
-                           ThreadManager::KTIMERSOFTD_0_PID,
-                           KTIMERSOFTD_PRIORITY));
-        CHECK_SUCCESS (ThreadManager::setProcessPriority (
-                           ThreadManager::KTIMERSOFTD_1_PID,
-                           KTIMERSOFTD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
+                                                 ThreadManager::KSOFTIRQD_0_PID,
+                                                 KSOFTIRQD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
+                                             ThreadManager::KSOFTIRQD_1_PID,
+                                             KSOFTIRQD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
+                                           ThreadManager::KTIMERSOFTD_0_PID,
+                                           KTIMERSOFTD_PRIORITY));
+        CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
+                                           ThreadManager::KTIMERSOFTD_1_PID,
+                                           KTIMERSOFTD_PRIORITY));
     }
 };
 
@@ -178,9 +178,9 @@ TEST (ThreadManagerInit, SetProcessPriority)
 
     // Set priority and verify. Sleep for 1ms to allow priority change to 
     // propagate. 
-    CHECK_SUCCESS (ThreadManager::setProcessPriority (
+    CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
                                     ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::SW_IRQ_PRIORITY)); 
+                                    ThreadManager::SW_IRQ_PRIORITY));
     TestHelpers::sleepMs (1);
     struct sched_param schedParam;
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
@@ -189,9 +189,9 @@ TEST (ThreadManagerInit, SetProcessPriority)
     
     // Set priority back to default and verify. Sleep for 1ms to allow
     // priority change to propagate. 
-    CHECK_SUCCESS (ThreadManager::setProcessPriority (
-                                               ThreadManager::KSOFTIRQD_0_PID, 
-                                               DEFAULT_PRIORITY));
+    CHECK_SUCCESS (ThreadManager::setKernelProcessPriority (
+                                                 ThreadManager::KSOFTIRQD_0_PID, 
+                                                 DEFAULT_PRIORITY));
     TestHelpers::sleepMs (1);
     sched_getparam (ThreadManager::KSOFTIRQD_0_PID, &schedParam);
     CHECK_EQUAL (DEFAULT_PRIORITY, schedParam.__sched_priority);
@@ -200,13 +200,13 @@ TEST (ThreadManagerInit, SetProcessPriority)
 /* Test passing in an invalid priority to setProcessPriority. */
 TEST (ThreadManagerInit, SetProcessPriorityInvalidPri)
 {
-    Error_t ret = ThreadManager::setProcessPriority (
+    CHECK_ERROR (ThreadManager::setKernelProcessPriority (
                                     ThreadManager::KSOFTIRQD_0_PID,
-                                    ThreadManager::HW_IRQ_PRIORITY); 
-    CHECK_EQUAL (E_INVALID_PRIORITY, ret);
-    CHECK_ERROR (ThreadManager::setProcessPriority (
-                                ThreadManager::KSOFTIRQD_0_PID,
-                                ThreadManager::MIN_NEW_THREAD_PRIORITY - 1),
+                                    sched_get_priority_max (SCHED_FIFO) + 1),
+                 E_INVALID_PRIORITY)
+    CHECK_ERROR (ThreadManager::setKernelProcessPriority (
+                                    ThreadManager::KSOFTIRQD_0_PID,
+                                    sched_get_priority_min (SCHED_FIFO) - 1),
                  E_INVALID_PRIORITY);
 }
 
