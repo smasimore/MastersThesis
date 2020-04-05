@@ -52,7 +52,7 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
             static Time::TimeNs_t prevSentNs = 0;
 
             // Receive "Region" from DN.
-            Errors::exitOnError (pNm->recv (NODE_CONTROL, bufVec[i]),
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
                                  "Recv err");
 
             // Get time message received and store that time and previous send
@@ -74,7 +74,7 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
         for (uint32_t j = 0; j < NUM_PARALLEL_RUNS; j++)
         {
             // Receive "Region" from DN.
-            Errors::exitOnError (pNm->recv (NODE_CONTROL, bufVec[i]),
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
                                  "Recv err");
 
             // Send "Region" response to DN.
@@ -86,7 +86,7 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
         for (uint32_t j = 0; j < NUM_SERIAL_RUNS; j++)
         {
             // Receive "Region" from DN.
-            Errors::exitOnError (pNm->recv (NODE_CONTROL, bufVec[i]),
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
                                  "Recv err");
 
             // Send "Region" response to DN.
@@ -98,7 +98,7 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
         for (uint32_t j = 0; j < NUM_SPIKE_PARALLEL_RUNS; j++)
         {
             // Receive "Region" from DN.
-            Errors::exitOnError (pNm->recv (NODE_CONTROL, bufVec[i]),
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
                                  "Recv err");
 
             // Send "Region" response to DN.
@@ -110,7 +110,7 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
         for (uint32_t j = 0; j < NUM_SPIKE_SERIAL_RUNS; j++)
         {
             // Receive "Region" from DN.
-            Errors::exitOnError (pNm->recv (NODE_CONTROL, bufVec[i]),
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
                                  "Recv err");
 
             // Send "Region" response to DN.

@@ -106,7 +106,7 @@ static Time::TimeNs_t measureCommsTimeDebug (std::vector<uint8_t>& kReg0SendBuf,
     // Send "Region" to DN0 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE0, kReg0SendBuf), "Sent err");
     Time::TimeNs_t sent0Ns = ProfileHelpers::getTimeNs ();
-    Errors::exitOnError (gPNm->recv (NODE_DEVICE0, kReg0RecvBuf), "Rx err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE0, kReg0RecvBuf), "Rx err");
     Time::TimeNs_t recvd0Ns = ProfileHelpers::getTimeNs ();
 
     // Calculate elapsed and print debug info.
@@ -185,15 +185,15 @@ static Time::TimeNs_t measureCommsTimeSerial (std::vector<uint8_t>& kReg0SendBuf
 
     // Send "Region" to DN0 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE0, kReg0SendBuf), "Send err");
-    Errors::exitOnError (gPNm->recv (NODE_DEVICE0, kReg0RecvBuf), "Rx err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE0, kReg0RecvBuf), "Rx err");
 
     // Send "Region" to DN1 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE1, kReg1SendBuf), "Send err");
-    Errors::exitOnError (gPNm->recv (NODE_DEVICE1, kReg1RecvBuf), "Rx err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE1, kReg1RecvBuf), "Rx err");
 
     // Send "Region" to DN2 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE2, kReg2SendBuf), "Send err");
-    Errors::exitOnError (gPNm->recv (NODE_DEVICE2, kReg2RecvBuf), "Rx err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE2, kReg2RecvBuf), "Rx err");
     Time::TimeNs_t recvd2Ns = ProfileHelpers::getTimeNs ();
 
     Time::TimeNs_t elapsed = recvd2Ns - startNs;

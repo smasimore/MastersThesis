@@ -11,6 +11,10 @@
  * nodes (e.g. tx'ing a region from a RIO to the FC using the Network
  * Interface). 
  *
+ * A Data Vector is split into Regions. Regions encapsulate a group of related
+ * data within the Data Vector that is either sent to or received from another 
+ * flight computer.
+ *
  * A lock is used for thread synchronization to ensure only 1 thread is 
  * accessing the Data Vector at once. The underlying lock semantics are as 
  * follows:
@@ -49,6 +53,12 @@
  *   #2  Only 1 Data Vector is created per compute node. This object is not a 
  *       singleton in order to facilitate testing.
  *
+ * Notes:
+ *   #1  Due to networking constraints, the maximum Region size is capped at 
+ *       1024 bytes. This is the maximum size of a message that can be received
+ *       by a flight computer. There is currently no maximum on overall Data
+ *       Vector size.
+ *
  */
 
 #ifndef DATA_VECTOR_HPP
@@ -65,116 +75,118 @@
 #include "DataVectorEnums.hpp"
 #include "EnumClassHash.hpp"
 
-/*********************** HELPER MACROS FOR DV CONFIG *************************/
+/*********************** HELPER MACROS FOR DV CONFIG **************************/
+/***************** See DataVectorTest.cpp for example usage *******************/
+
 
 /**
  * Defines an ElementConfig_t of type DV_T_UINT8.
  */
-#define DV_ADD_UINT8(elem, initialVal)                                        \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_UINT8,                                                          \
-         DataVector::toUInt64<uint8_t> (initialVal)                          \
+#define DV_ADD_UINT8(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_UINT8,                                                           \
+         DataVector::toUInt64<uint8_t> (initialVal)                            \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_UINT16.
  */
-#define DV_ADD_UINT16(elem, initialVal)                                       \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_UINT16,                                                         \
-         DataVector::toUInt64<uint16_t> (initialVal)                         \
+#define DV_ADD_UINT16(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_UINT16,                                                          \
+         DataVector::toUInt64<uint16_t> (initialVal)                           \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_UINT32.
  */
-#define DV_ADD_UINT32(elem, initialVal)                                       \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_UINT32,                                                         \
-         DataVector::toUInt64<uint32_t> (initialVal)                         \
+#define DV_ADD_UINT32(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_UINT32,                                                          \
+         DataVector::toUInt64<uint32_t> (initialVal)                           \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_UINT64.
  */
-#define DV_ADD_UINT64(elem, initialVal)                                       \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_UINT64,                                                         \
-         DataVector::toUInt64<uint64_t> (initialVal)                         \
+#define DV_ADD_UINT64(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_UINT64,                                                          \
+         DataVector::toUInt64<uint64_t> (initialVal)                           \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_INT8.
  */
-#define DV_ADD_INT8(elem, initialVal)                                         \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_INT8,                                                           \
-         DataVector::toUInt64<int8_t> (initialVal)                           \
+#define DV_ADD_INT8(elem, initialVal)                                          \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_INT8,                                                            \
+         DataVector::toUInt64<int8_t> (initialVal)                             \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_INT16.
  */
-#define DV_ADD_INT16(elem, initialVal)                                        \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_INT16,                                                          \
-         DataVector::toUInt64<int16_t> (initialVal)                          \
+#define DV_ADD_INT16(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_INT16,                                                           \
+         DataVector::toUInt64<int16_t> (initialVal)                            \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_INT32.
  */
-#define DV_ADD_INT32(elem, initialVal)                                        \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_INT32,                                                          \
-         DataVector::toUInt64<int32_t> (initialVal)                          \
+#define DV_ADD_INT32(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_INT32,                                                           \
+         DataVector::toUInt64<int32_t> (initialVal)                            \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_INT64.
  */
-#define DV_ADD_INT64(elem, initialVal)                                        \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_INT64,                                                          \
-         DataVector::toUInt64<int64_t> (initialVal)                          \
+#define DV_ADD_INT64(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_INT64,                                                           \
+         DataVector::toUInt64<int64_t> (initialVal)                            \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_FLOAT.
  */
-#define DV_ADD_FLOAT(elem, initialVal)                                        \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_FLOAT,                                                          \
-         DataVector::toUInt64<float> (initialVal)                            \
+#define DV_ADD_FLOAT(elem, initialVal)                                         \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_FLOAT,                                                           \
+         DataVector::toUInt64<float> (initialVal)                              \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_DOUBLE.
  */
-#define DV_ADD_DOUBLE(elem, initialVal)                                       \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_DOUBLE,                                                         \
-         DataVector::toUInt64<double> (initialVal)                           \
+#define DV_ADD_DOUBLE(elem, initialVal)                                        \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_DOUBLE,                                                          \
+         DataVector::toUInt64<double> (initialVal)                             \
     })
 
 /**
  * Defines an ElementConfig_t of type DV_T_BOOL.
  */
-#define DV_ADD_BOOL(elem, initialVal)                                         \
-    ((DataVector::ElementConfig_t) {                                         \
-         elem,                                                                \
-         DV_T_BOOL,                                                           \
-         DataVector::toUInt64<bool> (initialVal)                             \
+#define DV_ADD_BOOL(elem, initialVal)                                          \
+    ((DataVector::ElementConfig_t) {                                           \
+         elem,                                                                 \
+         DV_T_BOOL,                                                            \
+         DataVector::toUInt64<bool> (initialVal)                               \
     })
 
 /**************************** DATA VECTOR CLASS *****************************/
@@ -239,8 +251,8 @@ public:
 
     /**
      * Entry point for creating a new Data Vector. Validates the
-     * passed in config. This should only be called once per compute node, although
-     * this is not enforced to facilitate testing.
+     * passed in config. This should only be called once per compute node, 
+     * although this is not enforced to facilitate testing.
      *
      * @param   kConfig               Data Vector's config data.
      * @param   kPDataVectorRet       Pointer to return Data Vector.
@@ -251,8 +263,9 @@ public:
      *          E_DUPLICATE_REGION    Duplicate region.
      *          E_DUPLICATE_ELEM      Duplicate element.
      *          E_INVALID_ENUM        Invalid enumeration.
-     *          E_INVALID_ENUM        Element type in config not supported by 
+     *          E_INVALID_TYPE        Element type in config not supported by 
      *                                getSizeBytesFromType.
+     *          E_REGION_TOO_LARGE    Region too large.
      *          E_FAILED_TO_INIT_LOCK Failed to initialize lock.
      */
     static Error_t createNew (Config_t& kConfig, 

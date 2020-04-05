@@ -80,7 +80,7 @@ Error_t ClockSync::syncServer (std::shared_ptr<NetworkManager>& kPNm,
     // 4) Wait for clients to send success/fail message.
     for (uint8_t nodeIdx = 0; nodeIdx < kClientNodes.size (); nodeIdx++)
     {
-        ret = kPNm->recv (kClientNodes[nodeIdx], rxMsgs[nodeIdx]);
+        ret = kPNm->recvBlock (kClientNodes[nodeIdx], rxMsgs[nodeIdx]);
         if (ret != E_SUCCESS)
         {
             // Attempt to stop daemon.
@@ -136,7 +136,7 @@ Error_t ClockSync::syncClient (std::shared_ptr<NetworkManager>& kPNm,
     // 2) Wait for server ready message.
     std::vector<uint8_t> rxMsg (1);
     std::vector<uint8_t> expectedRxMsg = {ClockSync::Msg_t::SERVER_READY};
-    Error_t ret = kPNm->recv (kServerNode, rxMsg);
+    Error_t ret = kPNm->recvBlock (kServerNode, rxMsg);
     if (ret != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_RX_FAIL;

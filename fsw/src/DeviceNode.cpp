@@ -231,7 +231,7 @@ static Error_t recvAndSendDataVectorData ()
     }
 
     // 2) Receive data from Control Node.
-    if (gPNm->recv (NODE_CONTROL, gRecvBuf) != E_SUCCESS)
+    if (gPNm->recvBlock (NODE_CONTROL, gRecvBuf) != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_RX_FAIL;
     }

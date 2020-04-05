@@ -313,7 +313,7 @@ static void* threadFuncClientSendSuccess (void *rawArgs)
     // Rx server ready cmd from CN.
     std::vector<uint8_t> rxBuf (1);
     std::vector<uint8_t> expectedRxBuf = {ClockSync::Msg_t::SERVER_READY};
-    ret = pNm->recv (NODE_CONTROL, rxBuf);
+    ret = pNm->recvBlock (NODE_CONTROL, rxBuf);
     if (ret != E_SUCCESS)
     {
         return (void *) ret;
@@ -343,7 +343,7 @@ static void* threadFuncClientSendFail (void *rawArgs)
     // Rx server ready cmd from CN.
     std::vector<uint8_t> rxBuf (1);
     std::vector<uint8_t> expectedRxBuf = {ClockSync::Msg_t::SERVER_READY};
-    ret = pNm->recv (NODE_CONTROL, rxBuf);
+    ret = pNm->recvBlock (NODE_CONTROL, rxBuf);
     if (ret != E_SUCCESS)
     {
         return (void *) ret;

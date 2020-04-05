@@ -677,7 +677,7 @@ static void* fControlNodeSim (void* _args)
             CHECK_SUCCESS (pCnNm->send (args.deviceNode, sendBuf));
 
             // Receive data from DN and store in gPCnDv.
-            CHECK_SUCCESS (pCnNm->recv (args.deviceNode, recvBuf));
+            CHECK_SUCCESS (pCnNm->recvBlock (args.deviceNode, recvBuf));
             CHECK_SUCCESS (gPCnDv->writeRegion (args.recvReg, recvBuf));
 
             // Enable DeviceNodeController.

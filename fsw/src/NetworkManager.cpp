@@ -6,12 +6,14 @@
 #include <arpa/inet.h>
 #include <unistd.h> 
 #include <sys/select.h>
+#include <fcntl.h>
 
 #include "NetworkManager.hpp"
 
 const uint16_t NetworkManager::MIN_PORT             = 2200;
 const uint16_t NetworkManager::MAX_PORT             = 2299;
 const Time::TimeNs_t NetworkManager::MAX_TIMEOUT_NS = 100 * Time::NS_IN_S;
+const uint16_t NetworkManager::MAX_RECV_BYTES       = 1024;
 
 /*************************** PUBLIC FUNCTIONS *********************************/
 
@@ -87,22 +89,34 @@ Error_t NetworkManager::send (Node_t kNode, std::vector<uint8_t>& kBuf)
     return E_SUCCESS;
 }
 
-Error_t NetworkManager::recv (Node_t kNode, std::vector<uint8_t>& kBufRet)
+Error_t NetworkManager::recvBlock (Node_t kNode, std::vector<uint8_t>& kBufRet)
 {
-    // 1) Verify buffer is not empty.
-    if (kBufRet.size () == 0)
+    // 1) Verify params.
+    Error_t ret = verifyRecvParams (kNode, kBufRet);
+    if (ret != E_SUCCESS)
     {
-        return E_EMPTY_BUFFER;
+        return ret;
     }
 
-    // 2) Verify valid node and get channel information.
-    if (mNodeToChannel.find (kNode) == mNodeToChannel.end ())
-    {
-        return E_INVALID_NODE;
-    }
+    // 2) Get node's channel information.
     NetworkManager::Channel_t channel = mNodeToChannel[kNode];
 
-    // 3) Receive message. MSG_TRUNC causes recv to return the total size of 
+    // 3) Set socket to be blocking.
+    int32_t flags = fcntl (channel.socketFd, F_GETFL);
+    if (flags == -1)
+    {
+        return E_FAILED_TO_GET_SOCKET_FLAGS;
+    }
+    // Check if socket is currently non-blocking. If yes, set as blocking.
+    if ((flags & O_NONBLOCK) != 0)
+    {
+        if (fcntl (channel.socketFd, F_SETFL, flags & ~O_NONBLOCK) == -1)
+        {
+            return E_FAILED_TO_SET_SOCKET_FLAGS;
+        }
+    }
+
+    // 4) Receive message. MSG_TRUNC causes recv to return the total size of 
     //    the received packet even if it is larger than the buffer supplied.
     int32_t numBytesRecvd = ::recv (channel.socketFd, kBufRet.data (), 
                                     kBufRet.size (), MSG_TRUNC);
@@ -115,12 +129,73 @@ Error_t NetworkManager::recv (Node_t kNode, std::vector<uint8_t>& kBufRet)
         return E_UNEXPECTED_RECV_SIZE;
     }
 
-    // 4) Increment message received counter.
+    // 5) Increment message received counter.
     if (mPDataVector->increment (mDvElemMsgRxCount) != E_SUCCESS)
     {
         return E_DATA_VECTOR_WRITE;
     }
 
+    return E_SUCCESS;
+}
+
+Error_t NetworkManager::recvNoBlock (Node_t kNode, 
+                                     std::vector<uint8_t>& kBufRet,
+                                     bool& kMsgReceivedRet)
+{
+    // 1) Initialize kMsgReceivedRet to false.
+    kMsgReceivedRet = false;
+
+    // 2) Verify params.
+    Error_t ret = verifyRecvParams (kNode, kBufRet);
+    if (ret != E_SUCCESS)
+    {
+        return ret;
+    }
+
+    // 3) Get node's channel information.
+    NetworkManager::Channel_t channel = mNodeToChannel[kNode];
+
+    // 4) Set socket to be non-blocking.
+    int32_t flags = fcntl (channel.socketFd, F_GETFL);
+    if (flags == -1)
+    {
+        return E_FAILED_TO_GET_SOCKET_FLAGS;
+    }
+    // Check if socket is currently blocking. If yes, set as non-blocking.
+    if ((flags & O_NONBLOCK) == 0)
+    {
+        if (fcntl (channel.socketFd, F_SETFL, flags | O_NONBLOCK) == -1)
+        {
+            return E_FAILED_TO_SET_SOCKET_FLAGS;
+        }
+    }
+
+    // 5) Attempt to receive a message. MSG_TRUNC causes recv to return the 
+    //    total size of the received packet even if it is larger than the buffer 
+    //    supplied.
+    int32_t numBytesRecvd = ::recv (channel.socketFd, kBufRet.data (), 
+                                    kBufRet.size (), MSG_TRUNC);
+    if (numBytesRecvd == -1)
+    {
+        // Recv failed due to no message rather than an error.
+        if (errno == EAGAIN)
+        {
+            return E_SUCCESS;
+        }
+        return E_FAILED_TO_RECV_MSG;
+    }
+    else if (numBytesRecvd != (int32_t) kBufRet.size ())
+    {
+        return E_UNEXPECTED_RECV_SIZE;
+    }
+
+    // 6) Increment message received counter.
+    if (mPDataVector->increment (mDvElemMsgRxCount) != E_SUCCESS)
+    {
+        return E_DATA_VECTOR_WRITE;
+    }
+
+    kMsgReceivedRet = true;
     return E_SUCCESS;
 }
 
@@ -507,6 +582,28 @@ Error_t NetworkManager::createSocket (uint32_t kMeIp, uint16_t kPort,
 
     // 3) Store socket FD in return parameter.
     kSocketRet = sockFd;
+
+    return E_SUCCESS;
+}
+
+Error_t NetworkManager::verifyRecvParams (Node_t kNode, 
+                                          std::vector<uint8_t>& kBuf)
+{
+    // Verify node is valid.
+    if (mNodeToChannel.find (kNode) == mNodeToChannel.end ())
+    {
+        return E_INVALID_NODE;
+    }
+
+    // Verify buffer is not empty or greater than max allowed recv size. 
+    if (kBuf.size () == 0)
+    {
+        return E_EMPTY_BUFFER;
+    }
+    else if (kBuf.size () > MAX_RECV_BYTES)
+    {
+        return E_GREATER_THAN_MAX_RECV_BYTES;
+    }
 
     return E_SUCCESS;
 }

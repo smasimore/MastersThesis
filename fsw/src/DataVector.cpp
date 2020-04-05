@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <limits>
 
+#include "NetworkManager.hpp"
 #include "DataVector.hpp"
 
 /*************************** PUBLIC FUNCTIONS *********************************/
@@ -449,7 +450,8 @@ DataVector::DataVector (DataVector::Config_t& kConfig, Error_t& kRet) :
 
         // 3b) Loop over the region's elements.
         uint32_t regionSizeBytes = 0;
-        std::vector<DataVectorElement_t> elementsInRegion (pElemConfigs->size ());
+        std::vector<DataVectorElement_t> elementsInRegion 
+            (pElemConfigs->size ());
         for (uint32_t elemIdx = 0; elemIdx < pElemConfigs->size (); elemIdx++)
         {
             // 3b i) Get pointer to element kConfig.
@@ -490,8 +492,16 @@ DataVector::DataVector (DataVector::Config_t& kConfig, Error_t& kRet) :
             // 3b viii) Add element to elementsInRegion vector.
             elementsInRegion[elemIdx] = pElemConfig->elem;
         }
+
+        // 3c) Verify region size is <= the maximum allowed receive message 
+        //     size.
+        if (regionSizeBytes > NetworkManager::MAX_RECV_BYTES)
+        {
+            kRet = E_REGION_TOO_LARGE;
+            return;
+        }
         
-        // 3c) Create the region's info struct and add it to the global map.
+        // 3d) Create the region's info struct and add it to the global map.
         RegionInfo_t regionInfo;
         regionInfo.startIdx = regionStartIdx;
         regionInfo.sizeBytes = regionSizeBytes;

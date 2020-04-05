@@ -42,6 +42,14 @@
  *      recvMult is intended to allow the Control Node to listen on multiple
  *      channels and timeout. recvMult should never block indefinitely.
  *
+ * #2 Messages on the flight network MUST be serial (i.e. only one message sent
+ *    at once) and messages being RECEIVED by a flight computer must be <= 1024
+ *    bytes. Otherwise, sporadic spikes in time for the OS to pass a received
+ *    message to the flight software application are seen (up to 10 seconds).
+ *    Messages > 1024 sent to a ground computer using non-sbRIO hardware and OS
+ *    is likely fine, as the delay occurs in the sbRIO's version of the Linux 
+ *    recv system call.
+ *
  */
 
 #ifndef NETWORK_MANAGER_HPP
@@ -92,6 +100,13 @@ public:
      * Maximum timeout size in nanoseconds.
      */
     static const Time::TimeNs_t MAX_TIMEOUT_NS;
+
+    /**
+     * Maximum size of a message being received. The recv system call can only
+     * support up to 1024 bytes. Above this maximum, sporadic delays up to
+     * multiple seconds are seen.
+     */
+    static const uint16_t MAX_RECV_BYTES;
 
     /**
      * IPv4 address type. This is expected to be in "x.x.x.x" format, which each
@@ -196,23 +211,49 @@ public:
 
     /**
      * Receive a message from a node. kBufRet must already have size equal to
-     * expected message size.
+     * expected message size. Blocks until a message is received.
      *
-     * WARNING: This method will block if no message currently in receive
-     *          buffer.
+     * @param   kNode                         Node to receive message from.
+     * @param   kBufRet                       Buffer to fill with message.
      *
-     * @param   kNode                       Node to receive message from.
-     * @param   kBufRet                     Buffer to fill with message.
-     *
-     * @ret     E_SUCCESS                   Message successfully received.
-     *          E_EMPTY_BUFFER              kBuf empty.
-     *          E_INVALID_NODE              No channel for node.
-     *          E_FAILED_TO_RECV_MSG        Failed to receive message.
-     *          E_UNEXPECTED_RECV_SIZE      Message recv length != kBuf size.
-     *          E_DATA_VECTOR_WRITE         Failed to increment msgs rx'd
-     *                                      counter.
+     * @ret     E_SUCCESS                     Message successfully received.
+     *          E_EMPTY_BUFFER                kBuf empty.
+     *          E_GREATER_THAN_MAX_RECV_BYTES Expected message size too large.
+     *          E_INVALID_NODE                No channel for node.
+     *          E_FAILED_TO_GET_SOCKET_FLAGS  Failed to read socket flags.
+     *          E_FAILED_TO_SET_SOCKET_FLAGS  Failed to write socket flags.
+     *          E_FAILED_TO_RECV_MSG          Failed to receive message.
+     *          E_UNEXPECTED_RECV_SIZE        Message recv length != kBuf size.
+     *          E_DATA_VECTOR_WRITE           Failed to increment msgs rx'd
+     *                                        counter.
      */
-    Error_t recv (Node_t kNode, std::vector<uint8_t>& kBufRet);
+    Error_t recvBlock (Node_t kNode, std::vector<uint8_t>& kBufRet);
+
+    /**
+     * Attempt to receive a message from a node. kBufRet must already have size 
+     * equal to expected message size. Returns immediately even if no message 
+     * received. 
+     *
+     * @param   kNode                         Node to receive message from.
+     * @param   kBufRet                       Buffer to fill with message.
+     * @param   kMsgRecvdRet                  Set to true if a message was
+     *                                        received..
+     *
+     * @ret     E_SUCCESS                     Successfully executed function.
+     *                                        Message may or may not have been 
+     *                                        received.
+     *          E_EMPTY_BUFFER                kBuf empty.
+     *          E_GREATER_THAN_MAX_RECV_BYTES Expected message size too large.
+     *          E_INVALID_NODE                No channel for node.
+     *          E_FAILED_TO_GET_SOCKET_FLAGS  Failed to read socket flags.
+     *          E_FAILED_TO_SET_SOCKET_FLAGS  Failed to write socket flags.
+     *          E_FAILED_TO_RECV_MSG          Failed to receive message.
+     *          E_UNEXPECTED_RECV_SIZE        Message recv length != kBuf size.
+     *          E_DATA_VECTOR_WRITE           Failed to increment msgs rx'd
+     *                                        counter.
+     */
+    Error_t recvNoBlock (Node_t kNode, std::vector<uint8_t>& kBufRet, 
+                         bool& kMsgReceivedRet);
 
     /**
      * Receive a message from each of the provided nodes. The method returns
@@ -372,6 +413,19 @@ private:
      */
     Error_t createSocket (uint32_t kMeIp, uint16_t kPort, 
                           int32_t& kSocketRet);
+
+    /**
+     * Verify the params passed to recvBlock and recvNoBlock. 
+     *
+     * @param   kNode                         Node to receive message from.
+     * @param   kBuf                          Buffer to fill with message.
+     *
+     * @ret     E_SUCCESS                     Params valid.
+     *          E_EMPTY_BUFFER                kBuf empty.
+     *          E_GREATER_THAN_MAX_RECV_BYTES Expected message size too large.
+     *          E_INVALID_NODE                No channel for node.
+     */
+    Error_t verifyRecvParams (Node_t kNode, std::vector<uint8_t>& kBuf);
 
 };
 #endif

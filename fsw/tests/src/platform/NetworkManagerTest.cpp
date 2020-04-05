@@ -427,14 +427,14 @@ NetworkManager::Config_t gLoopbackConfigDev1 =
     DV_ELEM_TEST5,
 };
 
-/* Group of tests to verify send and recv functions. */
-TEST_GROUP (NetworkManager_SendRecv)
+/* Group of tests to verify send param checking. */
+TEST_GROUP (NetworkManager_Send)
 {
 
 };
 
 /* Test sending with empty buffer. */
-TEST (NetworkManager_SendRecv, SendEmptyBuffer)
+TEST (NetworkManager_Send, SendEmptyBuffer)
 {
     INIT_NETWORK_MANAGERS
 
@@ -446,7 +446,7 @@ TEST (NetworkManager_SendRecv, SendEmptyBuffer)
 }
 
 /* Test sending with invalid node. */
-TEST (NetworkManager_SendRecv, SendInvalidNode)
+TEST (NetworkManager_Send, SendInvalidNode)
 {
     INIT_NETWORK_MANAGERS
 
@@ -457,32 +457,51 @@ TEST (NetworkManager_SendRecv, SendInvalidNode)
     CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
-/* Test recv'ing with empty buffer. */
-TEST (NetworkManager_SendRecv, RecvEmptyBuffer)
+/* Group of tests to verify recvBlock param checking. */
+TEST_GROUP (NetworkManager_RecvBlock)
+{
+
+};
+
+/* Test recvBlock with empty buffer. */
+TEST (NetworkManager_RecvBlock, EmptyBuffer)
 {
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> recvBuf;
-    CHECK_ERROR (pNmCtrl->recv (NODE_CONTROL, recvBuf), E_EMPTY_BUFFER);
+    CHECK_ERROR (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf), E_EMPTY_BUFFER);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
-/* Test recv'ing with invalid node. */
-TEST (NetworkManager_SendRecv, RecvInvalidNode)
+/* Test recvBlock with buffer larger than max. */
+TEST (NetworkManager_RecvBlock, BufferOverMax)
+{
+    INIT_NETWORK_MANAGERS
+
+    std::vector<uint8_t> recvBuf (NetworkManager::MAX_RECV_BYTES + 1);
+    CHECK_ERROR (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf),
+                 E_GREATER_THAN_MAX_RECV_BYTES);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
+}
+
+/* Test recvBlock with invalid node. */
+TEST (NetworkManager_RecvBlock, InvalidNode)
 {
     INIT_NETWORK_MANAGERS
 
     std::vector<uint8_t> recvBuf (1);
-    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE2, recvBuf), E_INVALID_NODE);
+    CHECK_ERROR (pNmCtrl->recvBlock (NODE_DEVICE2, recvBuf), E_INVALID_NODE);
 
     // Expect no msgs tx'd/rx'd.
     CHECK_DV (0, 0, 0, 0, 0, 0);
 }
 
 /* Test receiving a message bigger than expected. */
-TEST (NetworkManager_SendRecv, RecvBufferTooSmall)
+TEST (NetworkManager_RecvBlock, BufferTooSmall)
 {
     INIT_NETWORK_MANAGERS
 
@@ -490,15 +509,15 @@ TEST (NetworkManager_SendRecv, RecvBufferTooSmall)
     std::vector<uint8_t> sendBuf = {0xff, 0xff};
     std::vector<uint8_t> recvBuf (1, 0);
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
-    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE0, recvBuf), 
-                                E_UNEXPECTED_RECV_SIZE);
+    CHECK_ERROR (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf), 
+                 E_UNEXPECTED_RECV_SIZE);
 
     // Expect 1 msg sent from dn0.
     CHECK_DV (0, 0, 1, 0, 0, 0);
 }
 
 /* Test receiving a message smaller than expected. */
-TEST (NetworkManager_SendRecv, RecvBufferTooBig)
+TEST (NetworkManager_RecvBlock, BufferTooBig)
 {
     INIT_NETWORK_MANAGERS
 
@@ -506,11 +525,105 @@ TEST (NetworkManager_SendRecv, RecvBufferTooBig)
     std::vector<uint8_t> sendBuf = {0xff, 0xff};
     std::vector<uint8_t> recvBuf (3, 0);
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
-    CHECK_ERROR (pNmCtrl->recv (NODE_DEVICE0, recvBuf), E_UNEXPECTED_RECV_SIZE);
+    CHECK_ERROR (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf), 
+                 E_UNEXPECTED_RECV_SIZE);
 
     // Expect 1 msg sent from dn0.
     CHECK_DV (0, 0, 1, 0, 0, 0);
 }
+
+/* Group of tests to verify recvNoBlock param checking. */
+TEST_GROUP (NetworkManager_RecvNoBlock)
+{
+
+};
+
+/* Test recvNoBlock with empty buffer. */
+TEST (NetworkManager_RecvNoBlock, EmptyBuffer)
+{
+    INIT_NETWORK_MANAGERS
+
+    std::vector<uint8_t> recvBuf;
+    bool msgRecvd = false;
+    CHECK_ERROR (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd), 
+                 E_EMPTY_BUFFER);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_FALSE (msgRecvd);
+    CHECK_DV (0, 0, 0, 0, 0, 0);
+}
+
+/* Test recvNoBlock with buffer larger than max. */
+TEST (NetworkManager_RecvNoBlock, BufferOverMax)
+{
+    INIT_NETWORK_MANAGERS
+
+    std::vector<uint8_t> recvBuf (NetworkManager::MAX_RECV_BYTES + 1);
+    bool msgRecvd = false;
+    CHECK_ERROR (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd),
+                 E_GREATER_THAN_MAX_RECV_BYTES);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_FALSE (msgRecvd);
+    CHECK_DV (0, 0, 0, 0, 0, 0);
+}
+
+/* Test recvNoBlock with invalid node. */
+TEST (NetworkManager_RecvNoBlock, InvalidNode)
+{
+    INIT_NETWORK_MANAGERS
+
+    std::vector<uint8_t> recvBuf (1);
+    bool msgRecvd = false;
+    CHECK_ERROR (pNmCtrl->recvNoBlock (NODE_DEVICE2, recvBuf, msgRecvd), 
+                 E_INVALID_NODE);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_FALSE (msgRecvd);
+    CHECK_DV (0, 0, 0, 0, 0, 0);
+}
+
+/* Test receiving a message bigger than expected. */
+TEST (NetworkManager_RecvNoBlock, BufferTooSmall)
+{
+    INIT_NETWORK_MANAGERS
+
+    // Send and receive a message using loopback.
+    std::vector<uint8_t> sendBuf = {0xff, 0xff};
+    std::vector<uint8_t> recvBuf (1, 0);
+    bool msgRecvd = false;
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_ERROR (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd), 
+                 E_UNEXPECTED_RECV_SIZE);
+
+    // Expect 1 msg sent from dn0.
+    CHECK_FALSE (msgRecvd);
+    CHECK_DV (0, 0, 1, 0, 0, 0);
+}
+
+/* Test receiving a message smaller than expected. */
+TEST (NetworkManager_RecvNoBlock, BufferTooBig)
+{
+    INIT_NETWORK_MANAGERS
+
+    // Send and receive a message using loopback.
+    std::vector<uint8_t> sendBuf = {0xff, 0xff};
+    std::vector<uint8_t> recvBuf (3, 0);
+    bool msgRecvd = false;
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
+    CHECK_ERROR (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd), 
+                 E_UNEXPECTED_RECV_SIZE);
+
+    // Expect 1 msg sent from dn0.
+    CHECK_FALSE (msgRecvd);
+    CHECK_DV (0, 0, 1, 0, 0, 0);
+}
+
+/* Group of tests to verify sending and receiving messages. */
+TEST_GROUP (NetworkManager_SendRecv)
+{
+
+};
 
 /* Send and receive a message successfully. */
 TEST (NetworkManager_SendRecv, SuccessOneMessagePerChannel)
@@ -524,14 +637,26 @@ TEST (NetworkManager_SendRecv, SuccessOneMessagePerChannel)
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
 
-    // Receive and verify buffers.
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf));
+    // Receive using recvBlock and verify buffers.
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf));
     CHECK (sendBuf0 == recvBuf);
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE1, recvBuf));
+    CHECK (sendBuf1 == recvBuf);
+
+    // Repeat with recvNoBlock.
+    bool msg0Recvd = false;
+    bool msg1Recvd = false;
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msg0Recvd));
+    CHECK (msg0Recvd);
+    CHECK (sendBuf0 == recvBuf);
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE1, recvBuf, msg1Recvd));
+    CHECK (msg1Recvd);
     CHECK (sendBuf1 == recvBuf);
 
     // Expect all msgs tx'd/rx'd.
-    CHECK_DV (0, 2, 1, 0, 1, 0);
+    CHECK_DV (0, 4, 2, 0, 2, 0);
 }
 
 /* Send and receive two messages successfully. */
@@ -552,19 +677,45 @@ TEST (NetworkManager_SendRecv, SuccessTwoMessagesPerChannel)
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0Msg2));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg1));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg2));
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf0Msg1));
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf0Msg2));
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf1Msg1));
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE1, recvBuf1Msg2));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf0Msg1));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf0Msg2));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE1, recvBuf1Msg1));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE1, recvBuf1Msg2));
 
-    // Receive and verify buffers.
+    // Receive with recvBlock and verify buffers.
+    CHECK (sendBuf0Msg1 == recvBuf0Msg1);
+    CHECK (sendBuf0Msg2 == recvBuf0Msg2);
+    CHECK (sendBuf1Msg1 == recvBuf1Msg1);
+    CHECK (sendBuf1Msg2 == recvBuf1Msg2);
+
+    // Repeat with recvNoBlock.
+    bool msg01Recvd = false;
+    bool msg02Recvd = false;
+    bool msg11Recvd = false;
+    bool msg12Recvd = false;
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0Msg1));
+    CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0Msg2));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg1));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1Msg2));
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf0Msg1, 
+                                         msg01Recvd));
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf0Msg2,
+                                         msg02Recvd));
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE1, recvBuf1Msg1,
+                                         msg11Recvd));
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE1, recvBuf1Msg2,
+                                         msg12Recvd));
+    CHECK (msg01Recvd);
+    CHECK (msg02Recvd);
+    CHECK (msg11Recvd);
+    CHECK (msg12Recvd);
     CHECK (sendBuf0Msg1 == recvBuf0Msg1);
     CHECK (sendBuf0Msg2 == recvBuf0Msg2);
     CHECK (sendBuf1Msg1 == recvBuf1Msg1);
     CHECK (sendBuf1Msg2 == recvBuf1Msg2);
 
     // Expect all msgs tx'd/rx'd.
-    CHECK_DV (0, 4, 2, 0, 2, 0);
+    CHECK_DV (0, 8, 4, 0, 4, 0);
 }
 
 /**
@@ -600,8 +751,8 @@ static void* funcSend (void *rawArgs)
     return (void *) ret;
 }
 
-/* Verify thread blocks when no data in recv buffer. */
-TEST (NetworkManager_SendRecv, BlockOnRecv)
+/* Verify thread blocks when no data in recv buffer and recvBlock called. */
+TEST (NetworkManager_SendRecv, BlockOnRecvBlock)
 {
     INIT_THREAD_MANAGER_AND_LOGS;
     INIT_NETWORK_MANAGERS
@@ -620,7 +771,7 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     // Block on recv call.
     testLog.logEvent (Log::LogEvent_t::CALLED_RECV, 0);    
     std::vector<uint8_t> recvBuf (1, 0);
-    CHECK_SUCCESS (pNmCtrl->recv (NODE_DEVICE0, recvBuf));
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf));
     testLog.logEvent (Log::LogEvent_t::RECEIVED, 0);    
 
     // Verify received expected buffer.
@@ -637,6 +788,90 @@ TEST (NetworkManager_SendRecv, BlockOnRecv)
     WAIT_FOR_THREAD (thread, pThreadManager);
 
     // Expect all msgs tx'd/rx'd.
+    CHECK_DV (0, 1, 1, 0, 0, 0);
+}
+
+/* Verify thread does not block when no data in recv buffer and recvNoBlock 
+   called. */
+TEST (NetworkManager_SendRecv, NoBlockOnRecvNoBlock)
+{
+    INIT_NETWORK_MANAGERS
+
+    // Do not block on recv call.
+    std::vector<uint8_t> recvBuf (1, 0);
+    bool msgRecvd = false;
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd));
+
+    // Verify no message received. If get this far, did not block as expected.
+    CHECK_FALSE (msgRecvd);
+
+    // Expect no msgs tx'd/rx'd.
+    CHECK_DV (0, 0, 0, 0, 0, 0);
+}
+
+/* Verify thread can call recvBlock then recvNoBlock. */
+TEST (NetworkManager_SendRecv, BlockThenNoBlock)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_NETWORK_MANAGERS
+
+    // Create send thread. Thread should not run until cpputest thread blocks,
+    // since it is lower pri than the cpputest thread.
+    pthread_t thread;
+    struct ThreadFuncArgs argsThread = {&testLog, pNmDev0.get ()}; 
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    thread, 
+                                    (ThreadManager::ThreadFunc_t) funcSend,
+                                    &argsThread, sizeof (argsThread),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+
+    // Block on recv call.
+    std::vector<uint8_t> recvBuf (1, 0);
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf));
+
+    // Do not block on next recv call.
+    bool msgRecvd = false;
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd));
+    CHECK_FALSE (msgRecvd);
+
+    // Clean up thread.
+    WAIT_FOR_THREAD (thread, pThreadManager);
+
+    // Expect 1 msg tx'd/rx'd.
+    CHECK_DV (0, 1, 1, 0, 0, 0);
+}
+
+/* Verify thread can call recvNoBlock then recvBlock. */
+TEST (NetworkManager_SendRecv, NoBlockThenBlock)
+{
+    INIT_THREAD_MANAGER_AND_LOGS;
+    INIT_NETWORK_MANAGERS
+
+    // Do not block on first recv call.
+    std::vector<uint8_t> recvBuf (1, 0);
+    bool msgRecvd = false;
+    CHECK_SUCCESS (pNmCtrl->recvNoBlock (NODE_DEVICE0, recvBuf, msgRecvd));
+    CHECK_FALSE (msgRecvd);
+
+    // Create send thread. Thread should not run until cpputest thread blocks,
+    // since it is lower pri than the cpputest thread.
+    pthread_t thread;
+    struct ThreadFuncArgs argsThread = {&testLog, pNmDev0.get ()}; 
+    CHECK_SUCCESS (pThreadManager->createThread (
+                                    thread, 
+                                    (ThreadManager::ThreadFunc_t) funcSend,
+                                    &argsThread, sizeof (argsThread),
+                                    ThreadManager::MIN_NEW_THREAD_PRIORITY,
+                                    ThreadManager::Affinity_t::CORE_0));
+
+    // Block on next recv call.
+    CHECK_SUCCESS (pNmCtrl->recvBlock (NODE_DEVICE0, recvBuf));
+
+    // Clean up thread.
+    WAIT_FOR_THREAD (thread, pThreadManager);
+
+    // Expect 1 msg tx'd/rx'd.
     CHECK_DV (0, 1, 1, 0, 0, 0);
 }
 

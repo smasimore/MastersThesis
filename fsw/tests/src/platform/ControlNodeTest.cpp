@@ -619,9 +619,9 @@ static void* fNodesSim (void* _args)
 
     // Wait for clock sync SERVER_READY messages.
     std::vector<uint8_t> msg (1);
-    CHECK_SUCCESS (pDn0Nm->recv (NODE_CONTROL, msg));
-    CHECK_SUCCESS (pDn1Nm->recv (NODE_CONTROL, msg));
-    CHECK_SUCCESS (pDn2Nm->recv (NODE_CONTROL, msg));
+    CHECK_SUCCESS (pDn0Nm->recvBlock (NODE_CONTROL, msg));
+    CHECK_SUCCESS (pDn1Nm->recvBlock (NODE_CONTROL, msg));
+    CHECK_SUCCESS (pDn2Nm->recvBlock (NODE_CONTROL, msg));
 
     // Send clock sync responses.
     msg[0] = args.syncSuccess == true 
@@ -664,14 +664,10 @@ static void* fNodesSim (void* _args)
         while (1)
         {
             // Receive data from CN and store in pDv.
-            CHECK_SUCCESS (pDn0Nm->recv (NODE_CONTROL,
-                           cnToDn0Buf));
-            CHECK_SUCCESS (pDn1Nm->recv (NODE_CONTROL,
-                           cnToDn1Buf));
-            CHECK_SUCCESS (pDn2Nm->recv (NODE_CONTROL,
-                           cnToDn2Buf));
-            CHECK_SUCCESS (pGndNm->recv (NODE_CONTROL,
-                           telemBuf));
+            CHECK_SUCCESS (pDn0Nm->recvBlock (NODE_CONTROL, cnToDn0Buf));
+            CHECK_SUCCESS (pDn1Nm->recvBlock (NODE_CONTROL, cnToDn1Buf));
+            CHECK_SUCCESS (pDn2Nm->recvBlock (NODE_CONTROL, cnToDn2Buf));
+            CHECK_SUCCESS (pGndNm->recvBlock (NODE_CONTROL, telemBuf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN0, cnToDn0Buf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN1, cnToDn1Buf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN2, cnToDn2Buf));
