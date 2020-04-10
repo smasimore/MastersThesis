@@ -31,6 +31,6 @@ int main (int ac, char** av)
     // ClockSyncTest_Client::main (ac, av);
     // ClockSyncTest_Server::main (ac, av);
     // ProfileFpgaApi::main (ac, av);
-    ProfileEthernetRtt_ControlNode::main (ac, av);
-    //ProfileEthernetRtt_DeviceNode::main (ac, av);
+     ProfileEthernetRtt_ControlNode::main (ac, av);
+    // ProfileEthernetRtt_DeviceNode::main (ac, av);
 }
