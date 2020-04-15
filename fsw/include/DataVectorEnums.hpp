@@ -218,7 +218,8 @@ enum DataVectorElement_t : uint32_t
 ///////////////////////////////// FSW ELEMENTS /////////////////////////////////
 
     /* Health Counters */
-    DV_ELEM_CN_DEADLINE_MISSES,
+    DV_ELEM_CN_LOOP_DEADLINE_MISSES,
+    DV_ELEM_CN_COMMS_DEADLINE_MISSES,
     DV_ELEM_CN_LOOP_COUNT,
     DV_ELEM_CN_ERROR_COUNT,
     DV_ELEM_CN_MSG_TX_COUNT,

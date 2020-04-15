@@ -10,20 +10,34 @@
 static const uint32_t LOOP_PERIOD_MS = 10;
 
 /**
- * Nanoseconds to wait for Device and Ground node messages at top of loop.
+ * Device Nodes.
  */
-static const Time::TimeNs_t DATA_RX_TIMEOUT_NS = 2 * Time::NS_IN_MS;
-
-/**
- * Nodes to receive messages from at the top of loop.
- */
-static const std::vector<Node_t> NODES_TO_RECV_FROM =
+static const std::vector<Node_t> DEVICE_NODES =
 {
     NODE_DEVICE0,
     NODE_DEVICE1,
     NODE_DEVICE2,
-    NODE_GROUND,
 };
+
+/**
+ * Time per loop available to the communications step.
+ */
+static const Time::TimeNs_t COMMUNICATIONS_TIME_SLICE_NS = 2.2 * Time::NS_IN_MS;
+
+/**
+ * Used to calculate the recvMult timeout. The timeout must leave enough time in
+ * the communications time slice for the recvMult overhead that is not included
+ * in the timeout, received data to be saved to the Data Vector, and any errors 
+ * to be logged. This buffer accounts for that.
+ */
+static const Time::TimeNs_t COMMUNICATIONS_TIME_BUFFER_NS = 
+                                                        500 * Time::NS_IN_US;
+
+/**
+ * RecvMult will be called with at least this timeout, even if that means the 
+ * comms deadline will be missed.
+ */
+static const Time::TimeNs_t MIN_RECV_TIMEOUT_NS = 100 * Time::NS_IN_US;
 
 /********************************* GLOBALS ************************************/
 
@@ -58,9 +72,15 @@ std::unique_ptr<StateMachine> gPSm = nullptr;
 static std::vector<std::unique_ptr<Controller>> gPCtrls;
 
 /**
- * Statically allocated buffers for receiving data over the network.
+ * Statically allocated buffer for receiving data from Ground over the network.
  */
-static std::vector<std::vector<uint8_t>> gRecvBufs (NODES_TO_RECV_FROM.size ());
+static std::vector<uint8_t> gGndToCnBuf;
+
+/**
+ * Statically allocated buffers for receiving data from Device Nodes over the 
+ * network.
+ */
+static std::vector<std::vector<uint8_t>> gDnRecvBufs (DEVICE_NODES.size ());
 
 /**
  * Statically allocated buffers for sending data over the network.
@@ -85,8 +105,9 @@ static Error_t periodicErrorHandler (Error_t kError)
     // Log deadline miss.
     if (kError == E_MISSED_SCHEDULER_DEADLINE)
     {
-        Errors::incrementOnError (gPDv->increment (DV_ELEM_CN_DEADLINE_MISSES),
-                                  gPDv, DV_ELEM_CN_ERROR_COUNT);
+        Errors::incrementOnError (gPDv->increment (
+                                           DV_ELEM_CN_LOOP_DEADLINE_MISSES),
+                                 gPDv, DV_ELEM_CN_ERROR_COUNT);
         return E_SUCCESS;
     }
 
@@ -171,7 +192,8 @@ static Error_t verifyDvConfig (DataVector::Config_t& kDvConfig)
         DV_ELEM_DN1_RX_MISS_COUNT,
         DV_ELEM_DN2_RX_MISS_COUNT,
         DV_ELEM_CN_TIME_NS,
-        DV_ELEM_CN_DEADLINE_MISSES,
+        DV_ELEM_CN_LOOP_DEADLINE_MISSES,
+        DV_ELEM_CN_COMMS_DEADLINE_MISSES,
     };
 
     // Loop over regions and elements, removing them from the required sets.
@@ -238,21 +260,19 @@ static Error_t initializeBuffers ()
     gCnToGndBuf.resize (cnToGndBufSize);
 
     // Resize receive buffers.
-    for (uint8_t i = 0; i < NODES_TO_RECV_FROM.size (); i++)
+    gGndToCnBuf.resize (gndToCnBufSize);
+    for (uint8_t i = 0; i < DEVICE_NODES.size (); i++)
     {
-        switch (NODES_TO_RECV_FROM[i])
+        switch (DEVICE_NODES[i])
         {
             case NODE_DEVICE0:
-                gRecvBufs[i].resize (dn0ToCnBufSize);
+                gDnRecvBufs[i].resize (dn0ToCnBufSize);
                 break;
             case NODE_DEVICE1:
-                gRecvBufs[i].resize (dn1ToCnBufSize);
+                gDnRecvBufs[i].resize (dn1ToCnBufSize);
                 break;
             case NODE_DEVICE2:
-                gRecvBufs[i].resize (dn2ToCnBufSize);
-                break;
-            case NODE_GROUND:
-                gRecvBufs[i].resize (gndToCnBufSize);
+                gDnRecvBufs[i].resize (dn2ToCnBufSize);
                 break;
             default:
                 // This should never happen.
@@ -264,15 +284,27 @@ static Error_t initializeBuffers ()
 }
 
 /**
- * Helper to copy relevant Data Vector data and send it to respective nodes.
+ * Helper to send/recv Data Vector data to/from Device Nodes and Ground.
  *
- * @ret  E_SUCCESS                  Successfully sent data.
+ * @ret  E_SUCCESS                  Successfully received data.
+ *       E_FAILED_TO_GET_TIME       Could not read time.
  *       E_DATA_VECTOR_READ         Failed to copy data from Data Vector.
+ *       E_DATA_VECTOR_WRITE        Failed to write data to Data Vector.
+ *       E_NETWORK_MANAGER_RX_FAIL  Failed to recv data from nodes.
  *       E_NETWORK_MANAGER_TX_FAIL  Failed to send data to nodes.
  */
-static Error_t sendDataVectorData ()
+static Error_t sendAndRecvDataVectorData ()
 {
-    // Copy Data Vector data to buffers.
+    // 1) Get start time, deadline time, and deadline time - buffer. These are 
+    //    used for managing the communications so that they are completed within 
+    //    the time slice.
+    Time::TimeNs_t startTimeNs = 0;
+    if (gPTime->getTimeNs (startTimeNs) != E_SUCCESS)
+    {
+        return E_FAILED_TO_GET_TIME;
+    }
+
+    // 2) Copy Data Vector data to buffers.
     if (gPDv->readRegion (DV_REG_CN_TO_DN0, gCnToDn0Buf) != E_SUCCESS ||
         gPDv->readRegion (DV_REG_CN_TO_DN1, gCnToDn1Buf) != E_SUCCESS ||
         gPDv->readRegion (DV_REG_CN_TO_DN2, gCnToDn2Buf) != E_SUCCESS ||
@@ -281,63 +313,89 @@ static Error_t sendDataVectorData ()
         return E_DATA_VECTOR_READ;
     }
 
-    // Send data to respective nodes.
+    // 3) Send data to respective nodes. Send to Ground last so that there is
+    //    additional time for Device Nodes to respond before end of comms 
+    //    deadline.
     if (gPNm->send (NODE_DEVICE0, gCnToDn0Buf) != E_SUCCESS ||
         gPNm->send (NODE_DEVICE1, gCnToDn1Buf) != E_SUCCESS ||
         gPNm->send (NODE_DEVICE2, gCnToDn2Buf) != E_SUCCESS ||
-        gPNm->send (NODE_GROUND, gCnToGndBuf)  != E_SUCCESS)
+        gPNm->send (NODE_GROUND,  gCnToGndBuf) != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_TX_FAIL;
     }
 
-    return E_SUCCESS;
-}
+    // 4) Attempt to receive data from Ground. Only done once per loop so that 
+    //    sequential commands do not overwrite each other.
+    bool msgRecvd = false;
+    if (gPNm->recvNoBlock (NODE_GROUND, gGndToCnBuf, msgRecvd) != E_SUCCESS)
+    {
+        return E_NETWORK_MANAGER_RX_FAIL;
+    }
+    if (msgRecvd == true)
+    {
+        if (gPDv->writeRegion (DV_REG_GROUND_TO_CN, gGndToCnBuf))
+        {
+            return E_DATA_VECTOR_WRITE;
+        }
+    }
 
-/**
- * Helper to recv Data Vector data from nodes and save it to the Control Node's
- * Data Vector. 
- *
- * @ret  E_SUCCESS                  Successfully received data.
- *       E_NETWORK_MANAGER_RX_FAIL  Failed to recv data from nodes.
- *       E_DATA_VECTOR_WRITE        Failed to write data to Data Vector.
- */
-static Error_t recvDataVectorData ()
-{
-    // Msg received params. Initialize to false.
-    std::vector<bool> msgsReceived (NODES_TO_RECV_FROM.size (), false);
+    // 5) Calculate remaining time in communications time slice to use as 
+    //    timeout for recvMult call. Minimum timeout is MIN_RECV_TIMEOUT_NS,
+    //    even if this will cause a communications deadline miss.
+    Time::TimeNs_t currTimeNs = 0;
+    if (gPTime->getTimeNs (currTimeNs) != E_SUCCESS)
+    {
+        return E_FAILED_TO_GET_TIME;
+    }
 
-    // Receive data from nodes.
-    if (gPNm->recvMult (DATA_RX_TIMEOUT_NS, NODES_TO_RECV_FROM, gRecvBufs, 
-                        msgsReceived) != E_SUCCESS)
+    // 5a) If we've already gone into the buffer or we are less than 
+    //     MIN_RECV_TIMEOUT_NS away from the buffer, set the timeout to be 
+    //     MIN_RECV_TIMEOUT_NS.
+    Time::TimeNs_t deadlineTimeNs = startTimeNs + COMMUNICATIONS_TIME_SLICE_NS;
+    Time::TimeNs_t deadlineBufferTimeNs = deadlineTimeNs - 
+                                          COMMUNICATIONS_TIME_BUFFER_NS;
+    Time::TimeNs_t recvMultTimeoutNs = 0;
+    if (currTimeNs > deadlineBufferTimeNs ||
+        deadlineBufferTimeNs - currTimeNs < MIN_RECV_TIMEOUT_NS)
+    {
+        recvMultTimeoutNs = MIN_RECV_TIMEOUT_NS;
+    }
+
+    // 5b) Otherwise, set the timeout to be the remaining time before we hit the
+    //     buffer time.
+    else
+    {
+        recvMultTimeoutNs = deadlineBufferTimeNs - currTimeNs;
+    }
+
+    // 6) Receive data from Device Nodes.
+    std::vector<uint32_t> numMsgsReceived (DEVICE_NODES.size (), 0);
+    if (gPNm->recvMult (recvMultTimeoutNs, DEVICE_NODES, gDnRecvBufs, 
+                        numMsgsReceived) != E_SUCCESS)
     {
         return E_NETWORK_MANAGER_RX_FAIL;
     }
 
-    // Copy data from buffers to Data Vector or handle a missed message.
-    for (uint8_t i = 0; i < NODES_TO_RECV_FROM.size (); i++)
+    // 7) Copy data from buffers to Data Vector or log a missed message.
+    for (uint8_t i = 0; i < DEVICE_NODES.size (); i++)
     {
         Error_t ret = E_SUCCESS;
-        switch (NODES_TO_RECV_FROM[i])
+        switch (DEVICE_NODES[i])
         {
             case NODE_DEVICE0:
-                ret = msgsReceived[i] == true
-                    ? gPDv->writeRegion (DV_REG_DN0_TO_CN, gRecvBufs[i])
+                ret = numMsgsReceived[i] > 0
+                    ? gPDv->writeRegion (DV_REG_DN0_TO_CN, gDnRecvBufs[i])
                     : gPDv->increment (DV_ELEM_DN0_RX_MISS_COUNT);
                 break;
             case NODE_DEVICE1:
-                ret = msgsReceived[i] == true
-                    ? gPDv->writeRegion (DV_REG_DN1_TO_CN, gRecvBufs[i])
+                ret = numMsgsReceived[i] > 0
+                    ? gPDv->writeRegion (DV_REG_DN1_TO_CN, gDnRecvBufs[i])
                     : gPDv->increment (DV_ELEM_DN1_RX_MISS_COUNT);
                 break;
             case NODE_DEVICE2:
-                ret = msgsReceived[i] == true
-                    ? gPDv->writeRegion (DV_REG_DN2_TO_CN, gRecvBufs[i])
+                ret = numMsgsReceived[i] > 0
+                    ? gPDv->writeRegion (DV_REG_DN2_TO_CN, gDnRecvBufs[i])
                     : gPDv->increment (DV_ELEM_DN2_RX_MISS_COUNT);
-                break;
-            case NODE_GROUND:
-                // Don't increment an error if don't rx msg from GROUND as this
-                // is expected unless a command has been sent.
-                ret = gPDv->writeRegion (DV_REG_GROUND_TO_CN, gRecvBufs[i]);
                 break;
             default:
                 // This should never happen.
@@ -348,6 +406,34 @@ static Error_t recvDataVectorData ()
         if (ret != E_SUCCESS)
         {
             return E_DATA_VECTOR_WRITE;
+        }
+    }
+
+    // 8) If the communications did not complete before deadline, log an error. 
+    //    Otherwise, spin until deadline is reached to reduce jitter in when
+    //    State Machine and Controllers run.
+    if (gPTime->getTimeNs (currTimeNs) != E_SUCCESS)
+    {
+        return E_FAILED_TO_GET_TIME;
+    }
+
+    if (currTimeNs > deadlineTimeNs)
+    {
+        // Log deadline miss.
+        if (gPDv->increment (DV_ELEM_CN_COMMS_DEADLINE_MISSES) != E_SUCCESS)
+        {
+            return E_DATA_VECTOR_WRITE;
+        }
+    }
+    else
+    {
+        // Spin.
+        while (currTimeNs < deadlineTimeNs)
+        {
+            if (gPTime->getTimeNs (currTimeNs) != E_SUCCESS)
+            {
+                return E_FAILED_TO_GET_TIME;
+            }
         }
     }
 
@@ -373,15 +459,10 @@ static Error_t recvDataVectorData ()
  */
 static void* loop (void* _kArgs)
 {
-    // 1) Send copies of relevant Data Vector regions to Device and Ground 
-    //    Nodes. This signal doubles as a loop synchronizer, as all Device
-    //    Nodes begin their loop on receiving a message from the Control Node.
-    Errors::incrementOnError (sendDataVectorData (), gPDv, 
-                              DV_ELEM_CN_ERROR_COUNT);
-
-    // 2) Receive relevant data from Device and Ground Nodes and save to Data
-    //    Vector.
-    Errors::incrementOnError (recvDataVectorData (), gPDv,
+    // 1) Send and receive Data Vector Regions with Device Nodes and Ground.
+    //    This step doubles as a loop synchronizer, as all Device Nodes begin 
+    //    their loop on receiving a message from the Control Node.
+    Errors::incrementOnError (sendAndRecvDataVectorData (), gPDv,
                               DV_ELEM_CN_ERROR_COUNT);
 
     // 3) Get the current time and store it in the Data Vector.
@@ -401,7 +482,7 @@ static void* loop (void* _kArgs)
     Errors::incrementOnError (gPSm->step (currTimeNs), gPDv, 
                               DV_ELEM_CN_ERROR_COUNT);
     
-    // 6) Run the controllers.
+    // 6) Run the Controllers.
     for (std::unique_ptr<Controller>& pCtrl : gPCtrls)
     {
         Errors::incrementOnError (pCtrl->run (), gPDv, DV_ELEM_CN_ERROR_COUNT);

@@ -26,6 +26,13 @@
  * Choose ports between 2200-2299. These are unused on the sbRIO's and on Ubuntu
  * 16.4. To see what ports are in use, run "cat /etc/services".
  *
+ *                         ------- NOTES -------
+ *
+ * #1 Due to a known issue with the Zynq-7000 series Gigabit Ethernet 
+ *    Controller, messages can get stuck in the RX FIFO queue. They are unstuck
+ *    when another Ethernet frame comes into the NIC. To prevent messages from
+ *    getting stuck, after every message send a noop message is sent to an
+ *    unused port to make sure the actual message does not stay stuck.
  *
  *                         ------- WARNINGS -------
  *
@@ -41,14 +48,6 @@
  *      Thread 1 blocking on the recvMult call is undesired and unexpected, as
  *      recvMult is intended to allow the Control Node to listen on multiple
  *      channels and timeout. recvMult should never block indefinitely.
- *
- * #2 Messages on the flight network MUST be serial (i.e. only one message sent
- *    at once) and messages being RECEIVED by a flight computer must be <= 1024
- *    bytes. Otherwise, sporadic spikes in time for the OS to pass a received
- *    message to the flight software application are seen (up to 10 seconds).
- *    Messages > 1024 sent to a ground computer using non-sbRIO hardware and OS
- *    is likely fine, as the delay occurs in the sbRIO's version of the Linux 
- *    recv system call.
  *
  */
 
@@ -85,6 +84,12 @@ class NetworkManager final
 {
 
 public:
+
+    /**
+     * Port used to send noop message to a node after an actual message is sent.
+     * Used to clear out a potentially "stuck" message from the node's RX queue.
+     */
+    static const uint16_t NOOP_PORT;
 
     /**
      * Minimum port value permitted.
@@ -256,11 +261,11 @@ public:
                          bool& kMsgReceivedRet);
 
     /**
-     * Receive a message from each of the provided nodes. The method returns
-     * after either a message is received from each of the nodes or the timeout
-     * has been reached. Each buffer in kBufsRet must already have size equal to
-     * expected message size. kNodes, kBufsRet, and kMsgReceived must be the
-     * same size.
+     * For the given timeout, attempt to receive messages from each of the 
+     * provided nodes. If multiple messages are received from a single node, the
+     * last message will be what is returned in kBufsRet. Each buffer in 
+     * kBufsRet must already have size equal to the expected message size. 
+     * kNodes, kBufsRet, and kMsgReceived must be the same size.
      *
      * Note: The select call has up to 250us of overhead.
      *
@@ -269,9 +274,10 @@ public:
      *                                      uses microsecond increments.
      * @param   kNodes                      Nodes to receive messages from.
      * @param   kBufsRet                    Buffers to fill with messages.
-     * @param   kMsgReceivedRet             True if message received from node.
+     * @param   kNumMsgsReceivedRet         Number of messages received from 
+     *                                      each node.
      *
-     * @ret     E_SUCCESS                   Messages successfully received or
+     * @ret     E_SUCCESS                   Messages successfully received and
      *                                      timeout expired.
      *          E_TIMEOUT_TOO_LARGE         Timeout greater than max.
      *          E_VECTORS_DIFF_SIZES        Vector params have different sizes.
@@ -291,7 +297,7 @@ public:
     Error_t recvMult (Time::TimeNs_t kTimeoutNs,
                       std::vector<Node_t> kNodes, 
                       std::vector<std::vector<uint8_t>>& kBufsRet, 
-                      std::vector<bool>& kMsgReceivedRet);
+                      std::vector<uint32_t>& kNumMsgsReceivedRet);
 
     /**
      * PUBLIC FOR TESTING PURPOSES ONLY -- DO NOT USE OUTSIDE OF NETWORK MANAGER

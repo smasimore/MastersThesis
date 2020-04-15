@@ -150,7 +150,7 @@ static Time::TimeNs_t measureCommsTimeParallel (
     Errors::exitOnError (gPNm->send (NODE_DEVICE1, kReg1SendBuf), "Send err");
     Errors::exitOnError (gPNm->send (NODE_DEVICE2, kReg2SendBuf), "Send err");
 
-    std::vector<bool> recvdMsgs (3);
+    std::vector<uint32_t> recvdMsgs (3);
     Errors::exitOnError (gPNm->recvMult (
                                      NetworkManager::MAX_TIMEOUT_NS,
                                      {NODE_DEVICE0, NODE_DEVICE1, NODE_DEVICE2},

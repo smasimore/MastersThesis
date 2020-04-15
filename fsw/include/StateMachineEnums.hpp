@@ -11,6 +11,7 @@ enum StateId_t : uint32_t
     STATE_C,
     STATE_D,
     STATE_E,
+    STATE_F,
 
     /* Platform LED Test */
     STATE_START,

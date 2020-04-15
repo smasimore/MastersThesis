@@ -107,63 +107,64 @@ static DataVector::Config_t gDvConfig =
 {
 ///////////////////////////////// DV_REG_CN ////////////////////////////////////
     {DV_REG_CN,
-    // TYPE          ELEM                           INITIAL_VAL
-    {DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_COUNT,         0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_ERROR_COUNT,        0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_TX_COUNT,       0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_RX_COUNT,       0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN0_RX_MISS_COUNT,     0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN1_RX_MISS_COUNT,     0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN2_RX_MISS_COUNT,     0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_DEADLINE_MISSES,    0            ),
-     DV_ADD_UINT8  ( DV_ELEM_CMD,                   CMD_NONE     ),
-     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM,     0            ),
-     DV_ADD_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,     MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,       MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE, MODE_SAFED   ),
-     DV_ADD_UINT64 ( DV_ELEM_CN_TIME_NS,            0            ),
-     DV_ADD_UINT32 ( DV_ELEM_STATE,                 STATE_A      ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST6,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL
+    {DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_COUNT,            0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_ERROR_COUNT,           0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_TX_COUNT,          0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_RX_COUNT,          0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN0_RX_MISS_COUNT,        0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN1_RX_MISS_COUNT,        0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN2_RX_MISS_COUNT,        0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_DEADLINE_MISSES,  0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_COMMS_DEADLINE_MISSES, 0            ),
+     DV_ADD_UINT8  ( DV_ELEM_CMD,                      CMD_NONE     ),
+     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM,        0            ),
+     DV_ADD_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,        MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,          MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_MISS_CTRL_MODE,           MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE,    MODE_SAFED   ),
+     DV_ADD_UINT64 ( DV_ELEM_CN_TIME_NS,               0            ),
+     DV_ADD_UINT32 ( DV_ELEM_STATE,                    STATE_A      ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST6,                    false        )}},
 
     {DV_REG_CN_TO_DN0,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST0,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST0,                    false        )}},
 
     {DV_REG_CN_TO_DN1,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST1,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST1,                    false        )}},
 
     {DV_REG_CN_TO_DN2,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST2,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST2,                    false        )}},
 
     {DV_REG_DN0_TO_CN,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_TX_COUNT,      0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_RX_COUNT,      0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST3,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_TX_COUNT,         0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_RX_COUNT,         0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST3,                    false        )}},
 
     {DV_REG_DN1_TO_CN,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_TX_COUNT,      0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_RX_COUNT,      0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST4,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_TX_COUNT,         0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_RX_COUNT,         0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST4,                    false        )}},
 
     {DV_REG_DN2_TO_CN,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_TX_COUNT,      0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_RX_COUNT,      0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST5,                 false        )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_TX_COUNT,         0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_RX_COUNT,         0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST5,                    false        )}},
 
     {DV_REG_GROUND_TO_CN,
-    // TYPE          ELEM                           INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_TX_COUNT,   0            ),
-     DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_RX_COUNT,   0            ),
-     DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,               CMD_NONE     ),
-     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,      0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,        DV_ELEM_LAST ),
-     DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,         0            )}},
+    // TYPE          ELEM                              INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_TX_COUNT,      0            ),
+     DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_RX_COUNT,      0            ),
+     DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,                  CMD_NONE     ),
+     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,         0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,           DV_ELEM_LAST ),
+     DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,            0            )}},
 };
 
 /**
@@ -251,15 +252,32 @@ static StateMachine::Config_t gSmConfig =
         {ACT_CREATE_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_ENABLED )}}},
     //
     // TRANSITIONS
-    {TR_CREATE_UINT32  ( DV_ELEM_CN_DEADLINE_MISSES,  CMP_EQUALS,  1,  STATE_E )}},
+    {TR_CREATE_UINT32  ( DV_ELEM_CN_LOOP_DEADLINE_MISSES,  CMP_EQUALS,  1,  STATE_E )}},
 
 
     //////////////////////////////// STATE_E ///////////////////////////////////
     //
-    // Enables ThreadKillController, which kills the thread.
+    // Delay Device Node messages to test Control Node message miss logging.
+    // Transition after CN misses a DN0 message.
     //
     // ID
     {STATE_E,
+    //
+    // ACTIONS
+    {{0 * Time::NS_IN_S,
+        {ACT_CREATE_UINT8  ( DV_ELEM_ERROR_CTRL_MODE, MODE_SAFED ),
+         ACT_CREATE_UINT8  ( DV_ELEM_MISS_CTRL_MODE,  MODE_SAFED )}}},
+    //
+    // TRANSITIONS
+    {TR_CREATE_UINT32  ( DV_ELEM_DN0_RX_MISS_COUNT,  CMP_EQUALS,  1,  STATE_F)}},
+
+
+    //////////////////////////////// STATE_F ///////////////////////////////////
+    //
+    // Enables ThreadKillController, which kills the thread.
+    //
+    // ID
+    {STATE_F,
     //
     // ACTIONS
     {{.01 * Time::NS_IN_S,
@@ -649,25 +667,40 @@ static void* fNodesSim (void* _args)
     CHECK_SUCCESS (pDv->getRegionSizeBytes (DV_REG_GROUND_TO_CN, 
                                             gndToCnBufSize));
     CHECK_SUCCESS (pDv->getDataVectorSizeBytes (telemBufSize));
-    std::vector<uint8_t> cnToDn0Buf (cnToDn0BufSize);                                            
-    std::vector<uint8_t> cnToDn1Buf (cnToDn1BufSize);                                            
-    std::vector<uint8_t> cnToDn2Buf (cnToDn2BufSize);                                            
-    std::vector<uint8_t> dn0ToCnBuf (dn0ToCnBufSize);                                            
-    std::vector<uint8_t> dn1ToCnBuf (dn1ToCnBufSize);                                            
-    std::vector<uint8_t> dn2ToCnBuf (dn2ToCnBufSize);                                            
-    std::vector<uint8_t> gndToCnBuf (gndToCnBufSize); 
-    std::vector<uint8_t> telemBuf   (telemBufSize);                                            
+    std::vector<uint8_t> cnToDn0Buf (cnToDn0BufSize);   
+    std::vector<uint8_t> cnToDn1Buf (cnToDn1BufSize);   
+    std::vector<uint8_t> cnToDn2Buf (cnToDn2BufSize);   
+    std::vector<uint8_t> dn0ToCnBuf (dn0ToCnBufSize);   
+    std::vector<uint8_t> dn1ToCnBuf (dn1ToCnBufSize);   
+    std::vector<uint8_t> dn2ToCnBuf (dn2ToCnBufSize);   
+    std::vector<uint8_t> gndToCnBuf (gndToCnBufSize);
+    std::vector<uint8_t> telemBuf   (telemBufSize);
+
+    // Initialize Device Node delay times.
+    const uint32_t DELAY_US = 2 * Time::US_IN_MS;
+    uint32_t dn0DelayUs = 0;
+    uint32_t dn1DelayUs = 0;
+    uint32_t dn2DelayUs = 0;
 
     // Simulate node loops.
     if (args.enterLoop == true)
     {
         while (1)
         {
-            // Receive data from CN and store in pDv.
+            // Receive and send data from/to CN.
+            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN0_TO_CN, dn0ToCnBuf));
+            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN1_TO_CN, dn1ToCnBuf));
+            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN2_TO_CN, dn2ToCnBuf));
             CHECK_SUCCESS (pDn0Nm->recvBlock (NODE_CONTROL, cnToDn0Buf));
             CHECK_SUCCESS (pDn1Nm->recvBlock (NODE_CONTROL, cnToDn1Buf));
             CHECK_SUCCESS (pDn2Nm->recvBlock (NODE_CONTROL, cnToDn2Buf));
             CHECK_SUCCESS (pGndNm->recvBlock (NODE_CONTROL, telemBuf));
+            usleep (dn0DelayUs);
+            CHECK_SUCCESS (pDn0Nm->send (NODE_CONTROL, dn0ToCnBuf));
+            usleep (dn1DelayUs);
+            CHECK_SUCCESS (pDn1Nm->send (NODE_CONTROL, dn1ToCnBuf));
+            usleep (dn2DelayUs);
+            CHECK_SUCCESS (pDn2Nm->send (NODE_CONTROL, dn2ToCnBuf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN0, cnToDn0Buf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN1, cnToDn1Buf));
             CHECK_SUCCESS (pDv->writeRegion (DV_REG_CN_TO_DN2, cnToDn2Buf));
@@ -690,6 +723,29 @@ static void* fNodesSim (void* _args)
                                          gndToCnBuf));
             }
 
+            // If we're in STATE_E, delay each DN response message once. Start
+            // with dn2, then dn1, and finally dn0. 
+            else if (state == STATE_E)
+            {
+                static uint8_t loopsinE = 0;
+                switch (loopsinE)
+                {
+                    case 0:
+                        dn2DelayUs = DELAY_US;
+                        break;
+                    case 1:
+                        dn1DelayUs = DELAY_US;
+                        dn2DelayUs = 0;
+                        break;
+                    case 2:
+                        dn0DelayUs = DELAY_US;
+                        dn1DelayUs = 0;
+                        dn2DelayUs = 0;
+                        break;
+                }
+                loopsinE++;
+            }
+
             // If we receive a flag from CN, send ack flag.
             bool dn0Flag = false;
             bool dn1Flag = false;
@@ -701,25 +757,11 @@ static void* fNodesSim (void* _args)
             CHECK_SUCCESS (pDv->write (DV_ELEM_TEST4, dn1Flag));
             CHECK_SUCCESS (pDv->write (DV_ELEM_TEST5, dn2Flag));
 
-            // Send DN regions to CN.
-            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN0_TO_CN, dn0ToCnBuf));
-            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN1_TO_CN, dn1ToCnBuf));
-            CHECK_SUCCESS (pDv->readRegion (DV_REG_DN2_TO_CN, dn2ToCnBuf));
-            CHECK_SUCCESS (pDn0Nm->send (
-                                     NODE_CONTROL,
-                                     dn0ToCnBuf));
-            CHECK_SUCCESS (pDn1Nm->send (
-                                     NODE_CONTROL,
-                                     dn1ToCnBuf));
-            CHECK_SUCCESS (pDn2Nm->send (
-                                     NODE_CONTROL,
-                                     dn2ToCnBuf));
-
             // Increment sim loop counter.
             gNumSimLoops++;
 
-            // Break once we reach STATE_E.
-            if (state == STATE_E)
+            // Break once we reach STATE_F.
+            if (state == STATE_F)
             {
                 break;
             }
@@ -920,51 +962,59 @@ TEST (ControlNode, Success)
     Error_t ret;
     WAIT_FOR_THREAD (thread, pTm);
 
-    // Expect 3 clock sync msgs on initialization and 4 data msgs per 
-    // sim thread loop except for the final loop. This is due to the CN's last
-    // msg rx's/tx's not being reflected in the last telem snapshot, since they
-    // are incremented as a part of sending the snapshot.
+    // + 3 clock sync msgs on initialization 
+    // + 4 data msgs per sim thread loop except for the final loop (due to the 
+    //   CN's last msg rx's/tx's not being reflected in the last telem snapshot)
     uint32_t cnMsgsTxCount = 0;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_MSG_TX_COUNT, cnMsgsTxCount));
     CHECK_EQUAL (3 + 4 * (gNumSimLoops - 1), cnMsgsTxCount);
 
-    // Expect 3 clock sync msgs on initialization, 1 from ground, and 3 DN msgs
-    // per sim thread loop except for the final loop. 
+    // + 3 clock sync msgs on initialization
+    // + 1 msg from ground, 
+    // + 3 DN msgs per sim thread loop except for the final loop. 
+    // - 3 missed messages the final loop (DN0-3 all have their msgs delayed 
+    //   when dn0 is delayed) that are never received due to transition to 
+    //   STATE_F that immediately kills the CN thread.
     uint32_t cnMsgsRxCount = 0;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_MSG_RX_COUNT, cnMsgsRxCount));
-    CHECK_EQUAL (4 + 3 * (gNumSimLoops - 1), cnMsgsRxCount);
+    CHECK_EQUAL (4 + 3 * (gNumSimLoops - 1) - 3, cnMsgsRxCount);
 
-    // Expect no missed msgs.
+    // Expect 1 missed dn0-2 msg. 
     uint32_t dn0Misses = 0;
     uint32_t dn1Misses = 0;
     uint32_t dn2Misses = 0;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_DN0_RX_MISS_COUNT, dn0Misses));
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_DN1_RX_MISS_COUNT, dn1Misses));
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_DN2_RX_MISS_COUNT, dn2Misses));
-    CHECK_EQUAL (0, dn0Misses);
-    CHECK_EQUAL (0, dn1Misses);
-    CHECK_EQUAL (0, dn2Misses);
+    CHECK_EQUAL (1, dn0Misses);
+    CHECK_EQUAL (1, dn1Misses);
+    CHECK_EQUAL (1, dn2Misses);
 
-    // Expect 3 errors due to ErrorController (2 in STATE_D, 1 in STATE_E).
+    // Expect 2 errors due to ErrorController (2 in STATE_D).
     uint32_t numErrors = 0;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_ERROR_COUNT, numErrors));
-    CHECK_EQUAL (3, numErrors);
+    CHECK_EQUAL (2, numErrors);
 
-    // Expect 2 deadline misses due to DeadlineMissController. (1 in STATE_D, 1
-    // in STATE_E).
-    uint32_t numMisses = 0;
-    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_DEADLINE_MISSES, numMisses));
-    CHECK_EQUAL (2, numMisses);
+    // Expect 1 loop deadline misses due to DeadlineMissController. (1 in 
+    // STATE_D).
+    uint32_t numLoopDeadlineMisses = 0;
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_LOOP_DEADLINE_MISSES, 
+                                    numLoopDeadlineMisses));
+    CHECK_EQUAL (1, numLoopDeadlineMisses);
 
-    // Expect to end in STATE_E.
+    // Expect no comms deadline misses.
+    uint32_t numCommsDeadlineMisses = 0;
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_COMMS_DEADLINE_MISSES, 
+                                    numCommsDeadlineMisses));
+    CHECK_EQUAL (0, numCommsDeadlineMisses);
+
+    // Expect to end in STATE_F.
     uint32_t state = STATE_A;
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_STATE, state));
-    CHECK_EQUAL (STATE_E, state);
+    CHECK_EQUAL (STATE_F, state);
 
-    // Expect CheckDeviceNodeResponsesController to be safed and ErrorController
-    // and DV_ELEM_MISS_CTRL_MODE to be enabled. ThreadKillController will also 
-    // be safed since the thread is killed before we receive another telem 
-    // snapshot.
+    // Expect all Controllers to be safed ThreadKillController will also be 
+    // safed since the thread is killed before we receive another telem snapshot.
     uint8_t dnRespCtrlMode     = MODE_SAFED;
     uint8_t errorCtrlMode      = MODE_SAFED;
     uint8_t missCtrlMode       = MODE_SAFED;
@@ -974,8 +1024,8 @@ TEST (ControlNode, Success)
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_MISS_CTRL_MODE, missCtrlMode));
     CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_THREAD_KILL_CTRL_MODE, 
                                     threadKillCtrlMode));
-    CHECK_EQUAL (MODE_SAFED,   dnRespCtrlMode);
-    CHECK_EQUAL (MODE_SAFED,   threadKillCtrlMode);
-    CHECK_EQUAL (MODE_ENABLED, errorCtrlMode);
-    CHECK_EQUAL (MODE_ENABLED, missCtrlMode);
+    CHECK_EQUAL (MODE_SAFED, dnRespCtrlMode);
+    CHECK_EQUAL (MODE_SAFED, threadKillCtrlMode);
+    CHECK_EQUAL (MODE_SAFED, errorCtrlMode);
+    CHECK_EQUAL (MODE_SAFED, missCtrlMode);
 };

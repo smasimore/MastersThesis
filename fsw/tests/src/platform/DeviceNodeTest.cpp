@@ -109,7 +109,7 @@
     CHECK_SUCCESS (gPCnDv->read (kDvElemTx, tx));                              \
     CHECK_SUCCESS (gPCnDv->read (kDvElemRx, rx));                              \
     CHECK_EQUAL (gNumSimLoops - 1, tx);                                        \
-    CHECK_EQUAL (gNumSimLoops - 1, rx);                                        \
+    CHECK_EQUAL ((gNumSimLoops - 1) * 2, rx);                                  \
 }
 
 /*************************** DEVICE NODE CONFIGS ******************************/
@@ -672,8 +672,10 @@ static void* fControlNodeSim (void* _args)
     {
         while (1)
         {
-            // Send region to DN.
+            // Send region to DN. Send two copies to test handling of
+            // "stuck" messages. Expect Device Node to receive both.
             CHECK_SUCCESS (gPCnDv->readRegion (args.sendReg, sendBuf));
+            CHECK_SUCCESS (pCnNm->send (args.deviceNode, sendBuf));
             CHECK_SUCCESS (pCnNm->send (args.deviceNode, sendBuf));
 
             // Receive data from DN and store in gPCnDv.
@@ -954,7 +956,7 @@ TEST (DeviceNode, BadControllerInit2)
 /* Test running through Device Node loops successfuly. */
 TEST (DeviceNode, Success0)
 {
-    // Create thread to simulate Control Node during clock sync. 
+    // Create thread to simulate Control Node. 
     CREATE_SIM_THREAD (false, true, NODE_DEVICE0, gDv0Config, DV_REG_DN0_TO_CN, 
                        DV_REG_CN_TO_DN0);
 
@@ -973,7 +975,7 @@ TEST (DeviceNode, Success0)
 /* Test running through Device Node loops successfuly. */
 TEST (DeviceNode, Success1)
 {
-    // Create thread to simulate Control Node during clock sync. 
+    // Create thread to simulate Control Node. 
     CREATE_SIM_THREAD (false, true, NODE_DEVICE1, gDv1Config, DV_REG_DN1_TO_CN, 
                        DV_REG_CN_TO_DN1);
 
@@ -992,7 +994,7 @@ TEST (DeviceNode, Success1)
 /* Test running through Device Node loops successfuly. */
 TEST (DeviceNode, Success2)
 {
-    // Create thread to simulate Control Node during clock sync. 
+    // Create thread to simulate Control Node. 
     CREATE_SIM_THREAD (false, true, NODE_DEVICE2, gDv2Config, DV_REG_DN2_TO_CN, 
                        DV_REG_CN_TO_DN2);
 

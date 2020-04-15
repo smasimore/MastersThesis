@@ -53,7 +53,6 @@
     CHECK_EQUAL (k5, act5);                                                    \
 }
 
-
 /*************************** VERIFY CONFIG TESTS ******************************/
 
 /* Valid DV config to use for verify config tests. */
@@ -889,7 +888,7 @@ TEST (NetworkManager_RecvMult, DiffVectorSizes)
     // Set up params.
     std::vector<Node_t> nodes;
     std::vector<std::vector<uint8_t>> bufs;
-    std::vector<bool> msgsReceived;
+    std::vector<uint32_t> msgsReceived;
 
     // Num nodes different.
     nodes.resize (1);
@@ -921,7 +920,7 @@ TEST (NetworkManager_RecvMult, LargeTimeout)
     // Set up params.
     std::vector<Node_t> nodes;
     std::vector<std::vector<uint8_t>> bufs;
-    std::vector<bool> msgsReceived;
+    std::vector<uint32_t> msgsReceived;
 
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS + 1, nodes, 
                                     bufs, msgsReceived),
@@ -942,7 +941,7 @@ TEST (NetworkManager_RecvMult, EmptyBuffer)
     bufsFirstEmpty[1].resize (1);
     std::vector<std::vector<uint8_t>> bufsSecondEmpty (2); 
     bufsSecondEmpty[0].resize (1);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
                                     bufsFirstEmpty, msgsReceived),
@@ -964,7 +963,7 @@ TEST (NetworkManager_RecvMult, InvalidNode)
     std::vector<Node_t> nodesFirstInvalid = {NODE_CONTROL, NODE_DEVICE1};
     std::vector<Node_t> nodesSecondInvalid = {NODE_DEVICE0, NODE_DEVICE2};
     std::vector<std::vector<uint8_t>> bufs = {{0xff}, {0xff}};
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     CHECK_ERROR (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, 
                                     nodesFirstInvalid, bufs, msgsReceived),
@@ -991,7 +990,7 @@ TEST (NetworkManager_RecvMult, BufferSizeTooSmall)
     std::vector<std::vector<uint8_t>> bufsSecondTooSmall (2);
     bufsSecondTooSmall[0].resize (2);
     bufsSecondTooSmall[1].resize (1);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, buf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, buf));
@@ -1025,7 +1024,7 @@ TEST (NetworkManager_RecvMult, BufferSizeTooLarge)
     std::vector<std::vector<uint8_t>> bufsSecondTooLarge (2);
     bufsSecondTooLarge[0].resize (2);
     bufsSecondTooLarge[1].resize (3);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf));
@@ -1054,13 +1053,14 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     Time::getInstance (pTime);
 
     // Set up params.
+    const Time::TimeNs_t TIMEOUT_NS  = 2 * Time::NS_IN_MS;
     std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
     bufs[1].resize (2);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     // Send messages to Control Node.
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
@@ -1071,7 +1071,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
+    CHECK_SUCCESS (pNmCtrl->recvMult (TIMEOUT_NS, nodes, 
                                       bufs, msgsReceived));
     pTime->getTimeNs (endNs);
 
@@ -1079,13 +1079,16 @@ TEST (NetworkManager_RecvMult, MsgsRxdBeforeRecvMult)
     CHECK (bufs[0] == sendBuf0);
     CHECK (bufs[1] == sendBuf1);
 
-    // Verify time taken is less than timeout.
-    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_NS);
+    // Verify time taken is greater than or equal to timeout and within 
+    // expected bounds.
+    Time::TimeNs_t elapsedNs = endNs - startNs;
+    CHECK (elapsedNs > TIMEOUT_NS);
+    CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
-    // Verify msgsReceived all set to true.
+    // Verify msgsReceived all set to 1.
     for (uint8_t i = 0; i < msgsReceived.size (); i++)
     {
-        CHECK (msgsReceived[i]);
+        CHECK_EQUAL (1, msgsReceived[i]);
     }
 
     // Expect all msgs tx'd/rx'd.
@@ -1107,7 +1110,7 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
     bufs[1].resize (2);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
@@ -1123,10 +1126,10 @@ TEST (NetworkManager_RecvMult, NoMsgs)
     CHECK (elapsedNs > TIMEOUT_NS);
     CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
-    // Verify msgsReceived all set to false.
+    // Verify msgsReceived all set to 0.
     for (uint8_t i = 0; i < msgsReceived.size (); i++)
     {
-        CHECK_FALSE (msgsReceived[i]);
+        CHECK_EQUAL (0, msgsReceived[i]);
     }
 
     // Expect no msgs tx'd/rx'd.
@@ -1134,7 +1137,7 @@ TEST (NetworkManager_RecvMult, NoMsgs)
 }
 
 /* Test sending multiple messages on one channel. Expect to only recv first. */
-TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
+TEST (NetworkManager_RecvMult, MultMsgsPerChannel)
 {
     INIT_NETWORK_MANAGERS
 
@@ -1143,44 +1146,47 @@ TEST (NetworkManager_RecvMult, MultMsgsOneChannel)
     Time::getInstance (pTime);
 
     // Set up params.
+    const Time::TimeNs_t TIMEOUT_NS = 1 * Time::NS_IN_MS;
     std::vector<Node_t> nodes = {NODE_DEVICE0, NODE_DEVICE1};
     std::vector<uint8_t> sendBuf0 = {0x10, 0x01};
-    std::vector<uint8_t> sendBuf0SecondMsg = {0x11, 0x11};
+    std::vector<uint8_t> sendBuf0SecondMsg = {0x11, 0x22};
     std::vector<uint8_t> sendBuf1 = {0x01, 0x10};
+    std::vector<uint8_t> sendBuf1SecondMsg = {0x33, 0x44};
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
     bufs[1].resize (2);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     // Send messages to Control Node.
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
     CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1));
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0SecondMsg));
+    CHECK_SUCCESS (pNmDev1->send (NODE_CONTROL, sendBuf1SecondMsg));
 
     // Receive messages from Device Nodes. Time receive to ensure returns well
     // before timeout.
     Time::TimeNs_t startNs;
     Time::TimeNs_t endNs;
     pTime->getTimeNs (startNs);
-    CHECK_SUCCESS (pNmCtrl->recvMult (NetworkManager::MAX_TIMEOUT_NS, nodes, 
-                                      bufs, msgsReceived));
+    CHECK_SUCCESS (pNmCtrl->recvMult (TIMEOUT_NS, nodes, bufs, msgsReceived));
     pTime->getTimeNs (endNs);
 
     // Verify buffers match.
-    CHECK (bufs[0] == sendBuf0);
-    CHECK (bufs[1] == sendBuf1);
+    CHECK (bufs[0] == sendBuf0SecondMsg);
+    CHECK (bufs[1] == sendBuf1SecondMsg);
 
-    // Verify time taken is less than timeout.
-    CHECK (endNs - startNs < NetworkManager::MAX_TIMEOUT_NS);
+    // Verify time taken is greater than or equal to timeout and within 
+    // expected bounds.
+    Time::TimeNs_t elapsedNs = endNs - startNs;
+    CHECK (elapsedNs > TIMEOUT_NS);
+    CHECK_IN_BOUND (TIMEOUT_NS, elapsedNs, SELECT_OVERHEAD_NS);
 
-    // Verify msgsReceived all set to true.
-    for (uint8_t i = 0; i < msgsReceived.size (); i++)
-    {
-        CHECK (msgsReceived[i]);
-    }
+    // Verify received 2 msgs from each node.
+    CHECK_EQUAL (2, msgsReceived[0]);
+    CHECK_EQUAL (2, msgsReceived[1]);
 
-    // Expect all msgs tx'd and only 2/3 rx'd.
-    CHECK_DV (0, 2, 2, 0, 1, 0);
+    // Expect all msgs tx'd and rx'd.
+    CHECK_DV (0, 4, 2, 0, 2, 0);
 }
 
 /* Test receiving one message on one channel and none on the other. */
@@ -1200,7 +1206,7 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (2);
     bufs[1].resize (2);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     // Send message to Control Node from Device Node 0.
     CHECK_SUCCESS (pNmDev0->send (NODE_CONTROL, sendBuf0));
@@ -1221,8 +1227,8 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 
     // Verify msg received only from Device Node 0.
     CHECK (sendBuf0 == bufs[0]);
-    CHECK (msgsReceived[0]);
-    CHECK_FALSE (msgsReceived[1]);
+    CHECK_EQUAL (1, msgsReceived[0]);
+    CHECK_EQUAL (0, msgsReceived[1]);
 
     // Expect all msgs tx'd/rx'd.
     CHECK_DV (0, 1, 1, 0, 0, 0);
@@ -1244,8 +1250,8 @@ TEST (NetworkManager_RecvMult, OneMsgRxdOneNot)
 
     // Verify msg received only from Device Node 1.
     CHECK (sendBuf1 == bufs[1]);
-    CHECK (msgsReceived[1]);
-    CHECK_FALSE (msgsReceived[0]);
+    CHECK_EQUAL (1, msgsReceived[1]);
+    CHECK_EQUAL (0, msgsReceived[0]);
 
     // Expect all msgs tx'd/rx'd.
     CHECK_DV (0, 2, 1, 0, 1, 0);
@@ -1286,7 +1292,7 @@ TEST (NetworkManager_RecvMult, MsgsRxdAfterRecvMult)
     std::vector<std::vector<uint8_t>> bufs (2);
     bufs[0].resize (1);
     bufs[1].resize (1);
-    std::vector<bool> msgsReceived (2);
+    std::vector<uint32_t> msgsReceived (2);
 
     // Block on recvMult call.
     testLog.logEvent (Log::LogEvent_t::CALLED_RECVMULT, 0);    

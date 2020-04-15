@@ -242,7 +242,20 @@ static Error_t recvAndSendDataVectorData ()
         return E_NETWORK_MANAGER_TX_FAIL;
     }
 
-    // 4) Copy data from buffer to Data Vector.
+    // 4) There is a known issue with the sbRIO Ethernet hardware that can
+    //    result in a message getting "stuck" in the RX FIFO queue. The message
+    //    gets unstuck when the next Ethernet frame comes in. This should not
+    //    happen due to the noop message sent by the Network Manager after each
+    //    send, but in case it does, call recv one more time without blocking to 
+    //    make sure the Device Node is not operating on the previous loop's 
+    //    data.
+    bool _msgRxd = false;
+    if (gPNm->recvNoBlock (NODE_CONTROL, gRecvBuf, _msgRxd) != E_SUCCESS)
+    {
+        return E_NETWORK_MANAGER_RX_FAIL;
+    }
+
+    // 5) Copy data from buffer to Data Vector.
     if (gPDv->writeRegion (NODE_TO_DV_INFO.at (gMe).recvRegion, gRecvBuf) 
             != E_SUCCESS)
     {
