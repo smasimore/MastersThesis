@@ -33,10 +33,10 @@ void ProfileHelpers::setThreadPriAndAffinity ()
         throw std::runtime_error ("Failed to set priority.");
     }   
 
-    // Use core 0 for determinism.
+    // Use core 1 for determinism.
     cpu_set_t cpuset;
     CPU_ZERO (&cpuset);
-    CPU_SET (0, &cpuset);
+    CPU_SET (1, &cpuset);
     if (pthread_setaffinity_np(currentThread, sizeof(cpu_set_t), &cpuset) != 0)
     {   
         throw std::runtime_error ("Failed to set affinity.");
@@ -64,7 +64,7 @@ Time::TimeNs_t ProfileHelpers::getTimeNs ()
     return timeNs;
 }
 
-uint64_t ProfileHelpers::measureBaseline ()
+Time::TimeNs_t ProfileHelpers::measureBaseline ()
 {
     // Start time.
     Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();    
@@ -92,19 +92,43 @@ void ProfileHelpers::printProcessStats ()
     }
 }
 
-void ProfileHelpers::printVectorStats (std::vector<uint64_t>& results, 
-                                       std::string header)
+void ProfileHelpers::printVectorStats (std::vector<Time::TimeNs_t>& kResults, 
+                                       std::string kHeader)
 {
     // Type last input to accumulate to be uint64_t to prevent overflow.
-    uint64_t avg =  std::accumulate (results.begin (), results.end (), 
-                                     (uint64_t) 0) / results.size ();
-    uint64_t min = *std::min_element (results.begin (), results.end ());
-    uint64_t max = *std::max_element (results.begin (), results.end ());
+    uint64_t avg =  std::accumulate (kResults.begin (), kResults.end (), 
+                                     (uint64_t) 0) / kResults.size ();
+    uint64_t min = *std::min_element (kResults.begin (), kResults.end ());
+    uint64_t max = *std::max_element (kResults.begin (), kResults.end ());
 
-    std::cout << header << std::endl;
+    std::cout << kHeader << std::endl;
     std::cout << "Average: " << avg << std::endl;
     std::cout << "Min:     " << min << std::endl;
     std::cout << "Max:     " << max << std::endl;
+}
+
+void ProfileHelpers::printVectorStats (std::vector<int64_t>& kResults, 
+                                       std::string kHeader)
+{
+    // Type last input to accumulate to be int64_t to prevent overflow.
+    int64_t avg =  std::accumulate (kResults.begin (), kResults.end (), 
+                                    (int64_t) 0) / kResults.size ();
+    int64_t min = *std::min_element (kResults.begin (), kResults.end ());
+    int64_t max = *std::max_element (kResults.begin (), kResults.end ());
+
+    std::vector<uint64_t> absResults (kResults.size ());
+    for (uint32_t i = 0; i < kResults.size (); i++)
+    {
+        absResults[i] = std::abs (kResults[i]);
+    }
+    uint64_t absAvg =  std::accumulate (absResults.begin (), absResults.end (), 
+                                    (uint64_t) 0) / absResults.size ();
+
+    std::cout << kHeader << std::endl;
+    std::cout << "Average:     " << avg << std::endl;
+    std::cout << "Abs Average: " << absAvg << std::endl;
+    std::cout << "Min:         " << min << std::endl;
+    std::cout << "Max:         " << max << std::endl;
 }
 
 std::map<uint32_t, ProfileHelpers::ProcessStats_t> 

@@ -226,9 +226,12 @@ Error_t verifyClientSynced (NetworkManager::IP_t kServerNodeIP)
 {
     // 1) Run ntpdate in debug mode to read current offset. Write output to
     //    TMP_SYNC_FILE_PATH.
-    std::string ntpdateDebugCmd = "output=$(ntpdate -d " + kServerNodeIP +
-                                  " 2>&1) && echo $output | awk '{print $119}' > "
-                                  + TMP_SYNC_FILE_PATH;
+    std::string ntpdateDebugCmd = 
+        "output=$(ntpdate -d " + kServerNodeIP + " 2>&1) && "
+        "offset=$(echo $output | awk '{print $119}') && " 
+        "if [[ -z $offset ]]; "
+            "then offset=$(echo $output | awk '{print $115}'); "
+        "fi && echo $offset > " + TMP_SYNC_FILE_PATH;
     int32_t ntpdateDebugRet = std::system (ntpdateDebugCmd.c_str ());
 
     // 2) Handle ntpdate failure.

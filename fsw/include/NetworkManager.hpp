@@ -30,9 +30,14 @@
  *
  * #1 Due to a known issue with the Zynq-7000 series Gigabit Ethernet 
  *    Controller, messages can get stuck in the RX FIFO queue. They are unstuck
- *    when another Ethernet frame comes into the NIC. To prevent messages from
- *    getting stuck, after every message send a noop message is sent to an
- *    unused port to make sure the actual message does not stay stuck.
+ *    when another Ethernet frame comes into the NIC. To reduce the likelihood 
+ *    of messages getting stuck, after every message send a noop message is sent 
+ *    to an unused port to unstick the actual data message. While this has 
+ *    greatly reduced stuck messages, there are still some conditions under
+ *    which stuck messages have been seen. E.g. they are still present when
+ *    running the ProfileEthernetRTT scripts. They have not, however, been seen
+ *    again when using the flight software Control Node and Device Node 
+ *    networking logic. 
  *
  *                         ------- WARNINGS -------
  *
@@ -107,9 +112,7 @@ public:
     static const Time::TimeNs_t MAX_TIMEOUT_NS;
 
     /**
-     * Maximum size of a message being received. The recv system call can only
-     * support up to 1024 bytes. Above this maximum, sporadic delays up to
-     * multiple seconds are seen.
+     * Maximum size of a message being received.
      */
     static const uint16_t MAX_RECV_BYTES;
 

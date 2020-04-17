@@ -359,8 +359,25 @@ void DeviceNode::entry (NetworkManager::Config_t  kNmConfig,
     // 6) Init Network Manager. This is required for clock synchronization.
     Errors::exitOnError (NetworkManager::createNew (kNmConfig, gPDv, gPNm), 
                          "Network Manager failed to initialize.");
+   
+    // 7) Init FPGA session. Required to init Devices. Done before clock sync
+    //    since this step takes a second or so. If done after clock sync, 
+    //    Control Node will start executing loop before Device Node is ready.
+    //
+    NiFpga_Status status = NiFpga_Status_Success;
+    Errors::exitOnError (FPGASession::getSession (gFpgaSession, status), 
+                         "FPGA session failed to initialize.");
+    if (status != NiFpga_Status_Success)
+    {
+        Errors::exitOnError (E_FPGA_INIT, "FPGA status error.");
+    }
 
-    // 7) Synchronize to the Control Node's clock. This must be done before the 
+    // 8) Init Controllers and Devices.
+    Errors::exitOnError (kFInitCtrlsAndDevs (gPDv, gFpgaSession, gPCtrls, 
+                                             gPSensorDevs, gPActuatorDevs),
+                         "Controllers or Devices failed to initialize.");
+
+    // 9) Synchronize to the Control Node's clock. This must be done before the 
     //    Time Module is initialized.
     if (kSkipClockSync == false)
     {
@@ -370,23 +387,9 @@ void DeviceNode::entry (NetworkManager::Config_t  kNmConfig,
                              "Clock synchronization failed.");
     }
 
-    // 8) Init Time Module.
+    // 10) Init Time Module.
     Errors::exitOnError (Time::getInstance (gPTime), 
                          "Time Module failed to initialize.");
-    
-    // 9) Init FPGA session. Required to init Devices.
-    NiFpga_Status status = NiFpga_Status_Success;
-    Errors::exitOnError (FPGASession::getSession (gFpgaSession, status), 
-                         "FPGA session failed to initialize.");
-    if (status != NiFpga_Status_Success)
-    {
-        Errors::exitOnError (E_FPGA_INIT, "FPGA status error.");
-    }
-
-    // 10) Init Controllers and Devices.
-    Errors::exitOnError (kFInitCtrlsAndDevs (gPDv, gFpgaSession, gPCtrls, 
-                                             gPSensorDevs, gPActuatorDevs),
-                         "Controllers or Devices failed to initialize.");
 
     // 11) Create thread to run loop function.
     pthread_t loopThread;

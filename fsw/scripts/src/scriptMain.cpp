@@ -14,14 +14,22 @@
  * 4. Build and run the Script build configuration.
  */
 
-#include "ProfileCopyBuffer.hpp"
-#include "ProfileLock.hpp"
-#include "RecoveryIgniterTest.hpp"
-#include "ClockSyncTest_Client.hpp"
-#include "ClockSyncTest_Server.hpp"
-#include "ProfileFpgaApi.hpp"
-#include "ProfileEthernetRtt_ControlNode.hpp"
-#include "ProfileEthernetRtt_DeviceNode.hpp"
+//#include "ProfileCopyBuffer.hpp"
+//#include "ProfileLock.hpp"
+//#include "RecoveryIgniterTest.hpp"
+//#include "ClockSyncTest_Client.hpp"
+//#include "ClockSyncTest_Server.hpp"
+//#include "ProfileFpgaApi.hpp"
+//#include "ProfileEthernetRtt_ControlNode.hpp"
+//#include "ProfileEthernetRtt_DeviceNode.hpp"
+#include "ProfilePlatformComms_ControlNode.hpp"
+#include "ProfilePlatformComms_DeviceNode.hpp"
+//#include "ProfilePlatformJitter_ControlNode.hpp"
+//#include "ProfilePlatformJitter_DeviceNode.hpp"
+//#include "ProfilePlatformRxnTime_ControlNode.hpp"
+//#include "ProfilePlatformRxnTime_DeviceNode.hpp"
+//#include "ProfilePlatformOverhead_ControlNode.hpp"
+//#include "ProfilePlatformOverhead_DeviceNode.hpp"
 
 int main (int ac, char** av)
 {
@@ -31,6 +39,14 @@ int main (int ac, char** av)
     // ClockSyncTest_Client::main (ac, av);
     // ClockSyncTest_Server::main (ac, av);
     // ProfileFpgaApi::main (ac, av);
-     ProfileEthernetRtt_ControlNode::main (ac, av);
+    // ProfileEthernetRtt_ControlNode::main (ac, av);
     // ProfileEthernetRtt_DeviceNode::main (ac, av);
+    // ProfilePlatformComms_ControlNode::main (ac, av);
+     ProfilePlatformComms_DeviceNode::main (ac, av);
+    // ProfilePlatformJitter_ControlNode::main (ac, av);
+    // ProfilePlatformJitter_DeviceNode::main (ac, av);
+    // ProfilePlatformRxnTime_ControlNode::main (ac, av);
+    // ProfilePlatformRxnTime_DeviceNode::main (ac, av);
+    // ProfilePlatformOverhead_ControlNode::main (ac, av);
+    // ProfilePlatformOverhead_DeviceNode::main (ac, av);
 }

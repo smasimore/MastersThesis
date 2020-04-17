@@ -11,12 +11,6 @@
 #include "ProfileEthernetRtt_ControlNode.hpp"
 
 /**
- * If a serial or parallel measurement takes over this time, filter it out as it
- * is a spike. See ProfileEthernetRtt_Config.hpp for rationale.
- */
-static const Time::TimeNs_t MAX_ELAPSED_NS = 10 * Time::NS_IN_MS;
-
-/**
  * Global pointer to Network Manager.
  */
 static std::shared_ptr<NetworkManager> gPNm = nullptr;
@@ -125,7 +119,8 @@ static Time::TimeNs_t measureCommsTimeDebug (std::vector<uint8_t>& kReg0SendBuf,
 
 /**
  * Measure RTT for full flight network comms using a parallel implementation. 
- * All buffers sent from CN and then CN calls recvMult to receive in parallel.
+ * Uses recvBlock instead of recvMult since recvMult uses the entire timeout to
+ * receive potentially multiple messages per channel.
  *
  * @param  kReg0SendBuf  Buffer to send to DN0.
  * @param  kReg1SendBuf  Buffer to send to DN1.
@@ -145,17 +140,17 @@ static Time::TimeNs_t measureCommsTimeParallel (
     Time::TimeNs_t startNs = ProfileHelpers::getTimeNs ();
 
     // Send "Data Vector" to Ground and "Regions" to Device Nodes.
-    Errors::exitOnError (gPNm->send (NODE_GROUND,  kDvBuf),       "Send err");
     Errors::exitOnError (gPNm->send (NODE_DEVICE0, kReg0SendBuf), "Send err");
     Errors::exitOnError (gPNm->send (NODE_DEVICE1, kReg1SendBuf), "Send err");
     Errors::exitOnError (gPNm->send (NODE_DEVICE2, kReg2SendBuf), "Send err");
+    Errors::exitOnError (gPNm->send (NODE_GROUND,  kDvBuf),       "Send err");
 
-    std::vector<uint32_t> recvdMsgs (3);
-    Errors::exitOnError (gPNm->recvMult (
-                                     NetworkManager::MAX_TIMEOUT_NS,
-                                     {NODE_DEVICE0, NODE_DEVICE1, NODE_DEVICE2},
-                                     kRegRecvBufs, recvdMsgs),
-                         "recvMult err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE0, kRegRecvBufs[0]), 
+                         "Recv err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE1, kRegRecvBufs[1]), 
+                         "Recv err");
+    Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE2, kRegRecvBufs[2]), 
+                         "Recv err");
 
     Time::TimeNs_t endNs = ProfileHelpers::getTimeNs ();
 
@@ -194,17 +189,17 @@ static Time::TimeNs_t measureCommsTimeSerial (
     // Send "Region" to DN0 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE0, kReg0SendBuf), "Send err");
     Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE0, kReg0RecvBuf), 
-			             "Rx err");
+                         "Rx err");
 
     // Send "Region" to DN1 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE1, kReg1SendBuf), "Send err");
     Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE1, kReg1RecvBuf), 
-			             "Rx err");
+                         "Rx err");
 
     // Send "Region" to DN2 and wait for response "Region".
     Errors::exitOnError (gPNm->send (NODE_DEVICE2, kReg2SendBuf), "Send err");
     Errors::exitOnError (gPNm->recvBlock (NODE_DEVICE2, kReg2RecvBuf), 
-			             "Rx err");
+                         "Rx err");
     Time::TimeNs_t recvd2Ns = ProfileHelpers::getTimeNs ();
 
     Time::TimeNs_t elapsed = recvd2Ns - startNs;
@@ -244,31 +239,14 @@ void ProfileEthernetRtt_ControlNode::main (int, char**)
                          "ClockSync");
 
     // 5) Init buffers.
-    static std::vector<uint8_t> reg0SendBuf (REGION_SIZE_BYTES);
-    static std::vector<uint8_t> reg1SendBuf (REGION_SIZE_BYTES);
-    static std::vector<uint8_t> reg2SendBuf (REGION_SIZE_BYTES);
-    static std::vector<uint8_t> dvBuf       (REGION_SIZE_BYTES * 7);
+    static std::vector<uint8_t> reg0SendBuf;
+    static std::vector<uint8_t> reg1SendBuf;
+    static std::vector<uint8_t> reg2SendBuf;
+    static std::vector<uint8_t> dvBuf;
     static std::vector<std::vector<uint8_t>> regRecvBufs (3);
-    regRecvBufs[0].resize (REGION_SIZE_BYTES);
-    regRecvBufs[1].resize (REGION_SIZE_BYTES);
-    regRecvBufs[2].resize (REGION_SIZE_BYTES);
 
-    // 6) Randomly fill buffers.
-    std::generate (reg0SendBuf.begin(), reg0SendBuf.end(), 
-                   []() {return rand() % 100;});
-    std::generate (reg1SendBuf.begin(), reg1SendBuf.end(), 
-                   []() {return rand() % 100;});
-    std::generate (reg2SendBuf.begin(), reg2SendBuf.end(), 
-                   []() {return rand() % 100;});
-    std::generate (regRecvBufs[0].begin(), regRecvBufs[0].end(), 
-                   []() {return rand() % 100;});
-    std::generate (regRecvBufs[1].begin(), regRecvBufs[1].end(), 
-                   []() {return rand() % 100;});
-    std::generate (regRecvBufs[2].begin(), regRecvBufs[2].end(), 
-                   []() {return rand() % 100;});
-
+    // 6) Print test header.
     std::cout << "------ Results ------" << std::endl;
-    std::cout << "Region Size: " << REGION_SIZE_BYTES << std::endl;
     std::cout << "# of Debug Runs: " << NUM_DEBUG_RUNS << std::endl;
     std::cout << "# of Parallel Runs: " << NUM_PARALLEL_RUNS << std::endl;
     std::cout << "# of Serial Runs: " << NUM_SERIAL_RUNS << std::endl;
@@ -277,49 +255,75 @@ void ProfileEthernetRtt_ControlNode::main (int, char**)
     std::cout << "# of Stress Serial Runs: " << NUM_STRESS_SERIAL_RUNS 
         << std::endl;
 
-    // 7) Init result buffers.
-    static std::vector<Time::TimeNs_t> resultsDebBuf  (NUM_DEBUG_RUNS,    0);
-    static std::vector<Time::TimeNs_t> resultsParBuf  (NUM_PARALLEL_RUNS, 0);
-    static std::vector<Time::TimeNs_t> resultsSerBuf  (NUM_SERIAL_RUNS,   0);
-
-    // 8) Run Debug configuration.
-    std::string rttMsg;
-    if (NUM_DEBUG_RUNS > 0)
+    // 7) Loop over various buffer sizes and run test.
+    for (uint32_t bufSizeBytes : ProfileEthernetRtt_Config::mRegSizesBytes)
     {
-        for (uint32_t i = 0; i < NUM_DEBUG_RUNS; i++)
+        // 7a) Init result buffer used for parallel and serial runs.
+        static std::vector<Time::TimeNs_t> resultsDebBuf  (NUM_DEBUG_RUNS, 0);
+        static std::vector<Time::TimeNs_t> resultsParBuf  (NUM_PARALLEL_RUNS, 
+                                                           0);
+        static std::vector<Time::TimeNs_t> resultsSerBuf  (NUM_SERIAL_RUNS, 0);
+
+        // 7b) Resize bufs.
+        reg0SendBuf.resize    (bufSizeBytes);
+        reg1SendBuf.resize    (bufSizeBytes);
+        reg2SendBuf.resize    (bufSizeBytes);
+        regRecvBufs[0].resize (bufSizeBytes);
+        regRecvBufs[1].resize (bufSizeBytes);
+        regRecvBufs[2].resize (bufSizeBytes);
+        dvBuf.resize          (bufSizeBytes * 7);
+
+        // 7c) Randomly fill buffers.
+        std::generate (reg0SendBuf.begin(), reg0SendBuf.end(), 
+                       []() {return rand() % 100;});
+        std::generate (reg1SendBuf.begin(), reg1SendBuf.end(), 
+                       []() {return rand() % 100;});
+        std::generate (reg2SendBuf.begin(), reg2SendBuf.end(), 
+                       []() {return rand() % 100;});
+        std::generate (regRecvBufs[0].begin(), regRecvBufs[0].end(), 
+                       []() {return rand() % 100;});
+        std::generate (regRecvBufs[1].begin(), regRecvBufs[1].end(), 
+                       []() {return rand() % 100;});
+        std::generate (regRecvBufs[2].begin(), regRecvBufs[2].end(), 
+                       []() {return rand() % 100;});
+        
+        // 7d) Print size loop header.
+        std::cout << "\n------ " << (int) bufSizeBytes << " Bytes ------" 
+            << std::endl;
+
+        // 7e) Run Debug configuration.
+        std::string rttMsg;
+        if (NUM_DEBUG_RUNS > 0)
         {
-            resultsDebBuf[i] = measureCommsTimeDebug (reg0SendBuf,
-                                                      regRecvBufs[0]);
+            for (uint32_t i = 0; i < NUM_DEBUG_RUNS; i++)
+            {
+                resultsDebBuf[i] = measureCommsTimeDebug (reg0SendBuf,
+                                                          regRecvBufs[0]);
+            }
+            rttMsg = "Debug Mode";
+            ProfileHelpers::printVectorStats (resultsDebBuf,  rttMsg);
         }
-        rttMsg = "Debug Mode";
-        ProfileHelpers::printVectorStats (resultsDebBuf,  rttMsg);
-    }
 
-    // 9) Run Parallel configuration. Filter out spikes.
-    if (NUM_PARALLEL_RUNS > 0)
-    {
-        for (uint32_t i = 0; i < NUM_PARALLEL_RUNS; i++)
+        // 7f) Run Parallel configuration.
+        if (NUM_PARALLEL_RUNS > 0)
         {
-            do
+            for (uint32_t i = 0; i < NUM_PARALLEL_RUNS; i++)
             {
                 resultsParBuf[i]  = measureCommsTimeParallel (reg0SendBuf,
                                                               reg1SendBuf,
                                                               reg2SendBuf,
                                                               regRecvBufs,
                                                               dvBuf);
-            }
-            while (resultsParBuf[i] > MAX_ELAPSED_NS);
-        }
-        rttMsg = "Parallel Configuration";
-        ProfileHelpers::printVectorStats (resultsParBuf,  rttMsg);
-    }
 
-    // 10) Run Serial configuration.
-    if (NUM_SERIAL_RUNS > 0)
-    {
-        for (uint32_t i = 0; i < NUM_SERIAL_RUNS; i++)
+            }
+            rttMsg = "Parallel Configuration";
+            ProfileHelpers::printVectorStats (resultsParBuf,  rttMsg);
+        }
+
+        // 7g) Run Serial configuration.
+        if (NUM_SERIAL_RUNS > 0)
         {
-            do
+            for (uint32_t i = 0; i < NUM_SERIAL_RUNS; i++)
             {
                 resultsSerBuf[i]  = measureCommsTimeSerial (reg0SendBuf,
                                                             reg1SendBuf,
@@ -329,79 +333,90 @@ void ProfileEthernetRtt_ControlNode::main (int, char**)
                                                             regRecvBufs[2],
                                                             dvBuf);
             }
-            while (resultsParBuf[i] > MAX_ELAPSED_NS);
+            rttMsg = "\nSerial Configuration";
+            ProfileHelpers::printVectorStats (resultsSerBuf,  rttMsg);
         }
-        rttMsg = "\nSerial Configuration";
-        ProfileHelpers::printVectorStats (resultsSerBuf,  rttMsg);
-    }
 
-    // 11) Run stress testing of Parallel configuration.
-    uint32_t numOver2ms = 0;
-    uint32_t numOver100ms = 0;
-    uint32_t numOver1000ms = 0;
-    if (NUM_STRESS_PARALLEL_RUNS > 0)
-    {
-        std::cout << "\nStress Parallel Configuration" << std::endl;
-        for (uint32_t i = 0; i < NUM_STRESS_PARALLEL_RUNS; i++)
+        // 7h) Run stress testing of Parallel configuration.
+        uint32_t numOver2ms = 0;
+        uint32_t numOver100ms = 0;
+        uint32_t numOver1000ms = 0;
+        uint64_t maxNs = 0;
+        if (NUM_STRESS_PARALLEL_RUNS > 0)
         {
-            Time::TimeNs_t elapsed = measureCommsTimeParallel (reg0SendBuf,
-                                                               reg1SendBuf,
-                                                               reg2SendBuf,
-                                                               regRecvBufs,
-                                                               dvBuf);
-            if (elapsed > 2 * Time::NS_IN_MS)
+            std::cout << "\nStress Parallel Configuration" << std::endl;
+            for (uint32_t i = 0; i < NUM_STRESS_PARALLEL_RUNS; i++)
             {
-                std::cout << "Run: " << i << " Elapsed: " << elapsed <<
-                    std::endl;
-                numOver2ms++;
+                Time::TimeNs_t elapsed = measureCommsTimeParallel (reg0SendBuf,
+                                                                   reg1SendBuf,
+                                                                   reg2SendBuf,
+                                                                   regRecvBufs,
+                                                                   dvBuf);
+                if (elapsed > maxNs)
+                {
+                    maxNs = elapsed;
+                }
+                if (elapsed > 2 * Time::NS_IN_MS)
+                {
+                    std::cout << "Run: " << i << " Elapsed: " << elapsed <<
+                        std::endl;
+                    numOver2ms++;
+                }
+                if (elapsed > 100 * Time::NS_IN_MS)
+                {
+                    numOver100ms++;
+                }
+                if (elapsed > 1000 * Time::NS_IN_MS)
+                {
+                    numOver1000ms++;
+                }
             }
-            if (elapsed > 100 * Time::NS_IN_MS)
-            {
-                numOver100ms++;
-            }
-            if (elapsed > 1000 * Time::NS_IN_MS)
-            {
-                numOver1000ms++;
-            }
+            std::cout << "Max:             " << maxNs << std::endl;
+            std::cout << "Num Over 2ms:    " << numOver2ms << std::endl;
+            std::cout << "Num Over 100ms:  " << numOver100ms << std::endl;
+            std::cout << "Num Over 1000ms: " << numOver1000ms << std::endl;
         }
-        std::cout << "Num Over 2ms:    " << numOver2ms << std::endl;
-        std::cout << "Num Over 100ms:  " << numOver100ms << std::endl;
-        std::cout << "Num Over 1000ms: " << numOver1000ms << std::endl;
-    }
 
-    // 12) Run stress testing of Serial configuration.
-    if (NUM_STRESS_SERIAL_RUNS > 0)
-    {
-        numOver2ms = 0;
-        numOver100ms = 0;
-        numOver1000ms = 0;
-        std::cout << "\nStress Serial Configuration" << std::endl;
-        for (uint32_t i = 0; i < NUM_STRESS_SERIAL_RUNS; i++)
+        // 7i) Run stress testing of Serial configuration.
+        if (NUM_STRESS_SERIAL_RUNS > 0)
         {
-            Time::TimeNs_t elapsed = measureCommsTimeSerial (reg0SendBuf,
-                                                             reg1SendBuf,
-                                                             reg2SendBuf,
-                                                             regRecvBufs[0],
-                                                             regRecvBufs[1],
-                                                             regRecvBufs[2],
-                                                             dvBuf);
-            if (elapsed > 2 * Time::NS_IN_MS)
+            numOver2ms = 0;
+            numOver100ms = 0;
+            numOver1000ms = 0;
+            maxNs = 0;
+            std::cout << "\nStress Serial Configuration" << std::endl;
+            for (uint32_t i = 0; i < NUM_STRESS_SERIAL_RUNS; i++)
             {
-                std::cout << "Run: " << i << " Elapsed: " << elapsed <<
-                    std::endl;
-                numOver2ms++;
+                Time::TimeNs_t elapsed = measureCommsTimeSerial (reg0SendBuf,
+                                                                 reg1SendBuf,
+                                                                 reg2SendBuf,
+                                                                 regRecvBufs[0],
+                                                                 regRecvBufs[1],
+                                                                 regRecvBufs[2],
+                                                                 dvBuf);
+                if (elapsed > maxNs)
+                {
+                    maxNs = elapsed;
+                }
+                if (elapsed > 2 * Time::NS_IN_MS)
+                {
+                    std::cout << "Run: " << i << " Elapsed: " << elapsed <<
+                        std::endl;
+                    numOver2ms++;
+                }
+                if (elapsed > 100 * Time::NS_IN_MS)
+                {
+                    numOver100ms++;
+                }
+                if (elapsed > 1000 * Time::NS_IN_MS)
+                {
+                    numOver1000ms++;
+                }
             }
-            if (elapsed > 100 * Time::NS_IN_MS)
-            {
-                numOver100ms++;
-            }
-            if (elapsed > 1000 * Time::NS_IN_MS)
-            {
-                numOver1000ms++;
-            }
+            std::cout << "Max:             " << maxNs << std::endl;
+            std::cout << "Num Over 2ms:    " << numOver2ms << std::endl;
+            std::cout << "Num Over 100ms:  " << numOver100ms << std::endl;
+            std::cout << "Num Over 1000ms: " << numOver1000ms << std::endl;
         }
-        std::cout << "Num Over 2ms:    " << numOver2ms << std::endl;
-        std::cout << "Num Over 100ms:  " << numOver100ms << std::endl;
-        std::cout << "Num Over 1000ms: " << numOver1000ms << std::endl;
     }
 }

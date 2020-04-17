@@ -65,7 +65,7 @@ Error_t NetworkManager::send (Node_t kNode, std::vector<uint8_t>& kBuf)
     destAddr.sin_family = AF_INET;
     destAddr.sin_port = htons (channel.toPort);
     destAddr.sin_addr.s_addr = htonl (channel.toIP);
-        
+
     // 4) Send message with no flags (0).
     int32_t numBytesSent = sendto (channel.socketFd, kBuf.data (), kBuf.size (), 
                                    0, (const struct sockaddr*) &destAddr, 

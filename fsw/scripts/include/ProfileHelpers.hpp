@@ -28,7 +28,8 @@ namespace ProfileHelpers
     } ProcessStats_t;
 
     /**
-     * Set current thread to have minimum FSW thread priority and only use core 0.
+     * Set current thread to have minimum FSW thread priority and only use core 
+     * 1.
      */
     void setThreadPriAndAffinity ();
 
@@ -49,9 +50,21 @@ namespace ProfileHelpers
     void printProcessStats ();
 
     /**
-     * Calculate and print avg, min, and max.
+     * Calculate and print avg, min, and max for TimeNs_t.
+     *
+     * @param  kResults  Vector of values to print stats for.
+     * @param  kHeader   Header to print before stats.
      */
-    void printVectorStats (std::vector<uint64_t>& results, std::string header);
+    void printVectorStats (std::vector<Time::TimeNs_t>& kResults, 
+                           std::string kHeader);
+
+    /**
+     * Calculate and print avg, min, and max for int64_t.
+     *
+     * @param  kResults  Vector of values to print stats for.
+     * @param  kHeader   Header to print before stats.
+     */
+    void printVectorStats (std::vector<int64_t>& kResults, std::string kHeader);
 
     /**
      * Get stats for all processes with PID <= 2000.
@@ -62,10 +75,10 @@ namespace ProfileHelpers
 
     /**
      * Print processes that ran during an event.
-	 *
-	 * @param  kPre      PID to ProcessStats_t map collected before event.
-	 * @param  kPost     PID to ProcessStats_t map collected after event.
-	 * @param  kCpupSet  Set of relevant CPU's.
+     *
+     * @param  kPre      PID to ProcessStats_t map collected before event.
+     * @param  kPost     PID to ProcessStats_t map collected after event.
+     * @param  kCpupSet  Set of relevant CPU's.
      */
     void printActiveProcesses (
                     std::map<uint32_t, ProfileHelpers::ProcessStats_t> kPre,

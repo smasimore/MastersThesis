@@ -4,6 +4,23 @@
 
 #include "ProfileEthernetRtt_Config.hpp"
 
+std::vector<uint32_t> ProfileEthernetRtt_Config::mRegSizesBytes =
+{
+    1 << 5,  // 32
+    1 << 6,  // 64
+    1 << 7,  // 128
+    1 << 8,  // 256
+    1 << 9,  // 512
+    600,
+    700,
+    800,
+    900,
+    1 << 10, // 1024
+    1472,    // Max UDP packet size.
+    1473,    // Max UDP packet size + 1.
+    1 << 11, // 2048
+};
+
 DataVector::Config_t ProfileEthernetRtt_Config::mDvConfig =
 {
     {DV_REG_TEST0,

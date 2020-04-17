@@ -34,39 +34,52 @@ void ProfileEthernetRtt_DeviceNode::main (int, char**)
     Errors::exitOnError (ClockSync::syncClient (pNm, NODE_CONTROL, 
                                                 CONTROL_NODE_IP), 
                          "ClockSync");
-
-    // 5) Initialize buffer.
-    std::vector<uint8_t> buf (REGION_SIZE_BYTES);
-
-    // 6) Debug runs.
-    for (uint32_t j = 0; j < NUM_DEBUG_RUNS; j++)
+    
+    // 5) Initialize buffers.
+    uint32_t numBufSizes = ProfileEthernetRtt_Config::mRegSizesBytes.size ();
+    std::vector<std::vector<uint8_t>> bufVec (numBufSizes);
+    for (uint8_t i = 0; i < numBufSizes; i++)
     {
-        static Time::TimeNs_t prevSentNs = 0;
-
-        // Receive "Region" from DN.
-        Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, buf), "Recv err");
-
-        // Get time message received and store that time and previous send
-        // time in response buffer.
-        Time::TimeNs_t recvdNs = ProfileHelpers::getTimeNs();
-        std::memcpy (&buf[0], &prevSentNs, sizeof (prevSentNs));
-        std::memcpy (&buf[sizeof (Time::TimeNs_t)], 
-                     &recvdNs, sizeof (recvdNs));
-
-        // Send "Region" response to DN.
-        Errors::exitOnError (pNm->send (NODE_CONTROL, buf), "Send err");
-
-        // Store send time.
-        prevSentNs = ProfileHelpers::getTimeNs();
+        bufVec[i].resize (ProfileEthernetRtt_Config::mRegSizesBytes[i]);
     }
 
-    // 7) For the rest of the script, loop forever.
-    while (1)
+    // 6) Loop over buffer sizes and num runs.
+    for (uint8_t i = 0; i < numBufSizes; i++)
     {
-        // Receive "Region" from DN.
-        Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, buf), "Recv err");
+        // 6a) Debug runs.
+        for (uint32_t j = 0; j < NUM_DEBUG_RUNS; j++)
+        {
+            static Time::TimeNs_t prevSentNs = 0;
 
-        // Send "Region" response to DN.
-        Errors::exitOnError (pNm->send (NODE_CONTROL, buf), "Send err");
+            // Receive "Region" from DN.
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
+                                 "Recv err");
+
+            // Get time message received and store that time and previous send
+            // time in response buffer.
+            Time::TimeNs_t recvdNs = ProfileHelpers::getTimeNs();
+            std::memcpy (&bufVec[i][0], &prevSentNs, sizeof (prevSentNs));
+            std::memcpy (&bufVec[i][sizeof (Time::TimeNs_t)], 
+                         &recvdNs, sizeof (recvdNs));
+
+            // Send "Region" response to DN.
+            Errors::exitOnError (pNm->send (NODE_CONTROL, bufVec[i]),
+                                 "Send err");
+            // Store send time.
+            prevSentNs = ProfileHelpers::getTimeNs();
+        }
+
+        // 6b) Parallel, Serial, and Stress Runs.
+        uint32_t numRuns = NUM_PARALLEL_RUNS + NUM_SERIAL_RUNS + 
+                           NUM_STRESS_PARALLEL_RUNS + NUM_STRESS_SERIAL_RUNS;
+        for (uint32_t j = 0; j < numRuns; j++)
+        {
+            // Receive "Region" from DN.
+            Errors::exitOnError (pNm->recvBlock (NODE_CONTROL, bufVec[i]),
+                                 "Recv err");
+            // Send "Region" response to DN.
+            Errors::exitOnError (pNm->send (NODE_CONTROL, bufVec[i]),
+                                 "Send err");
+        }
     }
 }

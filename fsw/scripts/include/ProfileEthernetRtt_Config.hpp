@@ -13,15 +13,6 @@
  *     3) Control Node receives a Region in response from each of the 3 Device
  *        Nodes.
  *
- * Due to a known issue with the Zynq-7000 series Gigabit Ethernet Controller,
- * there are periodic spikes in the time it takes to receive a message. This is
- * because a message can get stuck in the RX FIFO queue, and will only get
- * unstuck when another Ethernet frame comes in. In our flight software, the
- * Control Node will timeout when this happens and the stuck message will come
- * in the next loop. In these profiling scripts, we filter out these spikes as
- * the purpose of this script is to measure the time it takes for the serial vs.
- * parallel comms to complete to inform the Control Node timeout constants.
- *
  * The experiment has 5 different configurations, which can be turned off by 
  * setting their NUM_x_RUNS macro to 0. Configurations 2-5 can be run at the
  * same time, and configuration 1 must be run alone.
@@ -33,17 +24,12 @@
  *
  *     #2 NUM_PARALLEL_RUNS: Measures time to do a complete round of flight
  *        network communications, with all sends occurring first and then a call
- *        to recvMult to receive the responses. Spikes are filtered out as the
- *        purpose of this configuration is to measure the time it takes for the 
- *        nominal parallel comms to take in comparing the serial vs. parallel 
- *        implementations. Max 10,000 runs. 
+ *        to recvMult to receive the responses. Max 10,000 runs. 
  *
  *     #3 NUM_SERIAL_RUNS: Measures time to do a complete round of flight
  *        network communications, with each recv call occurring right after the 
- *        relevant send call (besides to Ground, which expects no response). 
- *        Spikes are filtered out as the purpose of this configuration is to 
- *        measure the time it takes for the nominal serial comms to take in 
- *        comparing the serial vs. parallel implementations. Max 10,000 runs. 
+ *        relevant send call (besides to Ground, which expects no response). Max
+ *        10,000 runs. 
  *
  *     #4 NUM_STRESS_PARALLEL_RUNS: Stress testing of the parallel design. 
  *        Because each run time is not stored like in #2, can run the complete
@@ -67,7 +53,7 @@
  *                       ---- HARDWARE SETUP ---- 
  * 
  * 1) Connect four sbRIO's to the switch.
- * 2) Set the IP and REGION_SIZE_BYTES macros.
+ * 2) Set the IP macros.
  * 3) Compile Control Node binary.
  * 4) Compile Device Node binaries, with relevant device node set in 
  *    DEVICE_NODE_TO_COMPILE macro.
@@ -88,10 +74,9 @@
 #define DEVICE_NODE_TO_COMPILE   NODE_DEVICE0
 #define NUM_DEBUG_RUNS           0
 #define NUM_PARALLEL_RUNS        10000
-#define NUM_SERIAL_RUNS          10000
-#define NUM_STRESS_PARALLEL_RUNS 0
+#define NUM_SERIAL_RUNS          0
+#define NUM_STRESS_PARALLEL_RUNS 1000000
 #define NUM_STRESS_SERIAL_RUNS   0
-#define REGION_SIZE_BYTES        1024
 #define DEVICE_NODE0_IP          "10.0.0.1"
 #define DEVICE_NODE1_IP          "10.0.0.2"
 #define DEVICE_NODE2_IP          "10.0.0.3"
@@ -100,6 +85,11 @@
 
 namespace ProfileEthernetRtt_Config
 {
+
+    /**
+     * Data Vector Region sizes to test.
+     */
+    extern std::vector<uint32_t> mRegSizesBytes;
 
     /**
      * Generic Data Vector config to satisfy Network Manager init.

@@ -52,7 +52,7 @@
 }
 
 /**
- * Create a thread to simulate the Device and Ground nodes. 
+ * Create a thread to simulate the Device and Ground nodes.
  *
  * @param  kSyncSuccess  Whether or not to successfully clock sync with the CN.
  * @param  kEnterLoop    Whether or not to enter node simulation loop.
@@ -65,7 +65,8 @@
     CHECK_SUCCESS (pTm->createThread (thread, gFNodesSim, &args,               \
                                       sizeof (args),                           \
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,  \
-                                      ThreadManager::Affinity_t::CORE_0));
+                                      ThreadManager::Affinity_t::CORE_0));     \
+    TestHelpers::sleepMs (10);
 
 /************************** CONTROL NODE CONFIGS ******************************/
 
@@ -107,64 +108,64 @@ static DataVector::Config_t gDvConfig =
 {
 ///////////////////////////////// DV_REG_CN ////////////////////////////////////
     {DV_REG_CN,
-    // TYPE          ELEM                              INITIAL_VAL
-    {DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_COUNT,            0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_ERROR_COUNT,           0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_TX_COUNT,          0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_RX_COUNT,          0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN0_RX_MISS_COUNT,        0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN1_RX_MISS_COUNT,        0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN2_RX_MISS_COUNT,        0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_DEADLINE_MISSES,  0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CN_COMMS_DEADLINE_MISSES, 0            ),
-     DV_ADD_UINT8  ( DV_ELEM_CMD,                      CMD_NONE     ),
-     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM,        0            ),
-     DV_ADD_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,        MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,          MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_MISS_CTRL_MODE,           MODE_SAFED   ),
-     DV_ADD_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE,    MODE_SAFED   ),
-     DV_ADD_UINT64 ( DV_ELEM_CN_TIME_NS,               0            ),
-     DV_ADD_UINT32 ( DV_ELEM_STATE,                    STATE_A      ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST6,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL
+    {DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_COUNT,                0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_ERROR_COUNT,               0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_TX_COUNT,              0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_MSG_RX_COUNT,              0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN0_RX_MISS_COUNT,            0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN1_RX_MISS_COUNT,            0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN2_RX_MISS_COUNT,            0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_LOOP_DEADLINE_MISS_COUNT,  0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CN_COMMS_DEADLINE_MISS_COUNT, 0            ),
+     DV_ADD_UINT8  ( DV_ELEM_CMD,                          CMD_NONE     ),
+     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM,            0            ),
+     DV_ADD_UINT8  ( DV_ELEM_DN_RESP_CTRL_MODE,            MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_ERROR_CTRL_MODE,              MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_MISS_CTRL_MODE,               MODE_SAFED   ),
+     DV_ADD_UINT8  ( DV_ELEM_THREAD_KILL_CTRL_MODE,        MODE_SAFED   ),
+     DV_ADD_UINT64 ( DV_ELEM_CN_TIME_NS,                   0            ),
+     DV_ADD_UINT32 ( DV_ELEM_STATE,                        STATE_A      ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST6,                        false        )}},
 
     {DV_REG_CN_TO_DN0,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST0,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST0,                        false        )}},
 
     {DV_REG_CN_TO_DN1,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST1,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST1,                        false        )}},
 
     {DV_REG_CN_TO_DN2,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_BOOL   ( DV_ELEM_TEST2,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_BOOL   ( DV_ELEM_TEST2,                        false        )}},
 
     {DV_REG_DN0_TO_CN,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_TX_COUNT,         0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_RX_COUNT,         0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST3,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_TX_COUNT,             0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN0_MSG_RX_COUNT,             0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST3,                        false        )}},
 
     {DV_REG_DN1_TO_CN,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_TX_COUNT,         0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_RX_COUNT,         0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST4,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_TX_COUNT,             0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN1_MSG_RX_COUNT,             0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST4,                        false        )}},
 
     {DV_REG_DN2_TO_CN,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_TX_COUNT,         0            ),
-     DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_RX_COUNT,         0            ),
-     DV_ADD_BOOL   ( DV_ELEM_TEST5,                    false        )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_TX_COUNT,             0            ),
+     DV_ADD_UINT32 ( DV_ELEM_DN2_MSG_RX_COUNT,             0            ),
+     DV_ADD_BOOL   ( DV_ELEM_TEST5,                        false        )}},
 
     {DV_REG_GROUND_TO_CN,
-    // TYPE          ELEM                              INITIAL_VAL  
-    {DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_TX_COUNT,      0            ),
-     DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_RX_COUNT,      0            ),
-     DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,                  CMD_NONE     ),
-     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,         0            ),
-     DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,           DV_ELEM_LAST ),
-     DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,            0            )}},
+    // TYPE          ELEM                                  INITIAL_VAL  
+    {DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_TX_COUNT,          0            ),
+     DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_RX_COUNT,          0            ),
+     DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,                      CMD_NONE     ),
+     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,             0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,               DV_ELEM_LAST ),
+     DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,                0            )}},
 };
 
 /**
@@ -252,7 +253,7 @@ static StateMachine::Config_t gSmConfig =
         {ACT_CREATE_UINT8  ( DV_ELEM_MISS_CTRL_MODE,        MODE_ENABLED )}}},
     //
     // TRANSITIONS
-    {TR_CREATE_UINT32  ( DV_ELEM_CN_LOOP_DEADLINE_MISSES,  CMP_EQUALS,  1,  STATE_E )}},
+    {TR_CREATE_UINT32  ( DV_ELEM_CN_LOOP_DEADLINE_MISS_COUNT,  CMP_EQUALS,  1,  STATE_E )}},
 
 
     //////////////////////////////// STATE_E ///////////////////////////////////
@@ -998,13 +999,13 @@ TEST (ControlNode, Success)
     // Expect 1 loop deadline misses due to DeadlineMissController. (1 in 
     // STATE_D).
     uint32_t numLoopDeadlineMisses = 0;
-    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_LOOP_DEADLINE_MISSES, 
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_LOOP_DEADLINE_MISS_COUNT, 
                                     numLoopDeadlineMisses));
     CHECK_EQUAL (1, numLoopDeadlineMisses);
 
     // Expect no comms deadline misses.
     uint32_t numCommsDeadlineMisses = 0;
-    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_COMMS_DEADLINE_MISSES, 
+    CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_CN_COMMS_DEADLINE_MISS_COUNT, 
                                     numCommsDeadlineMisses));
     CHECK_EQUAL (0, numCommsDeadlineMisses);
 

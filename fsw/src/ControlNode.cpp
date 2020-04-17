@@ -22,7 +22,7 @@ static const std::vector<Node_t> DEVICE_NODES =
 /**
  * Time per loop available to the communications step.
  */
-static const Time::TimeNs_t COMMUNICATIONS_TIME_SLICE_NS = 2.2 * Time::NS_IN_MS;
+static const Time::TimeNs_t COMMUNICATIONS_TIME_SLICE_NS = 2 * Time::NS_IN_MS;
 
 /**
  * Used to calculate the recvMult timeout. The timeout must leave enough time in
@@ -106,7 +106,7 @@ static Error_t periodicErrorHandler (Error_t kError)
     if (kError == E_MISSED_SCHEDULER_DEADLINE)
     {
         Errors::incrementOnError (gPDv->increment (
-                                           DV_ELEM_CN_LOOP_DEADLINE_MISSES),
+                                           DV_ELEM_CN_LOOP_DEADLINE_MISS_COUNT),
                                  gPDv, DV_ELEM_CN_ERROR_COUNT);
         return E_SUCCESS;
     }
@@ -192,8 +192,8 @@ static Error_t verifyDvConfig (DataVector::Config_t& kDvConfig)
         DV_ELEM_DN1_RX_MISS_COUNT,
         DV_ELEM_DN2_RX_MISS_COUNT,
         DV_ELEM_CN_TIME_NS,
-        DV_ELEM_CN_LOOP_DEADLINE_MISSES,
-        DV_ELEM_CN_COMMS_DEADLINE_MISSES,
+        DV_ELEM_CN_LOOP_DEADLINE_MISS_COUNT,
+        DV_ELEM_CN_COMMS_DEADLINE_MISS_COUNT,
     };
 
     // Loop over regions and elements, removing them from the required sets.
@@ -420,7 +420,7 @@ static Error_t sendAndRecvDataVectorData ()
     if (currTimeNs > deadlineTimeNs)
     {
         // Log deadline miss.
-        if (gPDv->increment (DV_ELEM_CN_COMMS_DEADLINE_MISSES) != E_SUCCESS)
+        if (gPDv->increment (DV_ELEM_CN_COMMS_DEADLINE_MISS_COUNT) != E_SUCCESS)
         {
             return E_DATA_VECTOR_WRITE;
         }
