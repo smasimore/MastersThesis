@@ -394,7 +394,7 @@ void DeviceNode::entry (NetworkManager::Config_t  kNmConfig,
     Errors::exitOnError (pTm->createThread (
                                       loopThread, fLoop, nullptr, 0,
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                      ThreadManager::Affinity_t::CORE_0),
+                                      ThreadManager::Affinity_t::CORE_1),
                          "Failed to start thread.");
 
     // 12) Wait for thread and check return status. On success, this will cause

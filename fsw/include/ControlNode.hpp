@@ -71,6 +71,9 @@
  *        avoid hardcoding which Controllers are initialized in the entry 
  *        function, a controller initialization function must be provided by the
  *        caller.
+ *
+ *     #3 The loop thread is run on CPU 1 to avoid being interrupted by the 
+ *        kernel's Ethernet thread, which runs on CPU 0.
  */
 
 #ifndef CONTROL_NODE_HPP

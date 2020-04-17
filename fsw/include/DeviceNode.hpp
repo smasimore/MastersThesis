@@ -54,6 +54,9 @@
  *        reaction time are intended to be run on Device Nodes. High-level
  *        Controllers that do not require as quick of a reaction time (e.g. GNC 
  *        Controller) are intended to run on the Control Node.
+ *
+ *     #4 The loop thread is run on CPU 1 to avoid being interrupted by the 
+ *        kernel's Ethernet thread, which runs on CPU 0.
  */
 
 #ifndef DEVICE_NODE_HPP

@@ -72,7 +72,7 @@
     CHECK_SUCCESS (pTm->createThread (thread, gFControlNodeSim, &args,         \
                                       sizeof (args),                           \
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,  \
-                                      ThreadManager::Affinity_t::CORE_1));
+                                      ThreadManager::Affinity_t::CORE_0));
 
 /**
  * Check state of "Control Node" Data Vector.

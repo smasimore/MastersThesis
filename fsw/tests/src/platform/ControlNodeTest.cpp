@@ -65,7 +65,7 @@
     CHECK_SUCCESS (pTm->createThread (thread, gFNodesSim, &args,               \
                                       sizeof (args),                           \
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,  \
-                                      ThreadManager::Affinity_t::CORE_1));
+                                      ThreadManager::Affinity_t::CORE_0));
 
 /************************** CONTROL NODE CONFIGS ******************************/
 

@@ -579,7 +579,7 @@ void ControlNode::entry (NetworkManager::Config_t kNmConfig,
     Errors::exitOnError (pTm->createPeriodicThread (
                                       loopThread, fLoop, nullptr, 0,
                                       ThreadManager::MIN_NEW_THREAD_PRIORITY,
-                                      ThreadManager::Affinity_t::CORE_0,
+                                      ThreadManager::Affinity_t::CORE_1,
                                       LOOP_PERIOD_MS, fError),
                          "Failed to start periodic thread.");
 
