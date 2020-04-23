@@ -1026,6 +1026,50 @@ enum DataVectorElement_t : uint32_t
     DV_ELEM_LAST_CMD_REQ_NUM,
     DV_ELEM_LAST_CMD_PROC_NUM,
 
+    /* Deployment Event Command Flags */
+    DV_ELEM_DEPLOY_NCONE_CMD,
+    DV_ELEM_DEPLOY_DROG0_CMD,
+    DV_ELEM_DEPLOY_DROG1_CMD,
+    DV_ELEM_DEPLOY_MAIN_CMD,
+
+    /* Deployment Event Timestamp Flags */
+    DV_ELEM_DEPLOY_NCONE_TIME_NS,
+    DV_ELEM_DEPLOY_DROG0_TIME_NS,
+    DV_ELEM_DEPLOY_DROG1_TIME_NS,
+    DV_ELEM_DEPLOY_MAIN_TIME_NS,
+
+    /* Recovery Igniter Controller Modes */
+    DV_ELEM_REC_CTRL_NCONE_MODE,
+    DV_ELEM_REC_CTRL_DROG0_MODE,
+    DV_ELEM_REC_CTRL_DROG1_MODE,
+    DV_ELEM_REC_CTRL_MAIN_MODE,
+
+    /* Primary Igniter DIO Devices Control/Feedback */
+    DV_ELEM_NCONE_IGN0_CTRL,
+    DV_ELEM_NCONE_IGN0_FB,
+    DV_ELEM_DROG0_IGN0_CTRL,
+    DV_ELEM_DROG0_IGN0_FB,
+    DV_ELEM_DROG1_IGN0_CTRL,
+    DV_ELEM_DROG1_IGN0_FB,
+    DV_ELEM_MAIN_IGN0_CTRL,
+    DV_ELEM_MAIN_IGN0_FB,
+
+    /* Redundant Igniter DIO Devices Control/Feedback */
+    DV_ELEM_NCONE_IGN1_CTRL,
+    DV_ELEM_NCONE_IGN1_FB,
+    DV_ELEM_DROG0_IGN1_CTRL,
+    DV_ELEM_DROG0_IGN1_FB,
+    DV_ELEM_DROG1_IGN1_CTRL,
+    DV_ELEM_DROG1_IGN1_FB,
+    DV_ELEM_MAIN_IGN1_CTRL,
+    DV_ELEM_MAIN_IGN1_FB,
+
+    /* Recovery System Armed */
+    DV_ELEM_RECOVERY_ARMED,
+
+    /* Recovery Controller Mode */
+    DV_ELEM_REC_CTRL_MODE,
+
     DV_ELEM_LAST
 };
 
