@@ -14,6 +14,7 @@
 #include "ThreadManager.hpp"
 #include "DataVector.hpp"
 #include "Log.hpp"
+#include "GNCUtils.hpp"
 
 #include "CppUTest/TestHarness.h"
 
@@ -51,6 +52,24 @@
         std::string macroFailStr = "Call produced error " +                    \
                                    std::to_string (macroErr) + " when " +      \
                                    std::to_string (err) + " was expected";     \
+        FAIL (macroFailStr.c_str());                                           \
+    }                                                                          \
+}
+
+/**
+ * Fails the ongoing test if two numbers are not weakly approximately equal. See
+ * GNCUtils::weakApprox for definition of approximate.
+ *
+ * @param   kLhs LHS number.
+ * @param   kRhs RHS number.
+ */
+#define CHECK_WAPPROX(kLhs, kRhs)                                              \
+{                                                                              \
+    if (!GNCUtils::weakApprox (kLhs, kRhs))                                    \
+    {                                                                          \
+        std::string macroFailStr = std::to_string (kLhs) +                     \
+                                   " is not approximately " +                  \
+                                   std::to_string (kRhs);                      \
         FAIL (macroFailStr.c_str());                                           \
     }                                                                          \
 }

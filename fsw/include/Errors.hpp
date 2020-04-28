@@ -157,6 +157,9 @@ enum Error_t : uint32_t
     /* Command Handler */
     E_INVALID_CMD = 200,
 
+    /* GNC */
+    E_NONNORMAL_QUATERNION = 220,
+
     /* Scripts */
     E_WRONG_ARGC,
     E_INVALID_ARGUMENT,
