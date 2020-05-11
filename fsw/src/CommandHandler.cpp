@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "CommandHandler.hpp"
 
 /*************************** PUBLIC FUNCTIONS *********************************/
@@ -19,7 +17,7 @@ Error_t CommandHandler::createNew (Config_t kConf,
         kPDv->elementExists (kConf.cmdReq)         != E_SUCCESS ||
         kPDv->elementExists (kConf.cmdWriteElem)   != E_SUCCESS ||
         kPDv->elementExists (kConf.cmdWriteVal)    != E_SUCCESS ||
-        kPDv->elementExists (kConf.lastCmdReqNum)  != E_SUCCESS ||
+        kPDv->elementExists (kConf.cmdReqNum)  != E_SUCCESS ||
         kPDv->elementExists (kConf.lastCmdProcNum) != E_SUCCESS)
     {
         return E_INVALID_ELEM;
@@ -36,7 +34,7 @@ Error_t CommandHandler::createNew (Config_t kConf,
         kPDv->getElementType (kConf.cmdReq, cmdReqType)         != E_SUCCESS ||
         kPDv->getElementType (kConf.cmdWriteElem, cmdElemType)  != E_SUCCESS ||
         kPDv->getElementType (kConf.cmdWriteVal, cmdValType)    != E_SUCCESS ||
-        kPDv->getElementType (kConf.lastCmdReqNum, lastReqType) != E_SUCCESS ||
+        kPDv->getElementType (kConf.cmdReqNum, lastReqType) != E_SUCCESS ||
         kPDv->getElementType (kConf.lastCmdProcNum, lastPrType) != E_SUCCESS)
     {
         return E_DATA_VECTOR_READ;
@@ -61,15 +59,15 @@ Error_t CommandHandler::run ()
 {
     // 1) Read command request and last command request number from GROUND, as
     //    well as last command processed number.
-    uint8_t cmdReq          = CMD_NONE;
+    uint8_t  cmdReq         = CMD_NONE;
     uint32_t cmdElem        = DV_ELEM_LAST;
     uint64_t cmdVal         = 0;
-    uint32_t lastCmdReqNum  = 0;
+    uint32_t cmdReqNum      = 0;
     uint32_t lastCmdProcNum = 0;
     if (mPDv->read (mConfig.cmdReq,         cmdReq)         != E_SUCCESS ||
         mPDv->read (mConfig.cmdWriteElem,   cmdElem)        != E_SUCCESS ||
         mPDv->read (mConfig.cmdWriteVal,    cmdVal)         != E_SUCCESS ||
-        mPDv->read (mConfig.lastCmdReqNum,  lastCmdReqNum)  != E_SUCCESS ||
+        mPDv->read (mConfig.cmdReqNum,      cmdReqNum)      != E_SUCCESS ||
         mPDv->read (mConfig.lastCmdProcNum, lastCmdProcNum) != E_SUCCESS)
     {
         return E_DATA_VECTOR_READ;
@@ -82,12 +80,12 @@ Error_t CommandHandler::run ()
     }
 
     // 3) If received a new command, handle. Otherwise, clear current command.
-    if (lastCmdProcNum < lastCmdReqNum)
+    if (lastCmdProcNum < cmdReqNum)
     {
         // Update last command processed number. This ensures the next time the
         // handler is called, the command will be cleared (unless a new command
         // is requested).
-        if (mPDv->write (mConfig.lastCmdProcNum, lastCmdReqNum) != E_SUCCESS)
+        if (mPDv->write (mConfig.lastCmdProcNum, cmdReqNum) != E_SUCCESS)
         {
             return E_DATA_VECTOR_WRITE;
         }    

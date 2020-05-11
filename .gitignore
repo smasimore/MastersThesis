@@ -64,3 +64,5 @@ libs/include/
 .ycm_extra_conf.py
 /Script/
 /Test_Platform/
+/Test_FPGA/
+/Script_x86/

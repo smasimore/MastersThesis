@@ -21,34 +21,34 @@
  * @param  kCmdReq          Expected value in cmd req element.
  * @param  kCmdWriteElem    Expected value in cmd write elem element.
  * @param  kCmdWriteVal     Expected value in cmd write val element.
- * @param  kLastCmdReqNum   Expected value in last cmd req element.
+ * @param  kCmdReqNum       Expected value in last cmd req element.
  * @param  kLastCmdProcNum  Expected value in last cmd proc element.
  * @param  kTest0           Expected value in test0 element.
  * @param  kTestActVar0     Var to store test0 value. Necessary since type is
  *                          dependent on test case.
  */
-#define CHECK_DV(kCmd, kCmdReq, kCmdWriteElem, kCmdWriteVal, kLastCmdReqNum,   \
+#define CHECK_DV(kCmd, kCmdReq, kCmdWriteElem, kCmdWriteVal, kCmdReqNum,       \
                  kLastCmdProcNum, kTest0, kTest0ActVar)                        \
 {                                                                              \
     uint8_t cmdAct = CMD_LAST;                                                 \
     uint8_t cmdReqAct = CMD_LAST;                                              \
     uint32_t cmdWriteElemAct = DV_ELEM_LAST;                                   \
     uint64_t cmdWriteValAct = 0;                                               \
-    uint32_t lastCmdReqNumAct = 0;                                             \
+    uint32_t cmdReqNumAct = 0;                                                 \
     uint32_t lastCmdProcNumAct = 0;                                            \
     kTest0ActVar = 0;                                                          \
     CHECK_SUCCESS (pDv->read (DV_ELEM_CMD, cmdAct));                           \
     CHECK_SUCCESS (pDv->read (DV_ELEM_CMD_REQ, cmdReqAct));                    \
     CHECK_SUCCESS (pDv->read (DV_ELEM_CMD_WRITE_ELEM, cmdWriteElemAct));       \
     CHECK_SUCCESS (pDv->read (DV_ELEM_CMD_WRITE_VAL, cmdWriteValAct));         \
-    CHECK_SUCCESS (pDv->read (DV_ELEM_LAST_CMD_REQ_NUM, lastCmdReqNumAct));    \
+    CHECK_SUCCESS (pDv->read (DV_ELEM_CMD_REQ_NUM, cmdReqNumAct));             \
     CHECK_SUCCESS (pDv->read (DV_ELEM_LAST_CMD_PROC_NUM, lastCmdProcNumAct));  \
     CHECK_SUCCESS (pDv->read (DV_ELEM_TEST0, kTest0ActVar));                   \
     CHECK_EQUAL (kCmd, cmdAct);                                                \
     CHECK_EQUAL (kCmdReq, cmdReqAct);                                          \
     CHECK_EQUAL (kCmdWriteElem, cmdWriteElemAct);                              \
     CHECK_EQUAL (kCmdWriteVal, cmdWriteValAct);                                \
-    CHECK_EQUAL (kLastCmdReqNum, lastCmdReqNumAct);                            \
+    CHECK_EQUAL (kCmdReqNum, cmdReqNumAct);                                    \
     CHECK_EQUAL (kLastCmdProcNum, lastCmdProcNumAct);                          \
     CHECK_EQUAL (kTest0, kTest0ActVar);                                        \
 }
@@ -64,7 +64,7 @@ static DataVector::Config_t gDvConfig =
         DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,           CMD_NONE     ),
         DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,    DV_ELEM_LAST ),
         DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,     0            ),
-        DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,  0            ),
+        DV_ADD_UINT32 ( DV_ELEM_CMD_REQ_NUM,       0            ),
         DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_PROC_NUM, 0            ),
         DV_ADD_UINT8  ( DV_ELEM_TEST0,             0            ),
     }},
@@ -79,7 +79,7 @@ static CommandHandler::Config_t gChConfig
     DV_ELEM_CMD_REQ,
     DV_ELEM_CMD_WRITE_ELEM,
     DV_ELEM_CMD_WRITE_VAL,
-    DV_ELEM_LAST_CMD_REQ_NUM,
+    DV_ELEM_CMD_REQ_NUM,
     DV_ELEM_LAST_CMD_PROC_NUM,
 };
 
@@ -129,7 +129,7 @@ TEST (CommandHandler_Config, InvalidElem)
 
     // last req num
     chConfig = gChConfig;
-    chConfig.lastCmdReqNum = DV_ELEM_TEST1;
+    chConfig.cmdReqNum = DV_ELEM_TEST1;
     CHECK_ERROR (CommandHandler::createNew (chConfig, pDv, pCh),
                  E_INVALID_ELEM);
 
@@ -173,7 +173,7 @@ TEST (CommandHandler_Config, InvalidType)
 
     // last req num
     chConfig = gChConfig;
-    chConfig.lastCmdReqNum = DV_ELEM_CMD;
+    chConfig.cmdReqNum = DV_ELEM_CMD;
     CHECK_ERROR (CommandHandler::createNew (chConfig, pDv, pCh),
                  E_INVALID_TYPE);
 
@@ -202,7 +202,7 @@ TEST (CommandHandler_Run, InvalidCmdReq)
 
     // Set invalid cmd req and cmd req number.
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_LAST));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
 
     // Run handler.
     CHECK_ERROR (pCh->run (), E_INVALID_CMD);
@@ -217,7 +217,7 @@ TEST (CommandHandler_Run, InvalidWriteElem)
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_WRITE));
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_WRITE_ELEM, 
                                (uint32_t) DV_ELEM_TEST1));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
 
     // Run handler.
     CHECK_ERROR (pCh->run (), E_INVALID_ELEM);
@@ -241,7 +241,7 @@ TEST (CommandHandler_Run, LaunchSuccess)
 
     // Set LAUNCH cmd and cmd req number.
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_LAUNCH));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
 
     // Run handler.
     CHECK_SUCCESS (pCh->run ());
@@ -288,7 +288,7 @@ TEST (CommandHandler_Run, AbortSuccess)
 
     // Set LAUNCH cmd and cmd req number.
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_ABORT));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
 
     // Run handler.
     CHECK_SUCCESS (pCh->run ());
@@ -378,7 +378,7 @@ void testWriteSuccess ()
     // Set WRITE cmd, cmd req number, write elem, and write val.
     uint64_t max = DataVector::toUInt64 (std::numeric_limits<T>::max ());
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_WRITE));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_WRITE_ELEM, 
                                (uint32_t) DV_ELEM_TEST0));
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_WRITE_VAL, 
@@ -447,7 +447,7 @@ TEST (CommandHandler_Run, LaunchAbortWriteSuccess)
 
     // Set LAUNCH cmd and cmd req number.
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_LAUNCH));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 1));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 1));
 
     // Run handler.
     CHECK_SUCCESS (pCh->run ());
@@ -464,7 +464,7 @@ TEST (CommandHandler_Run, LaunchAbortWriteSuccess)
 
     // Set ABORT cmd and cmd req number.
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_ABORT));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 2));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 2));
 
     // Run handler again.
     CHECK_SUCCESS (pCh->run ());
@@ -482,7 +482,7 @@ TEST (CommandHandler_Run, LaunchAbortWriteSuccess)
     // Set WRITE cmd, cmd req number, write elem, and write val.
     uint64_t max = DataVector::toUInt64 (std::numeric_limits<uint8_t>::max ());
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, (uint8_t) CMD_WRITE));
-    CHECK_SUCCESS (pDv->write (DV_ELEM_LAST_CMD_REQ_NUM, (uint32_t) 3));
+    CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ_NUM, (uint32_t) 3));
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_WRITE_ELEM, 
                                (uint32_t) DV_ELEM_TEST0));
     CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_WRITE_VAL, 

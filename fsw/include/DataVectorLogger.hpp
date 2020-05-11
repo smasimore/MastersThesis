@@ -38,8 +38,6 @@
 #include "EnumClassHash.hpp"
 #include "DataVector.hpp"
 
-/**************************** DATA VECTOR LOGGER CLASS *****************************/
-
 class DataVectorLogger final 
 {
 

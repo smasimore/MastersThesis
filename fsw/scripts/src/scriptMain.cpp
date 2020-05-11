@@ -22,14 +22,17 @@
 //#include "ProfileFpgaApi.hpp"
 //#include "ProfileEthernetRtt_ControlNode.hpp"
 //#include "ProfileEthernetRtt_DeviceNode.hpp"
-#include "ProfilePlatformComms_ControlNode.hpp"
-#include "ProfilePlatformComms_DeviceNode.hpp"
+//#include "ProfilePlatformComms_ControlNode.hpp"
+//#include "ProfilePlatformComms_DeviceNode.hpp"
 //#include "ProfilePlatformJitter_ControlNode.hpp"
 //#include "ProfilePlatformJitter_DeviceNode.hpp"
 //#include "ProfilePlatformRxnTime_ControlNode.hpp"
 //#include "ProfilePlatformRxnTime_DeviceNode.hpp"
 //#include "ProfilePlatformOverhead_ControlNode.hpp"
 //#include "ProfilePlatformOverhead_DeviceNode.hpp"
+#include "PlatformLEDSystemTest_ControlNode.hpp"
+#include "PlatformLEDSystemTest_DeviceNode.hpp"
+#include "PlatformLEDSystemTest_GroundNode.hpp"
 
 int main (int ac, char** av)
 {
@@ -42,11 +45,14 @@ int main (int ac, char** av)
     // ProfileEthernetRtt_ControlNode::main (ac, av);
     // ProfileEthernetRtt_DeviceNode::main (ac, av);
     // ProfilePlatformComms_ControlNode::main (ac, av);
-     ProfilePlatformComms_DeviceNode::main (ac, av);
+    // ProfilePlatformComms_DeviceNode::main (ac, av);
     // ProfilePlatformJitter_ControlNode::main (ac, av);
     // ProfilePlatformJitter_DeviceNode::main (ac, av);
     // ProfilePlatformRxnTime_ControlNode::main (ac, av);
     // ProfilePlatformRxnTime_DeviceNode::main (ac, av);
-    // ProfilePlatformOverhead_ControlNode::main (ac, av);
+    // ProfilePlatformOsverhead_ControlNode::main (ac, av);
     // ProfilePlatformOverhead_DeviceNode::main (ac, av);
+	 PlatformLEDSystemTest_ControlNode::main (ac, av);
+	// PlatformLEDSystemTest_DeviceNode::main (ac, av);
+	// PlatformLEDSystemTest_GroundNode::main (ac, av);
 }

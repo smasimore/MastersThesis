@@ -163,7 +163,7 @@ static DataVector::Config_t gDvConfig =
     {DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_TX_COUNT,          0            ),
      DV_ADD_UINT32 ( DV_ELEM_GROUND_MSG_RX_COUNT,          0            ),
      DV_ADD_UINT8  ( DV_ELEM_CMD_REQ,                      CMD_NONE     ),
-     DV_ADD_UINT32 ( DV_ELEM_LAST_CMD_REQ_NUM,             0            ),
+     DV_ADD_UINT32 ( DV_ELEM_CMD_REQ_NUM,                  0            ),
      DV_ADD_UINT32 ( DV_ELEM_CMD_WRITE_ELEM,               DV_ELEM_LAST ),
      DV_ADD_UINT64 ( DV_ELEM_CMD_WRITE_VAL,                0            )}},
 };
@@ -177,7 +177,7 @@ static CommandHandler::Config_t gChConfig =
     DV_ELEM_CMD_REQ,
     DV_ELEM_CMD_WRITE_ELEM,
     DV_ELEM_CMD_WRITE_VAL,
-    DV_ELEM_LAST_CMD_REQ_NUM,    
+    DV_ELEM_CMD_REQ_NUM,    
     DV_ELEM_LAST_CMD_PROC_NUM,
 };
 
@@ -711,12 +711,12 @@ static void* fNodesSim (void* _args)
             uint32_t state = STATE_A;
             uint32_t reqNum = 0;
             CHECK_SUCCESS (gPTelemDv->read (DV_ELEM_STATE, state));
-            CHECK_SUCCESS (pDv->read (DV_ELEM_LAST_CMD_REQ_NUM, reqNum));
+            CHECK_SUCCESS (pDv->read (DV_ELEM_CMD_REQ_NUM, reqNum));
             if (state == STATE_B && reqNum == 0)
             {
                 CHECK_SUCCESS (pDv->write (DV_ELEM_CMD_REQ, 
                                            (uint8_t) CMD_LAUNCH));
-                CHECK_SUCCESS (pDv->increment (DV_ELEM_LAST_CMD_REQ_NUM));
+                CHECK_SUCCESS (pDv->increment (DV_ELEM_CMD_REQ_NUM));
                 CHECK_SUCCESS (pDv->readRegion (DV_REG_GROUND_TO_CN, 
                                                 gndToCnBuf));
                 CHECK_SUCCESS (pGndNm->send (

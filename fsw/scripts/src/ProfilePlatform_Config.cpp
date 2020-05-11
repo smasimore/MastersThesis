@@ -848,7 +848,7 @@ DataVector::RegionConfig_t ProfilePlatform_Config::mDvRegGndToCn =
     DV_REG_GROUND_TO_CN,
     // TYPE           ELEM                                  INITIAL_VAL  
     {DV_ADD_UINT8   ( DV_ELEM_CMD_REQ,                      CMD_NONE     ),
-     DV_ADD_UINT32  ( DV_ELEM_LAST_CMD_REQ_NUM,             0            ),
+     DV_ADD_UINT32  ( DV_ELEM_CMD_REQ_NUM,                  0            ),
      DV_ADD_UINT32  ( DV_ELEM_CMD_WRITE_ELEM,               DV_ELEM_LAST ),
      DV_ADD_UINT64  ( DV_ELEM_CMD_WRITE_VAL,                0            )}
 };
@@ -1096,6 +1096,6 @@ CommandHandler::Config_t ProfilePlatform_Config::mChConfig =
     DV_ELEM_CMD_REQ,
     DV_ELEM_CMD_WRITE_ELEM,
     DV_ELEM_CMD_WRITE_VAL,
-    DV_ELEM_LAST_CMD_REQ_NUM,    
+    DV_ELEM_CMD_REQ_NUM,    
     DV_ELEM_LAST_CMD_PROC_NUM,
 };

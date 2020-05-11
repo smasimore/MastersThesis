@@ -81,11 +81,11 @@ class CommandHandler
              */
             DataVectorElement_t cmdWriteVal;
             /**
-             * DV elem containing the number of the last requested command. Used
-             * to determine if current request has been processed yet. Must be 
-             * DV_T_UINT32.
+             * DV elem containing the number of the current requested command. 
+             * used to determine if current request has been processed yet. 
+             * Must be DV_T_UINT32.
              */
-            DataVectorElement_t lastCmdReqNum;
+            DataVectorElement_t cmdReqNum;
             /**
              * DV elem on Control Node to store number of the last processed 
              * command. Used to determine if current request has been processed
