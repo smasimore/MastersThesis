@@ -14,25 +14,26 @@
  * 4. Build and run the Script build configuration.
  */
 
-//#include "ProfileCopyBuffer.hpp"
-//#include "ProfileLock.hpp"
-//#include "RecoveryIgniterTest.hpp"
-//#include "ClockSyncTest_Client.hpp"
-//#include "ClockSyncTest_Server.hpp"
-//#include "ProfileFpgaApi.hpp"
-//#include "ProfileEthernetRtt_ControlNode.hpp"
-//#include "ProfileEthernetRtt_DeviceNode.hpp"
-//#include "ProfilePlatformComms_ControlNode.hpp"
-//#include "ProfilePlatformComms_DeviceNode.hpp"
-//#include "ProfilePlatformJitter_ControlNode.hpp"
-//#include "ProfilePlatformJitter_DeviceNode.hpp"
-//#include "ProfilePlatformRxnTime_ControlNode.hpp"
-//#include "ProfilePlatformRxnTime_DeviceNode.hpp"
-//#include "ProfilePlatformOverhead_ControlNode.hpp"
-//#include "ProfilePlatformOverhead_DeviceNode.hpp"
-#include "PlatformLEDSystemTest_ControlNode.hpp"
-#include "PlatformLEDSystemTest_DeviceNode.hpp"
-#include "PlatformLEDSystemTest_GroundNode.hpp"
+// #include "ProfileCopyBuffer.hpp"
+// #include "ProfileLock.hpp"
+// #include "RecoveryIgniterTest.hpp"
+// #include "ClockSyncTest_Client.hpp"
+// #include "ClockSyncTest_Server.hpp"
+// #include "ProfileFpgaApi.hpp"
+// #include "ProfileEthernetRtt_ControlNode.hpp"
+// #include "ProfileEthernetRtt_DeviceNode.hpp"
+// #include "ProfilePlatformComms_ControlNode.hpp"
+// #include "ProfilePlatformComms_DeviceNode.hpp"
+// #include "ProfilePlatformJitter_ControlNode.hpp"
+// #include "ProfilePlatformJitter_DeviceNode.hpp"
+// #include "ProfilePlatformRxnTime_ControlNode.hpp"
+// #include "ProfilePlatformRxnTime_DeviceNode.hpp"
+// #include "ProfilePlatformOverhead_ControlNode.hpp"
+// #include "ProfilePlatformOverhead_DeviceNode.hpp"
+// #include "PlatformLEDSystemTest_ControlNode.hpp"
+// #include "PlatformLEDSystemTest_DeviceNode.hpp"
+// #include "PlatformLEDSystemTest_GroundNode.hpp"
+#include "AnalogInDeviceTest.hpp"
 
 int main (int ac, char** av)
 {
@@ -52,7 +53,8 @@ int main (int ac, char** av)
     // ProfilePlatformRxnTime_DeviceNode::main (ac, av);
     // ProfilePlatformOsverhead_ControlNode::main (ac, av);
     // ProfilePlatformOverhead_DeviceNode::main (ac, av);
-	 PlatformLEDSystemTest_ControlNode::main (ac, av);
-	// PlatformLEDSystemTest_DeviceNode::main (ac, av);
-	// PlatformLEDSystemTest_GroundNode::main (ac, av);
+    // PlatformLEDSystemTest_ControlNode::main (ac, av);
+    // PlatformLEDSystemTest_DeviceNode::main (ac, av);
+    // PlatformLEDSystemTest_GroundNode::main (ac, av);
+    AnalogInDeviceTest::main (ac, av);
 }
